@@ -66,6 +66,8 @@ document.querySelector("#app").innerHTML = `
       <p>Track calls and releases from your spreadsheet.</p>
         </header>
 
+    <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
+
         <div id="loader">Connecting to Google Sheets...</div>
         <div id="data-list" aria-live="polite"></div>
 
@@ -124,6 +126,51 @@ const unitSelectElement = document.getElementById("unit");
 const formMessageElement = document.getElementById("form-message");
 const nameInputElement = document.getElementById("name");
 const headerMessageElement = document.querySelector(".app-header p");
+const toastElement = document.getElementById("app-toast");
+
+let toastTimeoutId;
+
+function showToast(message, options = {}) {
+  const {
+    type = "info",
+    actionLabel,
+    onAction,
+    duration = 4000,
+    persist = false,
+  } = options;
+
+  if (!toastElement) {
+    return;
+  }
+
+  toastElement.innerHTML = "";
+  toastElement.className = `app-toast ${type}`;
+  toastElement.classList.remove("hidden");
+
+  const text = document.createElement("span");
+  text.className = "app-toast-text";
+  text.textContent = message;
+  toastElement.appendChild(text);
+
+  if (actionLabel && typeof onAction === "function") {
+    const actionButton = document.createElement("button");
+    actionButton.type = "button";
+    actionButton.className = "app-toast-action";
+    actionButton.textContent = actionLabel;
+    actionButton.addEventListener("click", onAction);
+    toastElement.appendChild(actionButton);
+  }
+
+  if (toastTimeoutId) {
+    clearTimeout(toastTimeoutId);
+  }
+
+  if (!persist) {
+    toastTimeoutId = window.setTimeout(() => {
+      toastElement.classList.add("hidden");
+    }, duration);
+  }
+}
 
 const appState = {
   units: [],
@@ -372,10 +419,54 @@ function registerServiceWorker() {
 
   window.addEventListener("load", async () => {
     try {
-      await navigator.serviceWorker.register(
+      const registration = await navigator.serviceWorker.register(
         `${import.meta.env.BASE_URL}sw.js`,
       );
       console.log("[Stake Callings] Service worker registered.");
+
+      if (registration.waiting) {
+        showToast("A new version is available.", {
+          type: "success",
+          actionLabel: "Refresh",
+          persist: true,
+          onAction: () => {
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          },
+        });
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const installingWorker = registration.installing;
+        if (!installingWorker) {
+          return;
+        }
+
+        installingWorker.addEventListener("statechange", () => {
+          if (installingWorker.state === "installed") {
+            if (navigator.serviceWorker.controller) {
+              showToast("A new version is available.", {
+                type: "success",
+                actionLabel: "Refresh",
+                persist: true,
+                onAction: () => {
+                  installingWorker.postMessage({ type: "SKIP_WAITING" });
+                },
+              });
+            } else {
+              showToast("Offline support is ready.", { type: "success" });
+            }
+          }
+        });
+      });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) {
+          return;
+        }
+        refreshing = true;
+        window.location.reload();
+      });
     } catch (error) {
       console.warn(
         "[Stake Callings] Service worker registration failed:",

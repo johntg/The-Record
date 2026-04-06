@@ -62,6 +62,49 @@ body.modal-open {
   font-size: 0.95rem;
 }
 
+.app-toast {
+  position: sticky;
+  top: 10px;
+  z-index: 1200;
+  margin: 0 auto 12px;
+  width: min(100%, 600px);
+  background: #21313b;
+  color: var(--white);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.app-toast.hidden {
+  display: none;
+}
+
+.app-toast.success {
+  background: #0f6b37;
+}
+
+.app-toast-text {
+  font-size: 0.9rem;
+}
+
+.app-toast-action {
+  border: none;
+  border-radius: 7px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-toast-action:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 #loader {
   text-align: center;
   padding: 40px;
@@ -286,5 +329,10 @@ select {
 
   .btn-group {
     flex-direction: column;
+  }
+
+  .app-toast {
+    top: 8px;
+    width: 100%;
   }
 }
