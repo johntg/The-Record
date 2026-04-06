@@ -221,3 +221,5 @@ The visual design is based on the updated prototype files in `src/resources/`.
 - `vite.config.js` — GitHub Pages base-path support
 - `.github/workflows/deploy.yml` — automated Pages deployment
 - `.env.example` — required environment variables
+
+change to force push
