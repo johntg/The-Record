@@ -2,6 +2,7 @@ var CONFIG = {
   SS_ID: "1cOrkam9VmF0m21gozVUJFAw6drLXeVym15csjLVpw5g",
   CALLINGS_SHEET: "Callings",
   UNITS_SHEET: "Units",
+  ASSIGN_SHEET: "Assign",
   DEFAULT_STATUS: "",
   HEADERS: [
     "Timestamp",
@@ -41,6 +42,41 @@ function doGet(e) {
     );
   }
 
+  if (action === "setInterviewAssignee") {
+    var assigneeParams = (e && e.parameter) || {};
+    return responsePayload_(
+      setInterviewAssignee(assigneeParams.id, assigneeParams.assignee),
+      e,
+    );
+  }
+
+  if (action === "setPreviousReleased") {
+    var previousReleasedParams = (e && e.parameter) || {};
+    return responsePayload_(
+      setPreviousReleased(
+        previousReleasedParams.id,
+        previousReleasedParams.isChecked,
+      ),
+      e,
+    );
+  }
+
+  if (action === "setSustainingAssignee") {
+    var susAssigneeParams = (e && e.parameter) || {};
+    return responsePayload_(
+      setSustainingAssignee(susAssigneeParams.id, susAssigneeParams.assignee),
+      e,
+    );
+  }
+
+  if (action === "setSustainingUnits") {
+    var susUnitsParams = (e && e.parameter) || {};
+    return responsePayload_(
+      setSustainingUnits(susUnitsParams.id, susUnitsParams.units),
+      e,
+    );
+  }
+
   return responsePayload_(
     {
       success: false,
@@ -64,6 +100,22 @@ function doPost(e) {
     );
   }
 
+  if (action === "setInterviewAssignee") {
+    return jsonResponse_(setInterviewAssignee(payload.id, payload.assignee));
+  }
+
+  if (action === "setPreviousReleased") {
+    return jsonResponse_(setPreviousReleased(payload.id, payload.isChecked));
+  }
+
+  if (action === "setSustainingAssignee") {
+    return jsonResponse_(setSustainingAssignee(payload.id, payload.assignee));
+  }
+
+  if (action === "setSustainingUnits") {
+    return jsonResponse_(setSustainingUnits(payload.id, payload.units));
+  }
+
   return jsonResponse_({
     success: false,
     error: 'Unknown POST action: "' + action + '"',
@@ -75,6 +127,7 @@ function getInitialData() {
     var ss = getSpreadsheet_();
     var unitsSheet = ss.getSheetByName(CONFIG.UNITS_SHEET);
     var callingsSheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+    var assignSheet = ss.getSheetByName(CONFIG.ASSIGN_SHEET);
 
     if (!unitsSheet || !callingsSheet) {
       return {
@@ -91,8 +144,133 @@ function getInitialData() {
     return {
       success: true,
       units: getUnits_(unitsSheet),
+      assigners: getAssigners_(assignSheet),
       callings: getCallings_(callingsSheet),
     };
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function setInterviewAssignee(id, assignee) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var cleanedAssignee = sanitizeValue_(assignee);
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 8).setValue(cleanedAssignee);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function setPreviousReleased(id, isChecked) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var checked = parseBoolean_(isChecked);
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 10).setValue(checked);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function setSustainingAssignee(id, assignee) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var cleanedAssignee = sanitizeValue_(assignee);
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 11).setValue(cleanedAssignee);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function setSustainingUnits(id, units) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var cleanedUnits = sanitizeValue_(units);
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 12).setValue(cleanedUnits);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
   } catch (error) {
     return {
       success: false,
@@ -209,6 +387,40 @@ function getUnits_(sheet) {
     .flat()
     .map(sanitizeValue_)
     .filter(String);
+}
+
+function getAssigners_(sheet) {
+  if (!sheet || sheet.getLastRow() === 0) {
+    return [];
+  }
+
+  var values = sheet
+    .getRange(1, 1, sheet.getLastRow(), 1)
+    .getDisplayValues()
+    .flat()
+    .map(sanitizeValue_)
+    .filter(String);
+
+  if (values.length === 0) {
+    return [];
+  }
+
+  var first = values[0].toLowerCase();
+  var headerLike = {
+    assign: true,
+    assignee: true,
+    assignees: true,
+    interviewer: true,
+    interviewers: true,
+    name: true,
+    names: true,
+  };
+
+  if (headerLike[first]) {
+    return values.slice(1);
+  }
+
+  return values;
 }
 
 function getCallings_(sheet) {

@@ -2,8 +2,10 @@ import "./style.css";
 
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL?.trim() ?? "";
 const UNCONFIGURED_API_MARKER = "YOUR_DEPLOYMENT_ID";
+const DEV_API_PROXY_PATH = "/api/apps-script";
 const DEMO_DATA = {
   units: ["1st Ward", "2nd Ward", "YSA Branch"],
+  assigners: ["Bishop Smith", "Sister Jones", "Brother Clark"],
   callings: [
     [
       "Timestamp",
@@ -174,6 +176,7 @@ function showToast(message, options = {}) {
 
 const appState = {
   units: [],
+  assigners: [],
   usingDemoData: false,
 };
 
@@ -193,6 +196,7 @@ function setHeaderMessage(message) {
 
 function applyData(data) {
   appState.units = Array.isArray(data.units) ? data.units : [];
+  appState.assigners = Array.isArray(data.assigners) ? data.assigners : [];
   populateUnitOptions(appState.units);
   renderCards(data.callings);
 }
@@ -207,14 +211,20 @@ function loadDemoData(message) {
   );
 }
 
-function getApiUrl(action) {
+function getApiUrl(action, options = {}) {
+  const { direct = false } = options;
+
   if (!API_URL) {
     throw new Error(
       "Missing VITE_APPS_SCRIPT_URL. Add your Apps Script /exec URL to .env.",
     );
   }
 
-  const url = new URL(API_URL);
+  const url =
+    import.meta.env.DEV && !direct
+      ? new URL(DEV_API_PROXY_PATH, window.location.origin)
+      : new URL(API_URL);
+
   if (action) {
     url.searchParams.set("action", action);
   }
@@ -224,7 +234,7 @@ function getApiUrl(action) {
 function requestViaJsonp(action, params = {}, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
     const callbackName = `__stakeCallingsJsonp_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    const url = getApiUrl(action);
+    const url = getApiUrl(action, { direct: true });
 
     Object.entries(params).forEach(([key, value]) => {
       if (value != null) {
@@ -321,10 +331,21 @@ function renderCards(rows) {
   listElement.innerHTML = rows
     .slice(1)
     .reverse()
-    .map(
-      (row) => `
+    .map((row) => {
+      const rowType = String(row?.[1] ?? "")
+        .trim()
+        .toLowerCase();
+      const isCall = rowType === "call";
+      const isRelease = rowType === "release";
+      const previousReleasedValue = String(row?.[9] ?? "")
+        .trim()
+        .toLowerCase();
+      const isPreviousReleasedChecked =
+        previousReleasedValue === "true" || previousReleasedValue === "yes";
+
+      return `
         <article class="card">
-          <span class="type-badge ${String(row?.[1] ?? "").toLowerCase() === "release" ? "type-release" : "type-call"}">
+          <span class="type-badge ${isRelease ? "type-release" : "type-call"}">
             ${escapeHtml(row?.[1] ?? "Call")}
           </span>
           <div class="person-name">${escapeHtml(row?.[2] ?? "Unknown name")}</div>
@@ -341,7 +362,7 @@ function renderCards(rows) {
                   data-col-index="6"
                   ${row?.[5] ? "checked" : ""}
                 />
-                <span class="approval-label"><span>S.Pres</span><span>approved</span></span>
+                <span>S.Pres approved</span>
               </label>
               <small class="approval-date">${escapeHtml(row?.[5] || "")}</small>
             </div>
@@ -355,13 +376,113 @@ function renderCards(rows) {
                   data-col-index="7"
                   ${row?.[6] ? "checked" : ""}
                 />
-                <span class="approval-label"><span>SHC</span><span>sustained</span></span>
+                <span>SHC sustained</span>
               </label>
               <small class="approval-date">${escapeHtml(row?.[6] || "")}</small>
             </div>
           </div>
+          <section class="interview-section">
+            <label class="field-label interview-label" for="assignee-${escapeHtml(row?.[0] ?? "")}">Interview</label>
+            <select
+              id="assignee-${escapeHtml(row?.[0] ?? "")}"
+              class="interviewer-select"
+              data-action="set-interviewer"
+              data-id="${escapeHtml(row?.[0] ?? "")}" 
+            >
+              ${renderAssigneeOptions(row?.[7] ?? "")}
+            </select>
+            <label class="approval-item interview-done">
+              <input
+                type="checkbox"
+                class="approval-checkbox"
+                data-action="toggle-approval"
+                data-id="${escapeHtml(row?.[0] ?? "")}" 
+                data-col-index="9"
+                ${row?.[8] ? "checked" : ""}
+              />
+              <span>Done</span>
+            </label>
+            <small class="approval-date">${escapeHtml(row?.[8] || "")}</small>
+          </section>
+          ${
+            isCall
+              ? `<section class="interview-section">
+            <label class="field-label interview-label" for="sus-assignee-${escapeHtml(row?.[0] ?? "")}">Sustaining</label>
+            <select
+              id="sus-assignee-${escapeHtml(row?.[0] ?? "")}"
+              class="interviewer-select"
+              data-action="set-sustaining-assignee"
+              data-id="${escapeHtml(row?.[0] ?? "")}"
+            >
+              ${renderAssigneeOptions(row?.[10] ?? "")}
+            </select>
+            <label class="field-label interview-label sustaining-units-label" for="sus-units-${escapeHtml(row?.[0] ?? "")}">Units</label>
+            <select
+              id="sus-units-${escapeHtml(row?.[0] ?? "")}"
+              class="interviewer-select sustaining-units-select"
+              multiple
+              data-action="set-sustaining-units"
+              data-id="${escapeHtml(row?.[0] ?? "")}"
+              size="3"
+            >
+              ${renderSustainingUnitOptions(row?.[11] ?? "")}
+            </select>
+          </section>`
+              : ""
+          }
+          ${
+            isCall
+              ? `<section class="interview-section">
+            <label class="approval-item interview-done">
+              <input
+                type="checkbox"
+                class="approval-checkbox"
+                data-action="toggle-previous-released"
+                data-id="${escapeHtml(row?.[0] ?? "")}" 
+                ${isPreviousReleasedChecked ? "checked" : ""}
+              />
+              <span>Previous person released</span>
+            </label>
+          </section>`
+              : ""
+          }
         </article>
-      `,
+      `;
+    })
+    .join("");
+}
+
+function renderAssigneeOptions(selectedAssignee) {
+  const selected = String(selectedAssignee ?? "").trim();
+  const names = Array.isArray(appState.assigners)
+    ? appState.assigners.filter(Boolean)
+    : [];
+
+  if (selected && !names.includes(selected)) {
+    names.push(selected);
+  }
+
+  return [
+    `<option value="" ${selected ? "" : "selected"}>Unassigned</option>`,
+    ...names.map(
+      (name) =>
+        `<option value="${escapeHtml(name)}" ${name === selected ? "selected" : ""}>${escapeHtml(name)}</option>`,
+    ),
+  ].join("");
+}
+
+function renderSustainingUnitOptions(selectedUnitsString) {
+  const savedUnits = String(selectedUnitsString ?? "")
+    .split(",")
+    .map((u) => u.trim())
+    .filter(Boolean);
+  const units = Array.isArray(appState.units)
+    ? appState.units.filter(Boolean)
+    : [];
+  return units
+    .map(
+      (unit) =>
+        `<option value="${escapeHtml(unit)}" ${savedUnits.includes(unit) ? "selected" : ""}>${escapeHtml(unit)}</option>`,
     )
     .join("");
 }
@@ -584,6 +705,216 @@ async function submitApprovalToggle(payload) {
   }
 }
 
+async function submitInterviewAssignee(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error(
+      "Interview assignment updates are unavailable in demo mode.",
+    );
+  }
+
+  const formData = new URLSearchParams({
+    action: "setInterviewAssignee",
+    id: payload.id,
+    assignee: payload.assignee,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Interview assignment failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(
+        result?.error || "Unable to update interview assignment.",
+      );
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setInterviewAssignee", {
+      id: payload.id,
+      assignee: payload.assignee,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error || "Compatibility interview assignment failed.",
+      );
+    }
+  }
+}
+
+async function submitPreviousReleasedToggle(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error("Previous-release updates are unavailable in demo mode.");
+  }
+
+  const formData = new URLSearchParams({
+    action: "setPreviousReleased",
+    id: payload.id,
+    isChecked: payload.isChecked ? "true" : "false",
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Previous-release update failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(result?.error || "Unable to update previous release.");
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setPreviousReleased", {
+      id: payload.id,
+      isChecked: payload.isChecked,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error ||
+          "Compatibility previous-release update failed.",
+      );
+    }
+  }
+}
+
+async function submitSustainingAssignee(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error(
+      "Sustaining assignment updates are unavailable in demo mode.",
+    );
+  }
+
+  const formData = new URLSearchParams({
+    action: "setSustainingAssignee",
+    id: payload.id,
+    assignee: payload.assignee,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Sustaining assignment failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(
+        result?.error || "Unable to update sustaining assignment.",
+      );
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setSustainingAssignee", {
+      id: payload.id,
+      assignee: payload.assignee,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error || "Compatibility sustaining assignment failed.",
+      );
+    }
+  }
+}
+
+async function submitSustainingUnits(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error("Sustaining unit updates are unavailable in demo mode.");
+  }
+
+  const formData = new URLSearchParams({
+    action: "setSustainingUnits",
+    id: payload.id,
+    units: payload.units,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Sustaining units update failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(result?.error || "Unable to update sustaining units.");
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setSustainingUnits", {
+      id: payload.id,
+      units: payload.units,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error ||
+          "Compatibility sustaining units update failed.",
+      );
+    }
+  }
+}
+
 formElement.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -628,6 +959,133 @@ modalElement.addEventListener("click", (event) => {
 });
 
 listElement.addEventListener("change", async (event) => {
+  const assigneeSelect = event.target.closest(
+    'select[data-action="set-interviewer"]',
+  );
+  if (assigneeSelect) {
+    const id = assigneeSelect.dataset.id?.trim();
+    const assignee = assigneeSelect.value.trim();
+
+    if (!id) {
+      showToast("Unable to update assignee: missing row identifier.", {
+        type: "error",
+      });
+      return;
+    }
+
+    assigneeSelect.disabled = true;
+    try {
+      await submitInterviewAssignee({ id, assignee });
+      await loadData();
+      showToast("Interview assignment updated.", { type: "success" });
+    } catch (error) {
+      showToast(error?.message || "Failed to update assignee.", {
+        type: "error",
+      });
+    } finally {
+      assigneeSelect.disabled = false;
+    }
+
+    return;
+  }
+
+  const sustainingAssigneeSelect = event.target.closest(
+    'select[data-action="set-sustaining-assignee"]',
+  );
+  if (sustainingAssigneeSelect) {
+    const id = sustainingAssigneeSelect.dataset.id?.trim();
+    const assignee = sustainingAssigneeSelect.value.trim();
+
+    if (!id) {
+      showToast(
+        "Unable to update sustaining assignee: missing row identifier.",
+        {
+          type: "error",
+        },
+      );
+      return;
+    }
+
+    sustainingAssigneeSelect.disabled = true;
+    try {
+      await submitSustainingAssignee({ id, assignee });
+      await loadData();
+      showToast("Sustaining assignment updated.", { type: "success" });
+    } catch (error) {
+      showToast(error?.message || "Failed to update sustaining assignee.", {
+        type: "error",
+      });
+    } finally {
+      sustainingAssigneeSelect.disabled = false;
+    }
+
+    return;
+  }
+
+  const sustainingUnitsSelect = event.target.closest(
+    'select[data-action="set-sustaining-units"]',
+  );
+  if (sustainingUnitsSelect) {
+    const id = sustainingUnitsSelect.dataset.id?.trim();
+    const units = Array.from(sustainingUnitsSelect.selectedOptions)
+      .map((opt) => opt.value)
+      .join(", ");
+
+    if (!id) {
+      showToast("Unable to update sustaining units: missing row identifier.", {
+        type: "error",
+      });
+      return;
+    }
+
+    sustainingUnitsSelect.disabled = true;
+    try {
+      await submitSustainingUnits({ id, units });
+      await loadData();
+      showToast("Sustaining units updated.", { type: "success" });
+    } catch (error) {
+      showToast(error?.message || "Failed to update sustaining units.", {
+        type: "error",
+      });
+    } finally {
+      sustainingUnitsSelect.disabled = false;
+    }
+
+    return;
+  }
+
+  const previousReleasedCheckbox = event.target.closest(
+    'input[data-action="toggle-previous-released"]',
+  );
+  if (previousReleasedCheckbox) {
+    const id = previousReleasedCheckbox.dataset.id?.trim();
+    const isChecked = previousReleasedCheckbox.checked;
+
+    if (!id) {
+      previousReleasedCheckbox.checked = !isChecked;
+      showToast("Unable to update previous release: missing row identifier.", {
+        type: "error",
+      });
+      return;
+    }
+
+    previousReleasedCheckbox.disabled = true;
+    try {
+      await submitPreviousReleasedToggle({ id, isChecked });
+      await loadData();
+      showToast("Previous release updated.", { type: "success" });
+    } catch (error) {
+      previousReleasedCheckbox.checked = !isChecked;
+      showToast(error?.message || "Failed to update previous release.", {
+        type: "error",
+      });
+    } finally {
+      previousReleasedCheckbox.disabled = false;
+    }
+
+    return;
+  }
+
   const checkbox = event.target.closest('input[data-action="toggle-approval"]');
   if (!checkbox) {
     return;

@@ -161,7 +161,7 @@ body.modal-open {
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  padding: 8px;
+  padding: 8px 0 0 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fafafa;
@@ -175,10 +175,8 @@ body.modal-open {
   font-size: 0.88rem;
 }
 
-.approval-label {
-  display: inline-flex;
-  flex-direction: column;
-  line-height: 1.1;
+.approval-grid .approval-item {
+  white-space: nowrap;
 }
 
 .approval-item input[type="checkbox"] {
@@ -192,6 +190,40 @@ body.modal-open {
   font-size: 0.75rem;
   text-align: left;
   min-height: 1em;
+}
+
+.interview-section {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 10px;
+  display: block;
+}
+
+.interview-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.interviewer-select {
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
+.interview-done {
+  margin-top: 6px;
+}
+
+.sustaining-units-label {
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.sustaining-units-select {
+  min-height: 80px;
 }
 
 .type-badge {
@@ -379,5 +411,11 @@ select {
   .app-toast {
     top: 8px;
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .approval-grid .approval-item {
+    white-space: normal;
   }
 }

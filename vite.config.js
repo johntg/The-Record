@@ -13,8 +13,31 @@ function normalizeBasePath(basePath) {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const apiUrl = env.VITE_APPS_SCRIPT_URL || "";
+  const base = normalizeBasePath(env.VITE_BASE_PATH || "/");
+
+  let server;
+  try {
+    if (apiUrl) {
+      const parsedUrl = new URL(apiUrl);
+      server = {
+        proxy: {
+          "/api/apps-script": {
+            target: parsedUrl.origin,
+            changeOrigin: true,
+            secure: true,
+            followRedirects: true,
+            rewrite: () => `${parsedUrl.pathname}`,
+          },
+        },
+      };
+    }
+  } catch {
+    server = undefined;
+  }
 
   return {
-    base: normalizeBasePath(env.VITE_BASE_PATH || "/"),
+    base,
+    server,
   };
 });
