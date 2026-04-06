@@ -261,11 +261,18 @@ async function loadData() {
     }
 
     const data = await response.json();
+    console.log("[Stake Callings] Apps Script response:", JSON.stringify(data));
 
-    if (!data.success) {
-      throw new Error(
-        data.error || "Apps Script returned an unsuccessful response.",
-      );
+    // Accept both { success: true, ... } (new API) and { error: null, ... } (old API)
+    const hasData = Array.isArray(data.callings) && data.callings.length > 0;
+    const isSuccess =
+      data.success === true || (data.success === undefined && hasData);
+
+    if (!isSuccess) {
+      const detail = data.error
+        ? `Apps Script error: ${data.error}`
+        : `Apps Script returned no usable data. Raw: ${JSON.stringify(data)}`;
+      throw new Error(detail);
     }
 
     appState.usingDemoData = false;
