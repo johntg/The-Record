@@ -358,8 +358,14 @@ async function submitCalling(payload) {
     }
 
     const result = await response.json();
+    console.log("[Stake Callings] Save POST response:", JSON.stringify(result));
 
-    if (!result.success) {
+    const postSucceeded =
+      result === true ||
+      result?.success === true ||
+      (result && result.success === undefined && result.error == null);
+
+    if (!postSucceeded) {
       throw new Error(result.error || "Unable to save item.");
     }
   } catch (error) {
@@ -394,9 +400,22 @@ async function submitCalling(payload) {
     }
 
     const fallbackResult = await fallbackResponse.json();
-    if (!fallbackResult.success) {
+    console.log(
+      "[Stake Callings] Save GET fallback response:",
+      JSON.stringify(fallbackResult),
+    );
+
+    const fallbackSucceeded =
+      fallbackResult === true ||
+      fallbackResult?.success === true ||
+      (fallbackResult &&
+        fallbackResult.success === undefined &&
+        fallbackResult.error == null);
+
+    if (!fallbackSucceeded) {
       throw new Error(
-        fallbackResult.error || "Fallback save failed in Apps Script.",
+        fallbackResult.error ||
+          `Fallback save failed in Apps Script. Raw: ${JSON.stringify(fallbackResult)}`,
       );
     }
 
