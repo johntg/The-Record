@@ -1,0 +1,338 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+
+    <style>
+              :root { --primary: #1a73e8; --bg-dark: #027da5; --bg-muted: #a7b8bd; --error: #d93025; --white: #ffffff; }
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body { font-family: -apple-system, sans-serif; background: var(--bg-muted); padding: 10px; padding-bottom: 100px; }
+              header { background: var(--white); padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+              .card { background: var(--white); border-radius: 12px; padding: 20px; margin: 12px 0; border: 1px solid #ddd; max-width: 600px; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+              .person-name { font-size: 1.1rem; font-weight: bold; color: var(--primary); }
+              .pos-text { color: #555; margin: 4px 0; }
+              .unit-text { font-size: 0.8rem; color: #888; font-style: italic; }
+              .type-badge { float: right; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; border: 1px solid; }
+              .type-call { color: var(--primary); border-color: var(--primary); background: #f0f7ff; }
+              .type-release { color: var(--error); border-color: var(--error); background: #fff1f0; }
+              .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; border: none; font-size: 30px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+              .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; }
+              .modal { background: white; padding: 25px; border-radius: 15px; width: 92%; max-width: 400px; }
+              input, select { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+              .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+              .btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+              #loader { text-align: center; padding: 40px; color: white; font-weight: bold; }
+              .approval-row {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px dashed #eee;
+      }
+
+      .approval-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: #444;
+        cursor: pointer;
+      }
+
+      .approval-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .date-label {
+        display: block;
+        font-size: 0.65rem;
+        color: #999;
+        margin-top: 2px;
+      }
+
+      html {
+        /* Set a larger base font for mobile */
+        font-size: 16px;
+        /* Prevent font scaling issues */
+        -webkit-text-size-adjust: 100%;
+        height: 100%;
+
+      body {
+        margin: 0;
+        padding: 10px;
+        /* Use 'vw' to ensure it never exceeds phone width */
+        width: 100vw;
+        overflow-x: hidden;
+        background: var(--bg-muted);
+        box-sizing: border-box;
+      }
+
+      /* Ensure all containers fill the phone screen */
+      #app-container, main, #data-list {
+        width: 100%;
+        max-width: 100vw;
+      }
+
+      /* Make cards touch-friendly and full-width */
+      ..card {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 0 12px 0 !important;
+        /* Larger text for mobile eyes */
+        font-size: 16px;
+      }
+
+      /* iOS Safari Fix: zoom-on-focus prevention */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+
+      /* Force inputs and buttons to be large enough for fingers */
+      input, select, button {
+        font-size: 16px !important; /* iOS will zoom in if font is < 16px */
+        height: 48px; /* Minimum recommended touch target size */
+      }
+
+      .approval-item {
+        padding: 10px 0; /* Larger hit area for checkboxes */
+      }
+
+      #app-container {
+        width: 100vw;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+
+      body {
+        margin: 0;
+        padding: 8px;
+        width: 100vw;
+        overflow-x: hidden;
+        background: var(--bg-muted);
+      }
+
+      html, body {
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+      html, body {
+        width: 100vw !important;
+        min-width: 100vw !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-container">
+      <header><h1>Stake Callings</h1></header>
+
+      <div id="loader">Loading data from Google Sheets...</div>
+      <div id="data-list"></div>
+
+      <button class="fab" onclick="openModal()">+</button>
+
+      <div id="itemModal" class="modal-overlay">
+        <div class="modal">
+          <h2 style="margin-bottom: 15px">New Entry</h2>
+          <label>Type</label>
+          <select id="type">
+            <option value="Call">Call</option>
+            <option value="Release">Release</option>
+          </select>
+          <label>Name</label>
+          <input type="text" id="name" placeholder="Full Name" />
+          <label>Position</label>
+          <input type="text" id="position" placeholder="Position" />
+          <label>Unit</label>
+          <select id="unit"></select>
+          <div class="btn-group">
+            <button class="btn" style="background: #eee" onclick="closeModal()">
+              Cancel
+            </button>
+            <button
+              id="submitBtn"
+              class="btn"
+              style="background: var(--primary); color: white"
+              onclick="saveItem()"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // 1. INITIAL LOAD
+      window.onload = function () {
+        google.script.run
+          .withSuccessHandler(function (jsonString) {
+            const data = JSON.parse(jsonString);
+            if (data.error) {
+              document.getElementById("loader").innerHTML =
+                "Error: " + data.error;
+              return;
+            }
+            setupDropdown(data.units);
+            renderCards(data.callings);
+            document.getElementById("loader").style.display = "none";
+          })
+          .withFailureHandler(function (err) {
+            document.getElementById("loader").innerHTML =
+              "Connection Failed: " + err.message;
+          })
+          .getInitialData();
+      };
+
+      // 2. UI FUNCTIONS
+      function setupDropdown(units) {
+        const select = document.getElementById("unit");
+        select.innerHTML = "<option disabled selected>Select Unit...</option>";
+        if (units && units.length > 0) {
+          units.forEach((u) => {
+            let opt = document.createElement("option");
+            opt.value = u;
+            opt.text = u;
+            select.add(opt);
+          });
+        }
+      }
+
+      function renderCards(rows) {
+        const dataList = document.getElementById("data-list");
+        if (!rows || rows.length <= 1) {
+          dataList.innerHTML = '<div class="card">No records found.</div>';
+          return;
+        }
+
+        const html = rows
+          .slice(1)
+          .reverse()
+          .map((row) => {
+            if (!row[1]) return "";
+
+            const id = row[0];
+            const type = row[1];
+            const name = row[2];
+            const pos = row[3];
+            const unit = row[4];
+
+            // Column F (index 5) and Column G (index 6)
+            const spVal = row[5];
+            const shcVal = row[6];
+
+            const typeClass =
+              type.toLowerCase() === "call" ? "type-call" : "type-release";
+
+            return `
+      <div class="card">
+        <span class="type-badge ${typeClass}">${type}</span>
+        <div class="person-name">${name}</div>
+        <div class="pos-text">${pos}</div>
+        <div class="unit-text">${unit}</div>
+        
+        <div class="approval-row">
+          <label class="approval-item">
+            <input type="checkbox" ${spVal ? "checked" : ""} 
+                   onchange="handleToggle('${id}', 6, this.checked)">
+            <div>
+              SP Approved
+              ${spVal ? `<span class="date-label">${spVal}</span>` : ""}
+            </div>
+          </label>
+
+          <label class="approval-item">
+            <input type="checkbox" ${shcVal ? "checked" : ""} 
+                   onchange="handleToggle('${id}', 7, this.checked)">
+            <div>
+              SHC Sustained
+              ${shcVal ? `<span class="date-label">${shcVal}</span>` : ""}
+            </div>
+          </label>
+        </div>
+      </div>`;
+          })
+          .join("");
+        dataList.innerHTML = html;
+      }
+
+      function handleToggle(id, colIndex, isChecked) {
+        // Call the server to update the sheet
+        google.script.run
+          .withSuccessHandler(function () {
+            // Refresh the list to show the new date/check state
+            google.script.run
+              .withSuccessHandler(function (jsonString) {
+                const data = JSON.parse(jsonString);
+                renderCards(data.callings);
+              })
+              .getInitialData();
+          })
+          .toggleApproval(id, colIndex, isChecked);
+      }
+      // 3. MODAL ACTIONS
+      function openModal() {
+        document.getElementById("itemModal").style.display = "flex";
+      }
+
+      function closeModal() {
+        document.getElementById("itemModal").style.display = "none";
+        document.getElementById("name").value = "";
+        document.getElementById("position").value = "";
+      }
+
+      function saveItem() {
+        const submitBtn = document.getElementById("submitBtn");
+        const payload = {
+          type: document.getElementById("type").value,
+          name: document.getElementById("name").value,
+          position: document.getElementById("position").value,
+          unit: document.getElementById("unit").value,
+        };
+
+        if (
+          !payload.name ||
+          !payload.position ||
+          payload.unit === "Select Unit..."
+        ) {
+          alert("Please fill all fields");
+          return;
+        }
+
+        submitBtn.innerText = "Saving...";
+        submitBtn.disabled = true;
+
+        google.script.run
+          .withSuccessHandler(function () {
+            submitBtn.innerText = "Submit";
+            submitBtn.disabled = false;
+            closeModal();
+            // Auto-refresh the page to show new item
+            location.reload();
+          })
+          .saveCalling(payload);
+      }
+
+      (function () {
+        function fixScale() {
+          const docWidth = document.documentElement.clientWidth;
+          const windowWidth = window.innerWidth;
+
+          // If browser is rendering wider than viewport → force scale
+          if (docWidth > windowWidth) {
+            const scale = windowWidth / docWidth;
+            document.body.style.transform = `scale(${scale})`;
+            document.body.style.transformOrigin = "top left";
+            document.body.style.width = 100 / scale + "%";
+          }
+        }
+
+        window.addEventListener("load", fixScale);
+        window.addEventListener("resize", fixScale);
+      })();
+    </script>
+  </body>
+</html>

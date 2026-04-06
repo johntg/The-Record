@@ -1,0 +1,73 @@
+!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Stake Callings</title>
+    <link rel="apple-touch-icon" href="icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <style>
+      /* All your previous CSS goes here */
+      body {
+        font-family: sans-serif;
+        background: #a7b8bd;
+        padding: 15px;
+        margin: 0;
+      }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      #loader {
+        text-align: center;
+        margin-top: 50px;
+        font-weight: bold;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loader">Connecting to Google Sheets...</div>
+    <div id="data-list"></div>
+
+    <script>
+      const API_URL =
+        "https://script.googleusercontent.com/macros/echo?user_content_key=AWDtjMU6poBA9FNndm2EBboRqg7kZGhjDAiCrJlTAaF9K8lGmWv-CStbammb-kDuDHBvIOS2aylJogwac7L6oIM-CAplFLBrcSYaIlXNaKSr4G0BJRCJ5S4dB6p6q3sU6TAVx6VcPXIv44G6HojhlfHphDFnaHRoPD2aCP8h_sd0IsxSqJIyCr4jjf-2eXj0WWGXWxsi1IFQAA6WHaJgcjffNCDsKTM22qdcgJkswzdTD6W19r5jOjJ7zmShEdxLAJv1hsbdmE7OVoIs2oJjdS4nychqoE2APA&lib=MrLl07mGn4mHEXSeaA0uY3SxoME-Osu7j";
+
+      async function loadData() {
+        try {
+          const response = await fetch(API_URL);
+          const data = await response.json();
+          renderCards(data.callings);
+          document.getElementById("loader").style.display = "none";
+        } catch (err) {
+          document.getElementById("loader").innerText = "Error: " + err;
+        }
+      }
+
+      function renderCards(rows) {
+        const list = document.getElementById("data-list");
+        list.innerHTML = rows
+          .slice(1)
+          .reverse()
+          .map(
+            (row) => `
+                <div class="card">
+                    <strong>${row[2]}</strong><br>
+                    <small>${row[3]}</small>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      window.onload = loadData;
+    </script>
+  </body>
+</html>

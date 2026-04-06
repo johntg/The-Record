@@ -1,0 +1,290 @@
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #155fbe;
+  --bg-muted: #a7b8bd;
+  --error: #d93025;
+  --white: #ffffff;
+  --text: #21313b;
+  --text-muted: #555;
+  --text-subtle: #888;
+  --border: #ddd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg-muted);
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  max-width: 100vw;
+}
+
+.app-shell {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  min-height: calc(100svh - 20px);
+  padding-bottom: 100px;
+}
+
+.app-header {
+  background: var(--white);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.6rem;
+}
+
+.app-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+#loader {
+  text-align: center;
+  padding: 40px;
+  color: var(--white);
+  font-weight: bold;
+}
+
+#loader.error {
+  color: #fff7f6;
+}
+
+.card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 0 auto 12px;
+  border: 1px solid var(--border);
+  max-width: 600px;
+  position: relative;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.person-name {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+.pos-text {
+  color: var(--text-muted);
+  margin: 4px 0;
+}
+
+.unit-text {
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+  font-style: italic;
+}
+
+.type-badge {
+  float: right;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.type-call {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: #f0f7ff;
+}
+
+.type-release {
+  color: var(--error);
+  border-color: var(--error);
+  background: #fff1f0;
+}
+
+.fab {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 30px;
+  line-height: 1;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.fab:hover {
+  background: var(--primary-dark);
+}
+
+.fab:focus-visible,
+.icon-button:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(26, 115, 232, 0.35);
+  outline-offset: 2px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal {
+  width: min(92%, 400px);
+  background: var(--white);
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--text);
+}
+
+.icon-button {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.calling-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-label {
+  margin-bottom: 4px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  background: var(--white);
+}
+
+.form-message {
+  min-height: 1.25rem;
+  margin: 0 0 12px;
+  color: var(--text-muted);
+}
+
+.form-message.error {
+  color: var(--error);
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+.btn-secondary {
+  background: #eee;
+  color: var(--text);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 8px;
+  }
+
+  .app-shell {
+    width: 100%;
+    min-height: calc(100svh - 16px);
+  }
+
+  .card {
+    max-width: none;
+  }
+
+  .fab {
+    right: 20px;
+    bottom: 20px;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+}
