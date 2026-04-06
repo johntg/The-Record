@@ -177,6 +177,7 @@ function showToast(message, options = {}) {
 const appState = {
   units: [],
   assigners: [],
+  statuses: [],
   usingDemoData: false,
 };
 
@@ -197,6 +198,7 @@ function setHeaderMessage(message) {
 function applyData(data) {
   appState.units = Array.isArray(data.units) ? data.units : [];
   appState.assigners = Array.isArray(data.assigners) ? data.assigners : [];
+  appState.statuses = Array.isArray(data.statuses) ? data.statuses : [];
   populateUnitOptions(appState.units);
   renderCards(data.callings);
 }
@@ -407,6 +409,22 @@ function renderCards(rows) {
           ${
             isCall
               ? `<section class="interview-section">
+            <label class="approval-item interview-done">
+              <input
+                type="checkbox"
+                class="approval-checkbox"
+                data-action="toggle-previous-released"
+                data-id="${escapeHtml(row?.[0] ?? "")}" 
+                ${isPreviousReleasedChecked ? "checked" : ""}
+              />
+              <span>Previous person released</span>
+            </label>
+          </section>`
+              : ""
+          }
+          ${
+            isCall
+              ? `<section class="interview-section">
             <label class="field-label interview-label" for="sus-assignee-${escapeHtml(row?.[0] ?? "")}">Sustaining</label>
             <select
               id="sus-assignee-${escapeHtml(row?.[0] ?? "")}"
@@ -433,19 +451,50 @@ function renderCards(rows) {
           ${
             isCall
               ? `<section class="interview-section">
+            <label class="field-label interview-label" for="sa-assignee-${escapeHtml(row?.[0] ?? "")}">Setting apart</label>
+            <select
+              id="sa-assignee-${escapeHtml(row?.[0] ?? "")}"
+              class="interviewer-select"
+              data-action="set-setting-apart-assignee"
+              data-id="${escapeHtml(row?.[0] ?? "")}" 
+            >
+              ${renderAssigneeOptions(row?.[12] ?? "")}
+            </select>
             <label class="approval-item interview-done">
               <input
                 type="checkbox"
                 class="approval-checkbox"
-                data-action="toggle-previous-released"
+                data-action="toggle-approval"
                 data-id="${escapeHtml(row?.[0] ?? "")}" 
-                ${isPreviousReleasedChecked ? "checked" : ""}
+                data-col-index="14"
+                ${row?.[13] ? "checked" : ""}
               />
-              <span>Previous person released</span>
+              <span>Done</span>
             </label>
+            <small class="approval-date">${escapeHtml(row?.[13] || "")}</small>
           </section>`
               : ""
           }
+          <section class="interview-section">
+            <label class="field-label interview-label" for="status-${escapeHtml(row?.[0] ?? "")}">Status</label>
+            <select
+              id="status-${escapeHtml(row?.[0] ?? "")}"
+              class="interviewer-select"
+              data-action="set-status"
+              data-id="${escapeHtml(row?.[0] ?? "")}" 
+            >
+              ${renderStatusOptions(row?.[14] ?? "")}
+            </select>
+            <button
+              type="button"
+              class="archive-btn"
+              data-action="archive-row"
+              data-id="${escapeHtml(row?.[0] ?? "")}"
+              title="Move this row to Archive"
+            >
+              Archive
+            </button>
+          </section>
         </article>
       `;
     })
@@ -485,6 +534,21 @@ function renderSustainingUnitOptions(selectedUnitsString) {
         `<option value="${escapeHtml(unit)}" ${savedUnits.includes(unit) ? "selected" : ""}>${escapeHtml(unit)}</option>`,
     )
     .join("");
+}
+
+function renderStatusOptions(selectedStatus) {
+  const selected = String(selectedStatus ?? "").trim();
+  const statuses = Array.isArray(appState.statuses)
+    ? appState.statuses.filter(Boolean)
+    : [];
+
+  return [
+    `<option value="" ${selected ? "" : "selected"}>Select status...</option>`,
+    ...statuses.map(
+      (status) =>
+        `<option value="${escapeHtml(status)}" ${status === selected ? "selected" : ""}>${escapeHtml(status)}</option>`,
+    ),
+  ].join("");
 }
 
 async function loadData() {
@@ -569,6 +633,7 @@ async function submitCalling(payload) {
 
   const formData = new URLSearchParams({
     action: "saveCalling",
+    timestamp: payload.timestamp,
     type: payload.type,
     name: payload.name,
     position: payload.position,
@@ -625,6 +690,7 @@ async function submitCalling(payload) {
     );
 
     const fallbackResult = await requestViaJsonp("saveCalling", {
+      timestamp: payload.timestamp,
       type: payload.type,
       name: payload.name,
       position: payload.position,
@@ -915,10 +981,162 @@ async function submitSustainingUnits(payload) {
   }
 }
 
+async function submitSettingApartAssignee(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error(
+      "Setting apart assignment updates are unavailable in demo mode.",
+    );
+  }
+
+  const formData = new URLSearchParams({
+    action: "setSettingApartAssignee",
+    id: payload.id,
+    assignee: payload.assignee,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Setting apart assignment failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(
+        result?.error || "Unable to update setting apart assignment.",
+      );
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setSettingApartAssignee", {
+      id: payload.id,
+      assignee: payload.assignee,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error ||
+          "Compatibility setting apart assignment failed.",
+      );
+    }
+  }
+}
+
+async function submitStatus(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error("Status updates are unavailable in demo mode.");
+  }
+
+  const formData = new URLSearchParams({
+    action: "setStatus",
+    id: payload.id,
+    status: payload.status,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Status update failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(result?.error || "Unable to update status.");
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setStatus", {
+      id: payload.id,
+      status: payload.status,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error || "Compatibility status update failed.",
+      );
+    }
+  }
+}
+
+async function submitArchiveRow(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error("Archive is unavailable in demo mode.");
+  }
+
+  const formData = new URLSearchParams({
+    action: "archiveRow",
+    id: payload.id,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Archive failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(result?.error || "Unable to archive row.");
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("archiveRow", {
+      id: payload.id,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(fallbackResult?.error || "Compatibility archive failed.");
+    }
+  }
+}
+
 formElement.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const payload = {
+    timestamp: new Date().toISOString(),
     type: formElement.type.value.trim(),
     name: formElement.name.value.trim(),
     position: formElement.position.value.trim(),
@@ -1054,6 +1272,67 @@ listElement.addEventListener("change", async (event) => {
     return;
   }
 
+  const settingApartAssigneeSelect = event.target.closest(
+    'select[data-action="set-setting-apart-assignee"]',
+  );
+  if (settingApartAssigneeSelect) {
+    const id = settingApartAssigneeSelect.dataset.id?.trim();
+    const assignee = settingApartAssigneeSelect.value.trim();
+
+    if (!id) {
+      showToast(
+        "Unable to update setting apart assignee: missing row identifier.",
+        {
+          type: "error",
+        },
+      );
+      return;
+    }
+
+    settingApartAssigneeSelect.disabled = true;
+    try {
+      await submitSettingApartAssignee({ id, assignee });
+      await loadData();
+      showToast("Setting apart assignment updated.", { type: "success" });
+    } catch (error) {
+      showToast(error?.message || "Failed to update setting apart assignee.", {
+        type: "error",
+      });
+    } finally {
+      settingApartAssigneeSelect.disabled = false;
+    }
+
+    return;
+  }
+
+  const statusSelect = event.target.closest('select[data-action="set-status"]');
+  if (statusSelect) {
+    const id = statusSelect.dataset.id?.trim();
+    const status = statusSelect.value.trim();
+
+    if (!id) {
+      showToast("Unable to update status: missing row identifier.", {
+        type: "error",
+      });
+      return;
+    }
+
+    statusSelect.disabled = true;
+    try {
+      await submitStatus({ id, status });
+      await loadData();
+      showToast("Status updated.", { type: "success" });
+    } catch (error) {
+      showToast(error?.message || "Failed to update status.", {
+        type: "error",
+      });
+    } finally {
+      statusSelect.disabled = false;
+    }
+
+    return;
+  }
+
   const previousReleasedCheckbox = event.target.closest(
     'input[data-action="toggle-previous-released"]',
   );
@@ -1118,6 +1397,39 @@ listElement.addEventListener("change", async (event) => {
   }
 });
 
+listElement.addEventListener("click", async (event) => {
+  const archiveBtn = event.target.closest('button[data-action="archive-row"]');
+  if (!archiveBtn) {
+    return;
+  }
+
+  const id = archiveBtn.dataset.id?.trim();
+
+  if (!id) {
+    showToast("Unable to archive: missing row identifier.", {
+      type: "error",
+    });
+    return;
+  }
+
+  if (!confirm("Are you sure you want to archive this row?")) {
+    return;
+  }
+
+  archiveBtn.disabled = true;
+  try {
+    await submitArchiveRow({ id });
+    await loadData();
+    showToast("Row archived.", { type: "success" });
+  } catch (error) {
+    showToast(error?.message || "Failed to archive row.", {
+      type: "error",
+    });
+  } finally {
+    archiveBtn.disabled = false;
+  }
+});
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !modalElement.classList.contains("hidden")) {
     setModalOpen(false);
@@ -1135,6 +1447,9 @@ function registerServiceWorker() {
         `${import.meta.env.BASE_URL}sw.js`,
       );
       console.log("[Stake Callings] Service worker registered.");
+
+      // Ask the browser to check for a newer worker immediately on app load.
+      await registration.update();
 
       if (registration.waiting) {
         showToast("A new version is available.", {
@@ -1179,6 +1494,14 @@ function registerServiceWorker() {
         refreshing = true;
         window.location.reload();
       });
+
+      // Re-check periodically while the app remains open.
+      window.setInterval(
+        () => {
+          registration.update().catch(() => {});
+        },
+        60 * 60 * 1000,
+      );
     } catch (error) {
       console.warn(
         "[Stake Callings] Service worker registration failed:",

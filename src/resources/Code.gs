@@ -3,6 +3,8 @@ var CONFIG = {
   CALLINGS_SHEET: "Callings",
   UNITS_SHEET: "Units",
   ASSIGN_SHEET: "Assign",
+  STATUS_SHEET: "Status",
+  ARCHIVE_SHEET: "Archive",
   DEFAULT_STATUS: "",
   HEADERS: [
     "Timestamp",
@@ -77,6 +79,24 @@ function doGet(e) {
     );
   }
 
+  if (action === "setSettingApartAssignee") {
+    var saAssigneeParams = (e && e.parameter) || {};
+    return responsePayload_(
+      setSettingApartAssignee(saAssigneeParams.id, saAssigneeParams.assignee),
+      e,
+    );
+  }
+
+  if (action === "setStatus") {
+    var statusParams = (e && e.parameter) || {};
+    return responsePayload_(setStatus(statusParams.id, statusParams.status), e);
+  }
+
+  if (action === "archiveRow") {
+    var archiveParams = (e && e.parameter) || {};
+    return responsePayload_(archiveRow(archiveParams.id), e);
+  }
+
   return responsePayload_(
     {
       success: false,
@@ -116,6 +136,18 @@ function doPost(e) {
     return jsonResponse_(setSustainingUnits(payload.id, payload.units));
   }
 
+  if (action === "setSettingApartAssignee") {
+    return jsonResponse_(setSettingApartAssignee(payload.id, payload.assignee));
+  }
+
+  if (action === "setStatus") {
+    return jsonResponse_(setStatus(payload.id, payload.status));
+  }
+
+  if (action === "archiveRow") {
+    return jsonResponse_(archiveRow(payload.id));
+  }
+
   return jsonResponse_({
     success: false,
     error: 'Unknown POST action: "' + action + '"',
@@ -141,10 +173,13 @@ function getInitialData() {
       };
     }
 
+    var statusSheet = ss.getSheetByName(CONFIG.STATUS_SHEET);
+
     return {
       success: true,
       units: getUnits_(unitsSheet),
       assigners: getAssigners_(assignSheet),
+      statuses: getStatuses_(statusSheet),
       callings: getCallings_(callingsSheet),
     };
   } catch (error) {
@@ -279,15 +314,126 @@ function setSustainingUnits(id, units) {
   }
 }
 
+function setSettingApartAssignee(id, assignee) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var cleanedAssignee = sanitizeValue_(assignee);
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 13).setValue(cleanedAssignee);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function setStatus(id, status) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var cleanedStatus = sanitizeValue_(status);
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 15).setValue(cleanedStatus);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function archiveRow(id) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var callingsSheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+    var archiveSheet = ss.getSheetByName(CONFIG.ARCHIVE_SHEET);
+
+    if (!callingsSheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    if (!archiveSheet) {
+      archiveSheet = ss.insertSheet(CONFIG.ARCHIVE_SHEET);
+    }
+
+    var data = callingsSheet.getDataRange().getDisplayValues();
+    var rowToArchive = null;
+    var rowIndex = -1;
+
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] === String(id)) {
+        rowToArchive = data[i];
+        rowIndex = i;
+        break;
+      }
+    }
+
+    if (!rowToArchive) {
+      throw new Error("Row ID not found: " + id);
+    }
+
+    archiveSheet.appendRow(rowToArchive);
+    callingsSheet.deleteRow(rowIndex + 1);
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
 function saveCalling(payload) {
   try {
+    var timestamp = sanitizeValue_(payload.timestamp || "");
     var type = sanitizeValue_(payload.type);
     var name = sanitizeValue_(payload.name);
     var position = sanitizeValue_(payload.position);
     var unit = sanitizeValue_(payload.unit);
 
-    if (!type || !name || !position || !unit) {
-      throw new Error("Type, name, position, and unit are all required.");
+    if (!timestamp || !type || !name || !position || !unit) {
+      throw new Error(
+        "Timestamp, type, name, position, and unit are all required.",
+      );
     }
 
     var ss = getSpreadsheet_();
@@ -298,7 +444,7 @@ function saveCalling(payload) {
     }
 
     sheet.appendRow([
-      new Date(),
+      timestamp,
       type,
       name,
       position,
@@ -312,7 +458,7 @@ function saveCalling(payload) {
       "",
       "",
       "",
-      CONFIG.DEFAULT_STATUS,
+      "In Progress",
     ]);
 
     return { success: true };
@@ -414,6 +560,35 @@ function getAssigners_(sheet) {
     interviewers: true,
     name: true,
     names: true,
+  };
+
+  if (headerLike[first]) {
+    return values.slice(1);
+  }
+
+  return values;
+}
+
+function getStatuses_(sheet) {
+  if (!sheet || sheet.getLastRow() === 0) {
+    return [];
+  }
+
+  var values = sheet
+    .getRange(1, 1, sheet.getLastRow(), 1)
+    .getDisplayValues()
+    .flat()
+    .map(sanitizeValue_)
+    .filter(String);
+
+  if (values.length === 0) {
+    return [];
+  }
+
+  var first = values[0].toLowerCase();
+  var headerLike = {
+    status: true,
+    statuses: true,
   };
 
   if (headerLike[first]) {

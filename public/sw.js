@@ -1,4 +1,4 @@
-const CACHE_NAME = "stake-callings-v1";
+const CACHE_NAME = "stake-callings-v2";
 const APP_SHELL = [
   "./",
   "./index.html",

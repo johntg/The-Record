@@ -226,6 +226,29 @@ body.modal-open {
   min-height: 80px;
 }
 
+.archive-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 10px;
+  background: #d93025;
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.archive-btn:hover:not(:disabled) {
+  background: #b3261e;
+}
+
+.archive-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .type-badge {
   float: right;
   font-size: 0.7rem;
