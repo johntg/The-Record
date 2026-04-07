@@ -62,6 +62,21 @@ body.modal-open {
   font-size: 0.95rem;
 }
 
+.header-action-btn {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--white);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.header-action-btn:hover {
+  background: #f5f7fa;
+}
+
 .app-toast {
   position: sticky;
   top: 10px;
@@ -329,6 +344,10 @@ select:focus-visible {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 15px;
+}
+
+.auth-modal-header {
+  justify-content: center;
 }
 
 .modal-header h2 {

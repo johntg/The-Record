@@ -2,6 +2,7 @@ var CONFIG = {
   SS_ID: "1cOrkam9VmF0m21gozVUJFAw6drLXeVym15csjLVpw5g",
   CALLINGS_SHEET: "Callings",
   UNITS_SHEET: "Units",
+  ADMIN_SHEET: "Admin",
   ASSIGN_SHEET: "Assign",
   STATUS_SHEET: "Status",
   ARCHIVE_SHEET: "Archive",
@@ -25,19 +26,34 @@ var CONFIG = {
   ],
 };
 
+var SESSION_TTL_SECONDS = 10800;
+
 function doGet(e) {
   var action = getAction_(e, "initialData");
+  var params = (e && e.parameter) || {};
+
+  if (action === "authOptions") {
+    return responsePayload_(getAuthOptions(), e);
+  }
+
+  if (action === "login") {
+    return responsePayload_(loginUser(params.name, params.password), e);
+  }
+
+  var authResult = authorizeRequest_(params);
+  if (!authResult.success) {
+    return responsePayload_(authResult, e);
+  }
 
   if (action === "initialData") {
     return responsePayload_(getInitialData(), e);
   }
 
   if (action === "saveCalling") {
-    return responsePayload_(saveCalling((e && e.parameter) || {}), e);
+    return responsePayload_(saveCalling(params), e);
   }
 
   if (action === "toggleApproval") {
-    var params = (e && e.parameter) || {};
     return responsePayload_(
       toggleApproval(params.id, Number(params.colIndex), params.isChecked),
       e,
@@ -93,6 +109,15 @@ function doGet(e) {
   }
 
   if (action === "archiveRow") {
+    if (!authResult.user || authResult.user.role !== "admin") {
+      return responsePayload_(
+        {
+          success: false,
+          error: "Only admins can archive rows.",
+        },
+        e,
+      );
+    }
     var archiveParams = (e && e.parameter) || {};
     return responsePayload_(archiveRow(archiveParams.id), e);
   }
@@ -109,6 +134,19 @@ function doGet(e) {
 function doPost(e) {
   var payload = parseRequestPayload_(e);
   var action = payload.action || "saveCalling";
+
+  if (action === "login") {
+    return jsonResponse_(loginUser(payload.name, payload.password));
+  }
+
+  var authResult = authorizeRequest_(payload);
+  if (!authResult.success) {
+    return jsonResponse_(authResult);
+  }
+
+  if (action === "initialData") {
+    return jsonResponse_(getInitialData());
+  }
 
   if (action === "saveCalling") {
     return jsonResponse_(saveCalling(payload));
@@ -145,6 +183,12 @@ function doPost(e) {
   }
 
   if (action === "archiveRow") {
+    if (!authResult.user || authResult.user.role !== "admin") {
+      return jsonResponse_({
+        success: false,
+        error: "Only admins can archive rows.",
+      });
+    }
     return jsonResponse_(archiveRow(payload.id));
   }
 
@@ -159,6 +203,7 @@ function getInitialData() {
     var ss = getSpreadsheet_();
     var unitsSheet = ss.getSheetByName(CONFIG.UNITS_SHEET);
     var callingsSheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+    var adminSheet = ss.getSheetByName(CONFIG.ADMIN_SHEET);
     var assignSheet = ss.getSheetByName(CONFIG.ASSIGN_SHEET);
 
     if (!unitsSheet || !callingsSheet) {
@@ -178,6 +223,7 @@ function getInitialData() {
     return {
       success: true,
       units: getUnits_(unitsSheet),
+      admins: getAdmins_(adminSheet),
       assigners: getAssigners_(assignSheet),
       statuses: getStatuses_(statusSheet),
       callings: getCallings_(callingsSheet),
@@ -522,6 +568,107 @@ function getSpreadsheet_() {
     : SpreadsheetApp.getActiveSpreadsheet();
 }
 
+function getAuthOptions() {
+  try {
+    var ss = getSpreadsheet_();
+    var adminSheet = ss.getSheetByName(CONFIG.ADMIN_SHEET);
+    var assignSheet = ss.getSheetByName(CONFIG.ASSIGN_SHEET);
+    var admins = getAdmins_(adminSheet);
+    var assigners = getAssigners_(assignSheet);
+    var allUsers = getAllowedUsers_(admins, assigners);
+
+    if (allUsers.length === 0) {
+      return {
+        success: false,
+        error:
+          "No sign-in names found. Add names in column A of the Admin and/or Assign sheets.",
+      };
+    }
+
+    return {
+      success: true,
+      users: allUsers,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function loginUser(name, password) {
+  try {
+    var cleanedName = sanitizeValue_(name);
+    var cleanedPassword = sanitizeValue_(password);
+
+    if (!cleanedName || !cleanedPassword) {
+      throw new Error("Name and password are required.");
+    }
+
+    var ss = getSpreadsheet_();
+    var adminSheet = ss.getSheetByName(CONFIG.ADMIN_SHEET);
+    var assignSheet = ss.getSheetByName(CONFIG.ASSIGN_SHEET);
+    var admins = getAdmins_(adminSheet);
+    var assigners = getAssigners_(assignSheet);
+    var role = resolveUserRole_(cleanedName, admins, assigners);
+
+    if (!role) {
+      throw new Error("Selected user is not allowed to access this app.");
+    }
+
+    var expectedPassword = getPasswordForRole_(role);
+    if (cleanedPassword !== expectedPassword) {
+      throw new Error("Incorrect password.");
+    }
+
+    var token = createSessionToken_(cleanedName, role);
+    return {
+      success: true,
+      token: token,
+      user: {
+        name: cleanedName,
+        role: role,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function authorizeRequest_(payload) {
+  var action = payload && payload.action ? payload.action : "initialData";
+  if (action === "authOptions" || action === "login") {
+    return { success: true };
+  }
+
+  var token = sanitizeValue_(payload && payload.token);
+  if (!token) {
+    return {
+      success: false,
+      authRequired: true,
+      error: "Authentication required.",
+    };
+  }
+
+  var session = getSession_(token);
+  if (!session) {
+    return {
+      success: false,
+      authRequired: true,
+      error: "Your session has expired. Please sign in again.",
+    };
+  }
+
+  return {
+    success: true,
+    user: session,
+  };
+}
+
 function getUnits_(sheet) {
   if (sheet.getLastRow() <= 1) {
     return [];
@@ -535,24 +682,17 @@ function getUnits_(sheet) {
     .filter(String);
 }
 
+function getAdmins_(sheet) {
+  return getNamedValues_(sheet, {
+    admin: true,
+    admins: true,
+    name: true,
+    names: true,
+  });
+}
+
 function getAssigners_(sheet) {
-  if (!sheet || sheet.getLastRow() === 0) {
-    return [];
-  }
-
-  var values = sheet
-    .getRange(1, 1, sheet.getLastRow(), 1)
-    .getDisplayValues()
-    .flat()
-    .map(sanitizeValue_)
-    .filter(String);
-
-  if (values.length === 0) {
-    return [];
-  }
-
-  var first = values[0].toLowerCase();
-  var headerLike = {
+  return getNamedValues_(sheet, {
     assign: true,
     assignee: true,
     assignees: true,
@@ -560,16 +700,17 @@ function getAssigners_(sheet) {
     interviewers: true,
     name: true,
     names: true,
-  };
-
-  if (headerLike[first]) {
-    return values.slice(1);
-  }
-
-  return values;
+  });
 }
 
 function getStatuses_(sheet) {
+  return getNamedValues_(sheet, {
+    status: true,
+    statuses: true,
+  });
+}
+
+function getNamedValues_(sheet, headerLike) {
   if (!sheet || sheet.getLastRow() === 0) {
     return [];
   }
@@ -586,16 +727,80 @@ function getStatuses_(sheet) {
   }
 
   var first = values[0].toLowerCase();
-  var headerLike = {
-    status: true,
-    statuses: true,
-  };
-
   if (headerLike[first]) {
     return values.slice(1);
   }
 
   return values;
+}
+
+function getAllowedUsers_(admins, assigners) {
+  var seen = {};
+  return admins
+    .concat(assigners)
+    .filter(function (name) {
+      if (!name || seen[name]) {
+        return false;
+      }
+      seen[name] = true;
+      return true;
+    })
+    .sort();
+}
+
+function resolveUserRole_(name, admins, assigners) {
+  if (admins.indexOf(name) !== -1) {
+    return "admin";
+  }
+
+  if (assigners.indexOf(name) !== -1) {
+    return "assign";
+  }
+
+  return "";
+}
+
+function getPasswordForRole_(role) {
+  var properties = PropertiesService.getScriptProperties();
+  var key = role === "admin" ? "ADMIN_PASSWORD" : "ASSIGN_PASSWORD";
+  var password = sanitizeValue_(properties.getProperty(key));
+
+  if (!password) {
+    throw new Error(
+      "Missing Apps Script property: " +
+        key +
+        ". Add it in Project Settings → Script properties.",
+    );
+  }
+
+  return password;
+}
+
+function createSessionToken_(name, role) {
+  var token = Utilities.getUuid();
+  CacheService.getScriptCache().put(
+    getSessionCacheKey_(token),
+    JSON.stringify({ name: name, role: role }),
+    SESSION_TTL_SECONDS,
+  );
+  return token;
+}
+
+function getSession_(token) {
+  var raw = CacheService.getScriptCache().get(getSessionCacheKey_(token));
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+function getSessionCacheKey_(token) {
+  return "stake-callings-session:" + token;
 }
 
 function getCallings_(sheet) {

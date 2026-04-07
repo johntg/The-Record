@@ -3,6 +3,9 @@ import "./style.css";
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL?.trim() ?? "";
 const UNCONFIGURED_API_MARKER = "YOUR_DEPLOYMENT_ID";
 const DEV_API_PROXY_PATH = "/api/apps-script";
+const SESSION_STORAGE_KEY = "stake-callings-session";
+const SESSION_TTL_MS = 3 * 60 * 60 * 1000;
+const PUBLIC_API_ACTIONS = new Set(["authOptions", "login"]);
 const DEMO_DATA = {
   units: ["1st Ward", "2nd Ward", "YSA Branch"],
   assigners: ["Bishop Smith", "Sister Jones", "Brother Clark"],
@@ -66,6 +69,8 @@ document.querySelector("#app").innerHTML = `
         <header class="app-header">
             <h1>Stake Callings</h1>
       <p>Track calls and releases from your spreadsheet.</p>
+      <button id="toggle-items-btn" class="header-action-btn" type="button" hidden>Show all current items</button>
+      <button id="sign-out-btn" class="header-action-btn" type="button" hidden>Sign out</button>
         </header>
 
     <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -113,6 +118,35 @@ document.querySelector("#app").innerHTML = `
                 </form>
             </div>
         </div>
+
+            <div id="auth-modal" class="modal-overlay hidden" aria-hidden="true">
+              <div class="modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+                <div class="modal-header auth-modal-header">
+                  <h2 id="auth-title">Sign in</h2>
+                </div>
+
+                <form id="auth-form" class="calling-form">
+                  <label class="field-label" for="auth-user">Name</label>
+                  <select id="auth-user" name="authUser" required>
+                    <option value="">Select your name...</option>
+                  </select>
+
+                  <label class="field-label" for="auth-password">Password</label>
+                  <input id="auth-password" name="authPassword" type="password" placeholder="Password" required />
+
+                  <label class="approval-item" for="auth-show-password">
+                    <input id="auth-show-password" name="authShowPassword" type="checkbox" />
+                    <span>Show password</span>
+                  </label>
+
+                  <p id="auth-message" class="form-message" aria-live="polite"></p>
+
+                  <div class="btn-group">
+                    <button id="auth-submit-btn" class="btn btn-primary" type="submit">Sign in</button>
+                  </div>
+                </form>
+              </div>
+            </div>
     </main>
 `;
 
@@ -129,6 +163,15 @@ const formMessageElement = document.getElementById("form-message");
 const nameInputElement = document.getElementById("name");
 const headerMessageElement = document.querySelector(".app-header p");
 const toastElement = document.getElementById("app-toast");
+const toggleItemsButton = document.getElementById("toggle-items-btn");
+const signOutButton = document.getElementById("sign-out-btn");
+const authModalElement = document.getElementById("auth-modal");
+const authFormElement = document.getElementById("auth-form");
+const authUserElement = document.getElementById("auth-user");
+const authPasswordElement = document.getElementById("auth-password");
+const authShowPasswordElement = document.getElementById("auth-show-password");
+const authMessageElement = document.getElementById("auth-message");
+const authSubmitButton = document.getElementById("auth-submit-btn");
 
 let toastTimeoutId;
 
@@ -176,8 +219,15 @@ function showToast(message, options = {}) {
 
 const appState = {
   units: [],
+  admins: [],
   assigners: [],
   statuses: [],
+  callings: [],
+  authUsers: [],
+  sessionToken: "",
+  sessionName: "",
+  sessionRole: "",
+  showAllCurrentItems: false,
   usingDemoData: false,
 };
 
@@ -195,12 +245,204 @@ function setHeaderMessage(message) {
   headerMessageElement.textContent = message;
 }
 
+function setAuthMessage(message = "", isError = false) {
+  authMessageElement.textContent = message;
+  authMessageElement.classList.toggle("error", isError);
+}
+
+function setAuthModalOpen(isOpen) {
+  authModalElement.classList.toggle("hidden", !isOpen);
+  authModalElement.setAttribute("aria-hidden", String(!isOpen));
+  document.body.classList.toggle("modal-open", isOpen);
+  loaderElement.style.display = isOpen ? "none" : "block";
+
+  if (isOpen) {
+    authUserElement.focus();
+  } else {
+    authPasswordElement.value = "";
+    authPasswordElement.type = "password";
+    if (authShowPasswordElement) {
+      authShowPasswordElement.checked = false;
+    }
+    setAuthMessage("");
+  }
+}
+
+function populateAuthUserOptions(users) {
+  const options = [
+    '<option value="">Select your name...</option>',
+    ...users.map(
+      (name) =>
+        `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`,
+    ),
+  ];
+
+  authUserElement.innerHTML = options.join("");
+}
+
+function setSession(session = {}) {
+  appState.sessionToken = String(session.token ?? "").trim();
+  appState.sessionName = String(session.name ?? "").trim();
+  appState.sessionRole = String(session.role ?? "").trim();
+  const isAssignUser = appState.sessionRole.toLowerCase() === "assign";
+
+  appState.showAllCurrentItems =
+    isAssignUser && typeof session.showAllCurrentItems === "boolean"
+      ? session.showAllCurrentItems
+      : false;
+
+  if (appState.sessionToken) {
+    const expiresAt = Number(session.expiresAt) || Date.now() + SESSION_TTL_MS;
+    localStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({
+        token: appState.sessionToken,
+        name: appState.sessionName,
+        role: appState.sessionRole,
+        expiresAt,
+        showAllCurrentItems: appState.showAllCurrentItems,
+      }),
+    );
+  } else {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  }
+
+  signOutButton.hidden = !appState.sessionToken;
+  openModalButton.hidden = !appState.sessionToken;
+  toggleItemsButton.hidden =
+    !appState.sessionToken || appState.sessionRole.toLowerCase() !== "assign";
+  toggleItemsButton.textContent = appState.showAllCurrentItems
+    ? "Show only my assignments"
+    : "Show all current items";
+
+  if (appState.sessionToken) {
+    setHeaderMessage(
+      `Signed in as ${appState.sessionName}${appState.sessionRole ? ` (${appState.sessionRole})` : ""}.`,
+    );
+  } else {
+    setHeaderMessage("Track calls and releases from your spreadsheet.");
+  }
+}
+
+function persistSessionViewPreference() {
+  if (!appState.sessionToken) {
+    return;
+  }
+
+  const storedSession = getStoredSession();
+  if (!storedSession) {
+    return;
+  }
+
+  localStorage.setItem(
+    SESSION_STORAGE_KEY,
+    JSON.stringify({
+      ...storedSession,
+      showAllCurrentItems: appState.showAllCurrentItems,
+    }),
+  );
+}
+
+function getStoredSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    const expiresAt = Number(parsed?.expiresAt);
+
+    if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function clearSession() {
+  setSession({ token: "", name: "", role: "" });
+}
+
+function createActionFormData(fields) {
+  const formData = new URLSearchParams(fields);
+
+  if (appState.sessionToken) {
+    formData.set("token", appState.sessionToken);
+  }
+
+  return formData;
+}
+
+function isAuthRequiredPayload(payload) {
+  return payload?.authRequired === true;
+}
+
+function handleAuthRequired(message) {
+  clearSession();
+  listElement.innerHTML = "";
+  loaderElement.style.display = "block";
+  setStatusMessage(message || "Please sign in to continue.", true);
+  setAuthModalOpen(true);
+  showToast(message || "Please sign in again.", { type: "error" });
+}
+
+function normalizeForMatch(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function isAssignedToCurrentUser(row) {
+  const currentUser = normalizeForMatch(appState.sessionName);
+  if (!currentUser) {
+    return false;
+  }
+
+  const assigneeColumns = [7, 10, 12];
+  return assigneeColumns.some(
+    (index) => normalizeForMatch(row?.[index] ?? "") === currentUser,
+  );
+}
+
+function getVisibleCallingsRows() {
+  const rows = Array.isArray(appState.callings) ? appState.callings : [];
+  if (rows.length <= 1) {
+    return rows;
+  }
+
+  const role = appState.sessionRole.toLowerCase();
+  if (role !== "assign" || appState.showAllCurrentItems) {
+    return rows;
+  }
+
+  const [header, ...dataRows] = rows;
+  const assignedRows = dataRows.filter(isAssignedToCurrentUser);
+  return [header, ...assignedRows];
+}
+
+function renderCurrentCallingsView() {
+  const role = appState.sessionRole.toLowerCase();
+  const emptyMessage =
+    role === "assign" && !appState.showAllCurrentItems
+      ? "No current items are assigned to you."
+      : "No callings found.";
+
+  renderCards(getVisibleCallingsRows(), emptyMessage);
+}
+
 function applyData(data) {
   appState.units = Array.isArray(data.units) ? data.units : [];
+  appState.admins = Array.isArray(data.admins) ? data.admins : [];
   appState.assigners = Array.isArray(data.assigners) ? data.assigners : [];
   appState.statuses = Array.isArray(data.statuses) ? data.statuses : [];
+  appState.callings = Array.isArray(data.callings) ? data.callings : [];
   populateUnitOptions(appState.units);
-  renderCards(data.callings);
+  renderCurrentCallingsView();
 }
 
 function loadDemoData(message) {
@@ -230,6 +472,11 @@ function getApiUrl(action, options = {}) {
   if (action) {
     url.searchParams.set("action", action);
   }
+
+  if (appState.sessionToken && !PUBLIC_API_ACTIONS.has(action)) {
+    url.searchParams.set("token", appState.sessionToken);
+  }
+
   return url;
 }
 
@@ -243,6 +490,10 @@ function requestViaJsonp(action, params = {}, timeoutMs = 10000) {
         url.searchParams.set(key, String(value));
       }
     });
+
+    if (appState.sessionToken && !PUBLIC_API_ACTIONS.has(action)) {
+      url.searchParams.set("token", appState.sessionToken);
+    }
 
     url.searchParams.set("callback", callbackName);
 
@@ -323,10 +574,11 @@ function setModalOpen(isOpen) {
   }
 }
 
-function renderCards(rows) {
+function renderCards(rows, emptyMessage = "No callings found.") {
+  const isAdminUser = appState.sessionRole.toLowerCase() === "admin";
+
   if (!Array.isArray(rows) || rows.length <= 1) {
-    listElement.innerHTML =
-      '<div class="card empty-state"><small>No callings found.</small></div>';
+    listElement.innerHTML = `<div class="card empty-state"><small>${escapeHtml(emptyMessage)}</small></div>`;
     return;
   }
 
@@ -485,7 +737,9 @@ function renderCards(rows) {
             >
               ${renderStatusOptions(row?.[14] ?? "")}
             </select>
-            <button
+            ${
+              isAdminUser
+                ? `<button
               type="button"
               class="archive-btn"
               data-action="archive-row"
@@ -493,7 +747,9 @@ function renderCards(rows) {
               title="Move this row to Archive"
             >
               Archive
-            </button>
+            </button>`
+                : ""
+            }
           </section>
         </article>
       `;
@@ -551,6 +807,95 @@ function renderStatusOptions(selectedStatus) {
   ].join("");
 }
 
+async function loadAuthOptions() {
+  const parsePayload = (payload) => {
+    console.log(
+      "[Stake Callings] Auth options payload:",
+      JSON.stringify(payload),
+    );
+    if (payload?.success !== true) {
+      throw new Error(payload?.error || "Unable to load sign-in names.");
+    }
+
+    const users = Array.isArray(payload.users) ? payload.users : [];
+    console.log("[Stake Callings] Auth users loaded:", users);
+    appState.authUsers = users;
+    populateAuthUserOptions(users);
+    return users;
+  };
+
+  try {
+    const response = await fetch(getApiUrl("authOptions"), {
+      redirect: "follow",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`);
+    }
+
+    parsePayload(await response.json());
+  } catch (error) {
+    console.warn(
+      "[Stake Callings] Auth options fetch failed, retrying with JSONP:",
+      error,
+    );
+    const fallbackPayload = await requestViaJsonp("authOptions");
+    parsePayload(fallbackPayload);
+  }
+}
+
+async function submitLogin(payload) {
+  const formData = createActionFormData({
+    action: "login",
+    name: payload.name,
+    password: payload.password,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Sign-in failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true || !result?.token || !result?.user?.name) {
+      throw new Error(result?.error || "Unable to sign in.");
+    }
+
+    return result;
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("login", {
+      name: payload.name,
+      password: payload.password,
+    });
+
+    if (
+      fallbackResult?.success !== true ||
+      !fallbackResult?.token ||
+      !fallbackResult?.user?.name
+    ) {
+      throw new Error(fallbackResult?.error || "Compatibility sign-in failed.");
+    }
+
+    return fallbackResult;
+  }
+}
+
 async function loadData() {
   if (!isApiConfigured()) {
     loadDemoData(
@@ -560,8 +905,14 @@ async function loadData() {
   }
 
   try {
-    const response = await fetch(getApiUrl("initialData"), {
+    const formData = createActionFormData({
+      action: "initialData",
+    });
+
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
       redirect: "follow",
+      body: formData,
     });
 
     if (!response.ok) {
@@ -570,6 +921,11 @@ async function loadData() {
 
     const data = await response.json();
     console.log("[Stake Callings] Apps Script response:", JSON.stringify(data));
+
+    if (isAuthRequiredPayload(data)) {
+      handleAuthRequired(data.error);
+      throw new Error(data.error || "Authentication required.");
+    }
 
     // Accept both { success: true, ... } (new API) and { error: null, ... } (old API)
     const hasData = Array.isArray(data.callings) && data.callings.length > 0;
@@ -588,8 +944,19 @@ async function loadData() {
     setHeaderMessage("Track calls and releases from your spreadsheet.");
     loaderElement.style.display = "none";
   } catch (error) {
+    if (
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("authentication required") ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("session has expired")
+    ) {
+      throw error;
+    }
+
     console.warn(
-      "[Stake Callings] GET fetch failed, retrying with JSONP:",
+      "[Stake Callings] POST fetch failed, retrying with JSONP:",
       error,
     );
 
@@ -599,6 +966,11 @@ async function loadData() {
         "[Stake Callings] Apps Script JSONP response:",
         JSON.stringify(jsonpData),
       );
+
+      if (isAuthRequiredPayload(jsonpData)) {
+        handleAuthRequired(jsonpData.error);
+        throw new Error(jsonpData.error || "Authentication required.");
+      }
 
       const hasData =
         Array.isArray(jsonpData.callings) && jsonpData.callings.length > 0;
@@ -631,7 +1003,7 @@ async function submitCalling(payload) {
     );
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "saveCalling",
     timestamp: payload.timestamp,
     type: payload.type,
@@ -724,7 +1096,7 @@ async function submitApprovalToggle(payload) {
     throw new Error("Approval updates are unavailable in demo mode.");
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "toggleApproval",
     id: payload.id,
     colIndex: String(payload.colIndex),
@@ -778,7 +1150,7 @@ async function submitInterviewAssignee(payload) {
     );
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "setInterviewAssignee",
     id: payload.id,
     assignee: payload.assignee,
@@ -830,7 +1202,7 @@ async function submitPreviousReleasedToggle(payload) {
     throw new Error("Previous-release updates are unavailable in demo mode.");
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "setPreviousReleased",
     id: payload.id,
     isChecked: payload.isChecked ? "true" : "false",
@@ -883,7 +1255,7 @@ async function submitSustainingAssignee(payload) {
     );
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "setSustainingAssignee",
     id: payload.id,
     assignee: payload.assignee,
@@ -935,7 +1307,7 @@ async function submitSustainingUnits(payload) {
     throw new Error("Sustaining unit updates are unavailable in demo mode.");
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "setSustainingUnits",
     id: payload.id,
     units: payload.units,
@@ -988,7 +1360,7 @@ async function submitSettingApartAssignee(payload) {
     );
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "setSettingApartAssignee",
     id: payload.id,
     assignee: payload.assignee,
@@ -1041,7 +1413,7 @@ async function submitStatus(payload) {
     throw new Error("Status updates are unavailable in demo mode.");
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "setStatus",
     id: payload.id,
     status: payload.status,
@@ -1091,7 +1463,7 @@ async function submitArchiveRow(payload) {
     throw new Error("Archive is unavailable in demo mode.");
   }
 
-  const formData = new URLSearchParams({
+  const formData = createActionFormData({
     action: "archiveRow",
     id: payload.id,
   });
@@ -1132,6 +1504,48 @@ async function submitArchiveRow(payload) {
   }
 }
 
+authFormElement.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const payload = {
+    name: authUserElement.value.trim(),
+    password: authPasswordElement.value,
+  };
+
+  if (!payload.name || !payload.password) {
+    setAuthMessage("Please choose your name and enter the password.", true);
+    return;
+  }
+
+  authSubmitButton.disabled = true;
+  authSubmitButton.textContent = "Signing in...";
+  setAuthMessage("");
+
+  try {
+    const result = await submitLogin(payload);
+    setSession({
+      token: result.token,
+      name: result.user.name,
+      role: result.user.role,
+    });
+    setAuthModalOpen(false);
+    setStatusMessage("Loading callings...");
+    await loadData();
+    showToast("Signed in successfully.", { type: "success" });
+  } catch (error) {
+    setAuthMessage(error?.message || "Unable to sign in.", true);
+  } finally {
+    authSubmitButton.disabled = false;
+    authSubmitButton.textContent = "Sign in";
+  }
+});
+
+authShowPasswordElement?.addEventListener("change", () => {
+  authPasswordElement.type = authShowPasswordElement.checked
+    ? "text"
+    : "password";
+});
+
 formElement.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -1169,6 +1583,21 @@ formElement.addEventListener("submit", async (event) => {
 openModalButton.addEventListener("click", () => setModalOpen(true));
 closeModalButton.addEventListener("click", () => setModalOpen(false));
 cancelButton.addEventListener("click", () => setModalOpen(false));
+signOutButton.addEventListener("click", () => {
+  clearSession();
+  listElement.innerHTML = "";
+  setStatusMessage("Signed out. Please sign in to continue.");
+  setAuthModalOpen(true);
+});
+
+toggleItemsButton.addEventListener("click", () => {
+  appState.showAllCurrentItems = !appState.showAllCurrentItems;
+  toggleItemsButton.textContent = appState.showAllCurrentItems
+    ? "Show only my assignments"
+    : "Show all current items";
+  persistSessionViewPreference();
+  renderCurrentCallingsView();
+});
 
 modalElement.addEventListener("click", (event) => {
   if (event.target === modalElement) {
@@ -1403,6 +1832,11 @@ listElement.addEventListener("click", async (event) => {
     return;
   }
 
+  if (appState.sessionRole.toLowerCase() !== "admin") {
+    showToast("Only admins can archive rows.", { type: "error" });
+    return;
+  }
+
   const id = archiveBtn.dataset.id?.trim();
 
   if (!id) {
@@ -1512,4 +1946,40 @@ function registerServiceWorker() {
 }
 
 registerServiceWorker();
-loadData();
+
+async function initializeApp() {
+  openModalButton.hidden = true;
+
+  if (!isApiConfigured()) {
+    loadDemoData(
+      "Apps Script URL not configured yet. Replace YOUR_DEPLOYMENT_ID in .env to connect live data.",
+    );
+    return;
+  }
+
+  setStatusMessage("Loading sign-in options...");
+
+  try {
+    await loadAuthOptions();
+  } catch (error) {
+    setStatusMessage(error?.message || "Unable to load sign-in options.", true);
+    return;
+  }
+
+  const storedSession = getStoredSession();
+  if (storedSession?.token) {
+    setSession(storedSession);
+    try {
+      await loadData();
+      return;
+    } catch (error) {
+      clearSession();
+    }
+  }
+
+  listElement.innerHTML = "";
+  setStatusMessage("Please sign in to continue.");
+  setAuthModalOpen(true);
+}
+
+initializeApp();
