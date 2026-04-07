@@ -657,6 +657,10 @@ function renderCards(rows, emptyMessage = "No callings found.") {
         .toLowerCase();
       const isPreviousReleasedChecked =
         previousReleasedValue === "true" || previousReleasedValue === "yes";
+      const isSpApprovedComplete = Boolean(row?.[5]);
+      const isShcSustainedComplete = Boolean(row?.[6]);
+      const isInterviewComplete = Boolean(row?.[8]);
+      const isSettingApartComplete = Boolean(row?.[13]);
 
       return `
         <article class="card">
@@ -667,7 +671,7 @@ function renderCards(rows, emptyMessage = "No callings found.") {
           <div class="pos-text">${escapeHtml(row?.[3] ?? "No position")}</div>
           <div class="unit-text">${escapeHtml(row?.[4] ?? "No unit")}</div>
           <div class="approval-grid">
-            <div class="approval-row">
+            <div class="approval-row ${isSpApprovedComplete ? "completion-complete" : "completion-pending"}">
               <label class="approval-item">
                 <input
                   type="checkbox"
@@ -681,7 +685,7 @@ function renderCards(rows, emptyMessage = "No callings found.") {
               </label>
               <small class="approval-date">${escapeHtml(row?.[5] || "")}</small>
             </div>
-            <div class="approval-row">
+            <div class="approval-row ${isShcSustainedComplete ? "completion-complete" : "completion-pending"}">
               <label class="approval-item">
                 <input
                   type="checkbox"
@@ -696,7 +700,7 @@ function renderCards(rows, emptyMessage = "No callings found.") {
               <small class="approval-date">${escapeHtml(row?.[6] || "")}</small>
             </div>
           </div>
-          <section class="interview-section">
+          <section class="interview-section ${isInterviewComplete ? "completion-complete" : "completion-pending"}">
             <label class="field-label interview-label" for="assignee-${escapeHtml(row?.[0] ?? "")}">Interview</label>
             <select
               id="assignee-${escapeHtml(row?.[0] ?? "")}"
@@ -721,7 +725,7 @@ function renderCards(rows, emptyMessage = "No callings found.") {
           </section>
           ${
             isCall
-              ? `<section class="interview-section">
+              ? `<section class="interview-section ${isPreviousReleasedChecked ? "completion-complete" : "completion-pending"}">
             <label class="approval-item interview-done">
               <input
                 type="checkbox"
@@ -737,7 +741,7 @@ function renderCards(rows, emptyMessage = "No callings found.") {
           }
           ${
             isCall
-              ? `<section class="interview-section">
+              ? `<section class="interview-section completion-pending">
             <label class="field-label interview-label" for="sus-assignee-${escapeHtml(row?.[0] ?? "")}">Sustaining</label>
             <select
               id="sus-assignee-${escapeHtml(row?.[0] ?? "")}"
@@ -773,7 +777,7 @@ function renderCards(rows, emptyMessage = "No callings found.") {
           }
           ${
             isCall
-              ? `<section class="interview-section">
+              ? `<section class="interview-section ${isSettingApartComplete ? "completion-complete" : "completion-pending"}">
             <label class="field-label interview-label" for="sa-assignee-${escapeHtml(row?.[0] ?? "")}">Setting apart</label>
             <select
               id="sa-assignee-${escapeHtml(row?.[0] ?? "")}"
@@ -798,7 +802,7 @@ function renderCards(rows, emptyMessage = "No callings found.") {
           </section>`
               : ""
           }
-          <section class="interview-section">
+          <section class="interview-section completion-pending">
             <label class="field-label interview-label" for="status-${escapeHtml(row?.[0] ?? "")}">Status</label>
             <select
               id="status-${escapeHtml(row?.[0] ?? "")}"

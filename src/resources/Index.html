@@ -2,7 +2,7 @@
 <tml>
   <head>
     <meta charset="UTF-8" />
-
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
               :root { --primary: #1a73e8; --bg-dark: #027da5; --bg-muted: #a7b8bd; --error: #d93025; --white: #ffffff; }
               * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,6 +30,8 @@
         border-top: 1px dashed #eee;
       }
 
+
+
       .approval-item {
         display: flex;
         align-items: center;
@@ -44,6 +46,11 @@
         height: 20px;
         margin: 0;
         cursor: pointer;
+        accent-color: #4285f4;
+      }
+
+      .approval-item input[type="checkbox"]:checked {
+        accent-color: #1a73e8;
       }
 
       .date-label {
