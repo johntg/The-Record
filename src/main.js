@@ -354,7 +354,7 @@ function setSession(session = {}) {
   }
 
   signOutButton.hidden = !appState.sessionToken;
-  openModalButton.hidden = !appState.sessionToken;
+  openModalButton.hidden = false;
   toggleSortButton.hidden = !appState.sessionToken;
   toggleSortButton.textContent = appState.sortNewestFirst
     ? "Show oldest first"
@@ -1688,7 +1688,14 @@ formElement.addEventListener("submit", async (event) => {
   }
 });
 
-openModalButton.addEventListener("click", () => setModalOpen(true));
+openModalButton.addEventListener("click", () => {
+  if (!appState.sessionToken) {
+    setAuthModalOpen(true);
+    return;
+  }
+
+  setModalOpen(true);
+});
 closeModalButton.addEventListener("click", () => setModalOpen(false));
 cancelButton.addEventListener("click", () => setModalOpen(false));
 signOutButton.addEventListener("click", () => {
