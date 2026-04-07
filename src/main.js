@@ -747,17 +747,27 @@ function renderCards(rows, emptyMessage = "No callings found.") {
             >
               ${renderAssigneeOptions(row?.[10] ?? "")}
             </select>
-            <label class="field-label interview-label sustaining-units-label" for="sus-units-${escapeHtml(row?.[0] ?? "")}">Units</label>
-            <select
-              id="sus-units-${escapeHtml(row?.[0] ?? "")}"
-              class="interviewer-select sustaining-units-select"
-              multiple
-              data-action="set-sustaining-units"
+            <button
+              type="button"
+              id="sus-units-toggle-${escapeHtml(row?.[0] ?? "")}"
+              class="sustaining-units-toggle"
+              data-action="toggle-sustaining-units-panel"
               data-id="${escapeHtml(row?.[0] ?? "")}"
-              size="3"
+              aria-expanded="false"
+              aria-controls="sus-units-panel-${escapeHtml(row?.[0] ?? "")}"
             >
-              ${renderSustainingUnitOptions(row?.[11] ?? "")}
-            </select>
+              Choose units
+            </button>
+            <div
+              id="sus-units-panel-${escapeHtml(row?.[0] ?? "")}"
+              class="sustaining-units-panel hidden"
+              data-sustaining-units-panel="true"
+            >
+              <div class="sustaining-units-buttons">
+                ${renderSustainingUnitButtons(row?.[0] ?? "", row?.[11] ?? "")}
+              </div>
+            </div>
+            <small class="approval-date sustaining-units-summary">${escapeHtml(formatSustainingUnitsSummary(row?.[11] ?? ""))}</small>
           </section>`
               : ""
           }
@@ -850,6 +860,39 @@ function renderSustainingUnitOptions(selectedUnitsString) {
       (unit) =>
         `<option value="${escapeHtml(unit)}" ${savedUnits.includes(unit) ? "selected" : ""}>${escapeHtml(unit)}</option>`,
     )
+    .join("");
+}
+
+function parseSelectedUnits(selectedUnitsString) {
+  return String(selectedUnitsString ?? "")
+    .split(",")
+    .map((unit) => unit.trim())
+    .filter(Boolean);
+}
+
+function formatSustainingUnitsSummary(selectedUnitsString) {
+  const savedUnits = parseSelectedUnits(selectedUnitsString);
+  return savedUnits.length > 0 ? savedUnits.join(", ") : "No units selected.";
+}
+
+function renderSustainingUnitButtons(rowId, selectedUnitsString) {
+  const savedUnits = parseSelectedUnits(selectedUnitsString);
+  const units = Array.isArray(appState.units)
+    ? appState.units.filter(Boolean)
+    : [];
+
+  return units
+    .map((unit) => {
+      const isSelected = savedUnits.includes(unit);
+      return `<button
+        type="button"
+        class="sustaining-unit-chip ${isSelected ? "selected" : ""}"
+        data-action="toggle-sustaining-unit"
+        data-id="${escapeHtml(rowId ?? "")}"
+        data-unit="${escapeHtml(unit)}"
+        aria-pressed="${isSelected ? "true" : "false"}"
+      >${escapeHtml(unit)}</button>`;
+    })
     .join("");
 }
 
@@ -1739,38 +1782,6 @@ listElement.addEventListener("change", async (event) => {
     return;
   }
 
-  const sustainingUnitsSelect = event.target.closest(
-    'select[data-action="set-sustaining-units"]',
-  );
-  if (sustainingUnitsSelect) {
-    const id = sustainingUnitsSelect.dataset.id?.trim();
-    const units = Array.from(sustainingUnitsSelect.selectedOptions)
-      .map((opt) => opt.value)
-      .join(", ");
-
-    if (!id) {
-      showToast("Unable to update sustaining units: missing row identifier.", {
-        type: "error",
-      });
-      return;
-    }
-
-    sustainingUnitsSelect.disabled = true;
-    try {
-      await submitSustainingUnits({ id, units });
-      await loadData();
-      showToast("Sustaining units updated.", { type: "success" });
-    } catch (error) {
-      showToast(error?.message || "Failed to update sustaining units.", {
-        type: "error",
-      });
-    } finally {
-      sustainingUnitsSelect.disabled = false;
-    }
-
-    return;
-  }
-
   const settingApartAssigneeSelect = event.target.closest(
     'select[data-action="set-setting-apart-assignee"]',
   );
@@ -1897,6 +1908,73 @@ listElement.addEventListener("change", async (event) => {
 });
 
 listElement.addEventListener("click", async (event) => {
+  const sustainingUnitsToggle = event.target.closest(
+    'button[data-action="toggle-sustaining-units-panel"]',
+  );
+  if (sustainingUnitsToggle) {
+    const id = sustainingUnitsToggle.dataset.id?.trim();
+    const panel = id ? document.getElementById(`sus-units-panel-${id}`) : null;
+    if (!panel) {
+      return;
+    }
+
+    const isHidden = panel.classList.toggle("hidden");
+    sustainingUnitsToggle.setAttribute("aria-expanded", String(!isHidden));
+    sustainingUnitsToggle.textContent = isHidden
+      ? "Choose units"
+      : "Hide units";
+    return;
+  }
+
+  const sustainingUnitChip = event.target.closest(
+    'button[data-action="toggle-sustaining-unit"]',
+  );
+  if (sustainingUnitChip) {
+    const id = sustainingUnitChip.dataset.id?.trim();
+    const unit = sustainingUnitChip.dataset.unit?.trim();
+
+    if (!id || !unit) {
+      showToast("Unable to update sustaining units: missing row identifier.", {
+        type: "error",
+      });
+      return;
+    }
+
+    const panel = document.getElementById(`sus-units-panel-${id}`);
+    const chips = panel
+      ? Array.from(
+          panel.querySelectorAll(
+            'button[data-action="toggle-sustaining-unit"]',
+          ),
+        )
+      : [];
+    const selectedUnits = chips
+      .filter((chip) => chip.classList.contains("selected"))
+      .map((chip) => chip.dataset.unit?.trim())
+      .filter(Boolean);
+
+    const isCurrentlySelected =
+      sustainingUnitChip.classList.contains("selected");
+    const nextUnits = isCurrentlySelected
+      ? selectedUnits.filter((selectedUnit) => selectedUnit !== unit)
+      : selectedUnits.concat(unit);
+
+    sustainingUnitChip.disabled = true;
+    try {
+      await submitSustainingUnits({ id, units: nextUnits.join(", ") });
+      await loadData();
+      showToast("Sustaining units updated.", { type: "success" });
+    } catch (error) {
+      showToast(error?.message || "Failed to update sustaining units.", {
+        type: "error",
+      });
+    } finally {
+      sustainingUnitChip.disabled = false;
+    }
+
+    return;
+  }
+
   const archiveBtn = event.target.closest('button[data-action="archive-row"]');
   if (!archiveBtn) {
     return;

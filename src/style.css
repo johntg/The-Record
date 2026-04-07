@@ -270,8 +270,66 @@ body.modal-open {
   margin-bottom: 4px;
 }
 
-.sustaining-units-select {
-  min-height: 80px;
+.sustaining-units-toggle {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sustaining-units-toggle:hover {
+  background: #f5f7fa;
+}
+
+.sustaining-units-panel {
+  margin-top: 8px;
+}
+
+.sustaining-units-panel.hidden {
+  display: none;
+}
+
+.sustaining-units-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sustaining-unit-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--white);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sustaining-unit-chip:hover:not(:disabled) {
+  background: #f5f7fa;
+}
+
+.sustaining-unit-chip.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+}
+
+.sustaining-unit-chip:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.sustaining-units-summary {
+  display: block;
+  margin-top: 8px;
 }
 
 .archive-btn {
