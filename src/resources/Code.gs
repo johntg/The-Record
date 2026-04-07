@@ -735,17 +735,59 @@ function getNamedValues_(sheet, headerLike) {
 }
 
 function getAllowedUsers_(admins, assigners) {
+  var ordered = [];
   var seen = {};
-  return admins
-    .concat(assigners)
-    .filter(function (name) {
-      if (!name || seen[name]) {
-        return false;
+
+  function addName(name) {
+    var cleaned = sanitizeValue_(name);
+    if (!cleaned) {
+      return;
+    }
+
+    var key = cleaned.toLowerCase();
+    if (seen[key]) {
+      return;
+    }
+
+    seen[key] = true;
+    ordered.push(cleaned);
+  }
+
+  function findByAliases(aliases) {
+    var aliasLookup = {};
+    aliases.forEach(function (alias) {
+      aliasLookup[sanitizeValue_(alias).toLowerCase()] = true;
+    });
+
+    var groups = [admins, assigners];
+    for (var g = 0; g < groups.length; g++) {
+      for (var i = 0; i < groups[g].length; i++) {
+        var cleaned = sanitizeValue_(groups[g][i]);
+        if (cleaned && aliasLookup[cleaned.toLowerCase()]) {
+          return cleaned;
+        }
       }
-      seen[name] = true;
-      return true;
-    })
-    .sort();
+    }
+
+    return "";
+  }
+
+  // 1) Priority names first
+  [
+    ["President Pongia"],
+    ["President Gardiner"],
+    ["President Satele", "President Satale"],
+  ].forEach(function (aliases) {
+    addName(findByAliases(aliases));
+  });
+
+  // 2) Assign list in spreadsheet order (seniority)
+  assigners.forEach(addName);
+
+  // 3) Remaining admin names in spreadsheet order
+  admins.forEach(addName);
+
+  return ordered;
 }
 
 function resolveUserRole_(name, admins, assigners) {

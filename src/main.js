@@ -70,10 +70,16 @@ document.querySelector("#app").innerHTML = `
             <h1>Stake Callings</h1>
       <p>Track calls and releases from your spreadsheet.</p>
       <button id="toggle-items-btn" class="header-action-btn" type="button" hidden>Show all current items</button>
+      <button id="toggle-sort-btn" class="header-action-btn" type="button" hidden>Show oldest first</button>
       <button id="sign-out-btn" class="header-action-btn" type="button" hidden>Sign out</button>
         </header>
 
     <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite"></div>
+
+    <div id="busy-overlay" class="busy-overlay hidden" aria-hidden="true" aria-live="polite">
+      <div class="busy-spinner" aria-hidden="true"></div>
+      <span>Working...</span>
+    </div>
 
         <div id="loader">Connecting to Google Sheets...</div>
         <div id="data-list" aria-live="polite"></div>
@@ -163,7 +169,9 @@ const formMessageElement = document.getElementById("form-message");
 const nameInputElement = document.getElementById("name");
 const headerMessageElement = document.querySelector(".app-header p");
 const toastElement = document.getElementById("app-toast");
+const busyOverlayElement = document.getElementById("busy-overlay");
 const toggleItemsButton = document.getElementById("toggle-items-btn");
+const toggleSortButton = document.getElementById("toggle-sort-btn");
 const signOutButton = document.getElementById("sign-out-btn");
 const authModalElement = document.getElementById("auth-modal");
 const authFormElement = document.getElementById("auth-form");
@@ -174,6 +182,38 @@ const authMessageElement = document.getElementById("auth-message");
 const authSubmitButton = document.getElementById("auth-submit-btn");
 
 let toastTimeoutId;
+let busyRequestCount = 0;
+
+function setBusyOverlayVisible(isVisible) {
+  if (!busyOverlayElement) {
+    return;
+  }
+
+  busyOverlayElement.classList.toggle("hidden", !isVisible);
+  busyOverlayElement.setAttribute("aria-hidden", String(!isVisible));
+}
+
+function beginBusy() {
+  busyRequestCount += 1;
+  setBusyOverlayVisible(true);
+}
+
+function endBusy() {
+  busyRequestCount = Math.max(0, busyRequestCount - 1);
+  if (busyRequestCount === 0) {
+    setBusyOverlayVisible(false);
+  }
+}
+
+const nativeFetch = window.fetch.bind(window);
+window.fetch = async (...args) => {
+  beginBusy();
+  try {
+    return await nativeFetch(...args);
+  } finally {
+    endBusy();
+  }
+};
 
 function showToast(message, options = {}) {
   const {
@@ -228,6 +268,7 @@ const appState = {
   sessionName: "",
   sessionRole: "",
   showAllCurrentItems: false,
+  sortNewestFirst: true,
   usingDemoData: false,
 };
 
@@ -290,6 +331,10 @@ function setSession(session = {}) {
     isAssignUser && typeof session.showAllCurrentItems === "boolean"
       ? session.showAllCurrentItems
       : false;
+  appState.sortNewestFirst =
+    typeof session.sortNewestFirst === "boolean"
+      ? session.sortNewestFirst
+      : true;
 
   if (appState.sessionToken) {
     const expiresAt = Number(session.expiresAt) || Date.now() + SESSION_TTL_MS;
@@ -301,6 +346,7 @@ function setSession(session = {}) {
         role: appState.sessionRole,
         expiresAt,
         showAllCurrentItems: appState.showAllCurrentItems,
+        sortNewestFirst: appState.sortNewestFirst,
       }),
     );
   } else {
@@ -309,6 +355,10 @@ function setSession(session = {}) {
 
   signOutButton.hidden = !appState.sessionToken;
   openModalButton.hidden = !appState.sessionToken;
+  toggleSortButton.hidden = !appState.sessionToken;
+  toggleSortButton.textContent = appState.sortNewestFirst
+    ? "Show oldest first"
+    : "Show newest first";
   toggleItemsButton.hidden =
     !appState.sessionToken || appState.sessionRole.toLowerCase() !== "assign";
   toggleItemsButton.textContent = appState.showAllCurrentItems
@@ -324,7 +374,7 @@ function setSession(session = {}) {
   }
 }
 
-function persistSessionViewPreference() {
+function persistSessionPreferences() {
   if (!appState.sessionToken) {
     return;
   }
@@ -339,6 +389,7 @@ function persistSessionViewPreference() {
     JSON.stringify({
       ...storedSession,
       showAllCurrentItems: appState.showAllCurrentItems,
+      sortNewestFirst: appState.sortNewestFirst,
     }),
   );
 }
@@ -482,6 +533,7 @@ function getApiUrl(action, options = {}) {
 
 function requestViaJsonp(action, params = {}, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
+    beginBusy();
     const callbackName = `__stakeCallingsJsonp_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const url = getApiUrl(action, { direct: true });
 
@@ -499,8 +551,13 @@ function requestViaJsonp(action, params = {}, timeoutMs = 10000) {
 
     const script = document.createElement("script");
     let timeoutId;
+    let isSettled = false;
 
     function cleanup() {
+      if (isSettled) {
+        return;
+      }
+      isSettled = true;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
@@ -508,6 +565,7 @@ function requestViaJsonp(action, params = {}, timeoutMs = 10000) {
         script.parentNode.removeChild(script);
       }
       delete window[callbackName];
+      endBusy();
     }
 
     window[callbackName] = (payload) => {
@@ -582,9 +640,12 @@ function renderCards(rows, emptyMessage = "No callings found.") {
     return;
   }
 
-  listElement.innerHTML = rows
-    .slice(1)
-    .reverse()
+  const dataRows = rows.slice(1);
+  const orderedRows = appState.sortNewestFirst
+    ? dataRows.slice().reverse()
+    : dataRows;
+
+  listElement.innerHTML = orderedRows
     .map((row) => {
       const rowType = String(row?.[1] ?? "")
         .trim()
@@ -1595,7 +1656,16 @@ toggleItemsButton.addEventListener("click", () => {
   toggleItemsButton.textContent = appState.showAllCurrentItems
     ? "Show only my assignments"
     : "Show all current items";
-  persistSessionViewPreference();
+  persistSessionPreferences();
+  renderCurrentCallingsView();
+});
+
+toggleSortButton.addEventListener("click", () => {
+  appState.sortNewestFirst = !appState.sortNewestFirst;
+  toggleSortButton.textContent = appState.sortNewestFirst
+    ? "Show oldest first"
+    : "Show newest first";
+  persistSessionPreferences();
   renderCurrentCallingsView();
 });
 
