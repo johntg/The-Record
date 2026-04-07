@@ -114,7 +114,7 @@ body.modal-open {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.25);
   color: var(--white);
   font-weight: 700;
 }
@@ -139,7 +139,7 @@ body.modal-open {
 }
 
 .app-toast.success {
-  background: #0f6b37;
+  background: var(--midContrast);
 }
 
 .app-toast-text {
@@ -387,7 +387,7 @@ body.modal-open {
 }
 
 .type-release {
-  color: #981398;
+  color: var(--darkContrast);
   border-color: var(--darkContrast);
   background: var(--lightContrast);
 }
@@ -410,7 +410,7 @@ body.modal-open {
 }
 
 .fab:hover {
-  background: var(--primary-dark);
+  background: var(--darkContrast);
 }
 
 .fab:focus-visible,
