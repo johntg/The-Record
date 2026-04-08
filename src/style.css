@@ -199,6 +199,39 @@ body.modal-open {
   margin: 4px 0;
 }
 
+.editable-field {
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.editable-field:hover {
+  background-color: #f0f7ff;
+  outline: 1px dashed var(--primary);
+}
+
+.editable-field:hover::after {
+  content: "✎";
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85em;
+  color: var(--primary);
+  opacity: 0.6;
+}
+
+.inline-edit-input {
+  width: 100%;
+  font: inherit;
+  padding: 4px;
+  border: 2px solid var(--primary);
+  border-radius: 4px;
+  outline: none;
+}
+
 .unit-text {
   font-size: 1.2rem;
   color: var(--text-subtle);

@@ -108,6 +108,19 @@ function doGet(e) {
     return responsePayload_(setStatus(statusParams.id, statusParams.status), e);
   }
 
+  if (action === "setName") {
+    var nameParams = (e && e.parameter) || {};
+    return responsePayload_(setName(nameParams.id, nameParams.name), e);
+  }
+
+  if (action === "setPosition") {
+    var positionParams = (e && e.parameter) || {};
+    return responsePayload_(
+      setPosition(positionParams.id, positionParams.position),
+      e,
+    );
+  }
+
   if (action === "archiveRow") {
     if (!authResult.user || authResult.user.role !== "admin") {
       return responsePayload_(
@@ -180,6 +193,14 @@ function doPost(e) {
 
   if (action === "setStatus") {
     return jsonResponse_(setStatus(payload.id, payload.status));
+  }
+
+  if (action === "setName") {
+    return jsonResponse_(setName(payload.id, payload.name));
+  }
+
+  if (action === "setPosition") {
+    return jsonResponse_(setPosition(payload.id, payload.position));
   }
 
   if (action === "archiveRow") {
@@ -409,6 +430,76 @@ function setStatus(id, status) {
     for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
       if (data[rowIndex][0] === String(id)) {
         sheet.getRange(rowIndex + 1, 15).setValue(cleanedStatus);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function setName(id, name) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var cleanedName = sanitizeValue_(name);
+    if (!cleanedName) {
+      throw new Error("Name cannot be empty.");
+    }
+
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 3).setValue(cleanedName);
+        return { success: true };
+      }
+    }
+
+    throw new Error("Row ID not found: " + id);
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function setPosition(id, position) {
+  try {
+    if (!id) {
+      throw new Error("Missing row ID.");
+    }
+
+    var ss = getSpreadsheet_();
+    var sheet = ss.getSheetByName(CONFIG.CALLINGS_SHEET);
+
+    if (!sheet) {
+      throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
+    }
+
+    var cleanedPosition = sanitizeValue_(position);
+    if (!cleanedPosition) {
+      throw new Error("Position cannot be empty.");
+    }
+
+    var data = sheet.getDataRange().getDisplayValues();
+    for (var rowIndex = 1; rowIndex < data.length; rowIndex++) {
+      if (data[rowIndex][0] === String(id)) {
+        sheet.getRange(rowIndex + 1, 4).setValue(cleanedPosition);
         return { success: true };
       }
     }

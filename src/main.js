@@ -667,8 +667,20 @@ function renderCards(rows, emptyMessage = "No callings found.") {
           <span class="type-badge ${isRelease ? "type-release" : "type-call"}">
             ${escapeHtml(row?.[1] ?? "Call")}
           </span>
-          <div class="person-name">${escapeHtml(row?.[2] ?? "Unknown name")}</div>
-          <div class="pos-text">${escapeHtml(row?.[3] ?? "No position")}</div>
+          <div class="person-name editable-field" 
+               data-action="edit-name" 
+               data-id="${escapeHtml(row?.[0] ?? "")}"
+               data-value="${escapeHtml(row?.[2] ?? "")}"
+               title="Click to edit name">
+            ${escapeHtml(row?.[2] ?? "Unknown name")}
+          </div>
+          <div class="pos-text editable-field" 
+               data-action="edit-position" 
+               data-id="${escapeHtml(row?.[0] ?? "")}"
+               data-value="${escapeHtml(row?.[3] ?? "")}"
+               title="Click to edit position">
+            ${escapeHtml(row?.[3] ?? "No position")}
+          </div>
           <div class="unit-text">${escapeHtml(row?.[4] ?? "No unit")}</div>
           <div class="approval-grid">
             <div class="approval-row ${isSpApprovedComplete ? "completion-complete" : "completion-pending"}">
@@ -911,6 +923,7 @@ function renderSustainingUnitButtons(rowId, selectedUnitsString) {
 
 function renderStatusOptions(selectedStatus) {
   const selected = String(selectedStatus ?? "").trim();
+  const selectedLower = selected.toLowerCase();
   const statuses = Array.isArray(appState.statuses)
     ? appState.statuses.filter(Boolean)
     : [];
@@ -919,7 +932,7 @@ function renderStatusOptions(selectedStatus) {
     `<option value="" ${selected ? "" : "selected"}>Select status...</option>`,
     ...statuses.map(
       (status) =>
-        `<option value="${escapeHtml(status)}" ${status === selected ? "selected" : ""}>${escapeHtml(status)}</option>`,
+        `<option value="${escapeHtml(status)}" ${status.toLowerCase() === selectedLower ? "selected" : ""}>${escapeHtml(status)}</option>`,
     ),
   ].join("");
 }
@@ -1575,6 +1588,106 @@ async function submitStatus(payload) {
   }
 }
 
+async function submitName(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error("Name updates are unavailable in demo mode.");
+  }
+
+  const formData = createActionFormData({
+    action: "setName",
+    id: payload.id,
+    name: payload.name,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Name update failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(result?.error || "Unable to update name.");
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setName", {
+      id: payload.id,
+      name: payload.name,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error || "Compatibility name update failed.",
+      );
+    }
+  }
+}
+
+async function submitPosition(payload) {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error("Position updates are unavailable in demo mode.");
+  }
+
+  const formData = createActionFormData({
+    action: "setPosition",
+    id: payload.id,
+    position: payload.position,
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Position update failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(result?.error || "Unable to update position.");
+    }
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("setPosition", {
+      id: payload.id,
+      position: payload.position,
+    });
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error || "Compatibility position update failed.",
+      );
+    }
+  }
+}
+
 async function submitArchiveRow(payload) {
   if (!isApiConfigured() || appState.usingDemoData) {
     throw new Error("Archive is unavailable in demo mode.");
@@ -1928,6 +2041,92 @@ listElement.addEventListener("change", async (event) => {
 });
 
 listElement.addEventListener("click", async (event) => {
+  const editableField = event.target.closest('.editable-field');
+  if (editableField && !editableField.querySelector('input')) {
+    const action = editableField.dataset.action;
+    const id = editableField.dataset.id?.trim();
+    const currentValue = editableField.dataset.value?.trim() || "";
+    const fieldType = action === "edit-name" ? "name" : "position";
+
+    if (!id) {
+      showToast(`Unable to edit ${fieldType}: missing row identifier.`, {
+        type: "error",
+      });
+      return;
+    }
+
+    // Create input field
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = currentValue;
+    input.className = "inline-edit-input";
+    input.style.cssText = "width: 100%; font: inherit; padding: 4px; border: 2px solid #007bff; border-radius: 4px;";
+
+    // Save function
+    const saveEdit = async () => {
+      const newValue = input.value.trim();
+      
+      if (!newValue) {
+        showToast(`${fieldType === "name" ? "Name" : "Position"} cannot be empty.`, {
+          type: "error",
+        });
+        input.focus();
+        return;
+      }
+
+      if (newValue === currentValue) {
+        // No change, just restore
+        editableField.textContent = currentValue;
+        return;
+      }
+
+      // Update via API
+      try {
+        if (fieldType === "name") {
+          await submitName({ id, name: newValue });
+        } else {
+          await submitPosition({ id, position: newValue });
+        }
+        await loadData();
+        showToast(`${fieldType === "name" ? "Name" : "Position"} updated.`, { type: "success" });
+      } catch (error) {
+        showToast(error?.message || `Failed to update ${fieldType}.`, {
+          type: "error",
+        });
+        // Restore original value on error
+        editableField.textContent = currentValue;
+      }
+    };
+
+    // Cancel function
+    const cancelEdit = () => {
+      editableField.textContent = currentValue;
+    };
+
+    // Replace content with input
+    editableField.textContent = "";
+    editableField.appendChild(input);
+    input.focus();
+    input.select();
+
+    // Handle blur (save)
+    input.addEventListener("blur", saveEdit, { once: true });
+
+    // Handle Enter key (save)
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        input.blur(); // Will trigger save
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        input.removeEventListener("blur", saveEdit);
+        cancelEdit();
+      }
+    });
+
+    return;
+  }
+
   const sustainingUnitsToggle = event.target.closest(
     'button[data-action="toggle-sustaining-units-panel"]',
   );
