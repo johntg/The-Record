@@ -489,23 +489,28 @@ function saveCalling(payload) {
       throw new Error('Sheet not found: "' + CONFIG.CALLINGS_SHEET + '".');
     }
 
-    sheet.appendRow([
+    var newRow = [
       timestamp,
       type,
       name,
       position,
       unit,
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "",
-      "In Progress",
-    ]);
+      "", // SP Approved
+      "", // SHC Sustained
+      "", // I/V Assigned
+      "", // I/V Complete
+      "", // Prev-Release
+      "", // SusAssigned
+      "", // SusUnit
+      "", // SA-Assign
+      "", // SA Done
+      "In Progress", // Status
+    ];
+
+    sheet.appendRow(newRow);
+
+    // Log for debugging
+    Logger.log("Appended row with status: " + newRow[14]);
 
     return { success: true };
   } catch (error) {
