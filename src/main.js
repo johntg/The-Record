@@ -111,7 +111,7 @@ document.querySelector("#app").innerHTML = `
     <main class="app-shell">
         <header class="app-header">
             <h1>Stake Callings</h1>
-      <p>Track calls and releases from your spreadsheet.</p>
+      <p>CHRISTCHURCH </p>
       <button id="toggle-items-btn" class="header-action-btn" type="button" hidden>Show all current items</button>
       <button id="toggle-sort-btn" class="header-action-btn" type="button" hidden>Show oldest first</button>
       <button id="reports-page-btn" class="header-action-btn" type="button" hidden>Reports</button>
@@ -443,7 +443,7 @@ function setSession(session = {}) {
       `Signed in as ${appState.sessionName}${appState.sessionRole ? ` (${appState.sessionRole})` : ""}.`,
     );
   } else {
-    setHeaderMessage("Track calls and releases from your spreadsheet.");
+    setHeaderMessage("Christchurch");
     setReportsPageOpen(false);
   }
 }
