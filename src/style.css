@@ -12,6 +12,7 @@
   --midContrast: #24cb90;
   --darkContrast: #ad0058;
   --iconClr: #24cb90;
+  --themeClr: #027da5;
 }
 * {
   box-sizing: border-box;
@@ -54,12 +55,12 @@ body.modal-open {
 }
 
 .app-header {
-  background: var(--white);
+  background: #ffe958;
   padding: 15px;
   border-radius: 10px;
   margin-bottom: 15px;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   opacity: 1;
 }
 
@@ -80,8 +81,8 @@ body.modal-open {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 12px;
-  background: var(--lightContrast);
-  color: var(--text);
+  background: var(--primary);
+  color: var(--white);
   font-weight: 600;
   cursor: pointer;
 }
