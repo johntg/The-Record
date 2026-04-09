@@ -77,6 +77,20 @@ function doGet(e) {
     );
   }
 
+  if (action === "deleteReports") {
+    if (!authResult.user || authResult.user.role !== "admin") {
+      return responsePayload_(
+        {
+          success: false,
+          error: "Only admins can delete reports.",
+        },
+        e,
+      );
+    }
+
+    return responsePayload_(deleteReports(), e);
+  }
+
   if (action === "saveCalling") {
     return responsePayload_(saveCalling(params), e);
   }
@@ -204,6 +218,17 @@ function doPost(e) {
     return jsonResponse_(
       generateReport(payload.reportType, authResult.user.name),
     );
+  }
+
+  if (action === "deleteReports") {
+    if (!authResult.user || authResult.user.role !== "admin") {
+      return jsonResponse_({
+        success: false,
+        error: "Only admins can delete reports.",
+      });
+    }
+
+    return jsonResponse_(deleteReports());
   }
 
   if (action === "saveCalling") {
@@ -362,6 +387,34 @@ function generateReport(reportType, generatedBy) {
     return {
       success: true,
       reports: getReports_(reportsSheet),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+function deleteReports() {
+  try {
+    var ss = getSpreadsheet_();
+    var reportsSheet = ss.getSheetByName(CONFIG.REPORTS_SHEET);
+
+    if (!reportsSheet) {
+      return {
+        success: true,
+        reports: [],
+      };
+    }
+
+    if (reportsSheet.getLastRow() > 1) {
+      reportsSheet.deleteRows(2, reportsSheet.getLastRow() - 1);
+    }
+
+    return {
+      success: true,
+      reports: [],
     };
   } catch (error) {
     return {

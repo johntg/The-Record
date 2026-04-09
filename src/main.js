@@ -110,8 +110,8 @@ It is proposed they be sustained. All in favour indicate by raising the right ha
 document.querySelector("#app").innerHTML = `
     <main class="app-shell">
         <header class="app-header">
-            <h1>Stake Callings</h1>
-      <p>CHRISTCHURCH </p>
+            <h1 id="app-main-heading">Stake Callings</h1>
+      <p>Christchurch</p>
       <button id="toggle-items-btn" class="header-action-btn" type="button" hidden>Show all current items</button>
       <button id="toggle-sort-btn" class="header-action-btn" type="button" hidden>Show oldest first</button>
       <button id="reports-page-btn" class="header-action-btn" type="button" hidden>Reports</button>
@@ -129,13 +129,10 @@ document.querySelector("#app").innerHTML = `
         <div id="data-list" aria-live="polite"></div>
 
         <section id="reports-page" class="reports-page hidden" aria-live="polite">
-          <div class="reports-header">
-            <h2>Reports</h2>
-            <p>Admins can generate reports. Assigned users can view them.</p>
-          </div>
           <div id="report-actions" class="report-actions hidden">
             <button id="generate-open-by-unit-btn" class="btn btn-primary" type="button">Generate Approved by SP, Awaiting HC Sustain</button>
             <button id="generate-assignments-by-person-btn" class="btn btn-primary" type="button">Generate Sustaining Agenda by Unit</button>
+            <button id="delete-reports-btn" class="btn btn-secondary" type="button">Delete All Reports</button>
           </div>
           <div id="reports-list" class="reports-list"></div>
         </section>
@@ -223,6 +220,7 @@ const submitButton = document.getElementById("submit-btn");
 const unitSelectElement = document.getElementById("unit");
 const formMessageElement = document.getElementById("form-message");
 const nameInputElement = document.getElementById("name");
+const headerHeadingElement = document.getElementById("app-main-heading");
 const headerMessageElement = document.querySelector(".app-header p");
 const toastElement = document.getElementById("app-toast");
 const busyOverlayElement = document.getElementById("busy-overlay");
@@ -239,6 +237,7 @@ const generateOpenByUnitButton = document.getElementById(
 const generateAssignmentsByPersonButton = document.getElementById(
   "generate-assignments-by-person-btn",
 );
+const deleteReportsButton = document.getElementById("delete-reports-btn");
 const authModalElement = document.getElementById("auth-modal");
 const authFormElement = document.getElementById("auth-form");
 const authUserElement = document.getElementById("auth-user");
@@ -443,7 +442,7 @@ function setSession(session = {}) {
       `Signed in as ${appState.sessionName}${appState.sessionRole ? ` (${appState.sessionRole})` : ""}.`,
     );
   } else {
-    setHeaderMessage("Christchurch");
+    setHeaderMessage("");
     setReportsPageOpen(false);
   }
 }
@@ -458,6 +457,10 @@ function setReportsPageOpen(isOpen) {
   reportsPageButton.textContent = appState.reportsPageOpen
     ? "Back to Callings"
     : "Reports";
+
+  headerHeadingElement.textContent = appState.reportsPageOpen
+    ? "Reports"
+    : "Stake Callings";
 }
 
 function persistSessionPreferences() {
@@ -1428,7 +1431,7 @@ async function loadData() {
 
     appState.usingDemoData = false;
     applyData(data);
-    setHeaderMessage("Track calls and releases from your spreadsheet.");
+    setHeaderMessage("");
     loaderElement.style.display = "none";
   } catch (error) {
     if (
@@ -1474,7 +1477,7 @@ async function loadData() {
 
       appState.usingDemoData = false;
       applyData(jsonpData);
-      setHeaderMessage("Track calls and releases from your spreadsheet.");
+      setHeaderMessage("");
       loaderElement.style.display = "none";
       showToast("Connected using compatibility mode.", { type: "success" });
     } catch (jsonpError) {
@@ -2168,6 +2171,59 @@ async function submitGenerateReport(payload) {
   }
 }
 
+async function submitDeleteReports() {
+  if (!isApiConfigured() || appState.usingDemoData) {
+    throw new Error("Delete reports is unavailable in demo mode.");
+  }
+
+  const formData = createActionFormData({
+    action: "deleteReports",
+  });
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      method: "POST",
+      redirect: "follow",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Delete reports failed (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (result?.success !== true) {
+      throw new Error(result?.error || "Unable to delete reports.");
+    }
+
+    appState.reports = Array.isArray(result.reports) ? result.reports : [];
+    renderReports();
+  } catch (error) {
+    const isFetchFailure =
+      error instanceof TypeError ||
+      String(error?.message || "")
+        .toLowerCase()
+        .includes("failed to fetch");
+
+    if (!isFetchFailure) {
+      throw error;
+    }
+
+    const fallbackResult = await requestViaJsonp("deleteReports");
+
+    if (fallbackResult?.success !== true) {
+      throw new Error(
+        fallbackResult?.error || "Compatibility delete reports failed.",
+      );
+    }
+
+    appState.reports = Array.isArray(fallbackResult.reports)
+      ? fallbackResult.reports
+      : [];
+    renderReports();
+  }
+}
+
 authFormElement.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -2327,6 +2383,33 @@ generateAssignmentsByPersonButton.addEventListener("click", async () => {
     });
   } finally {
     generateAssignmentsByPersonButton.disabled = false;
+  }
+});
+
+deleteReportsButton.addEventListener("click", async () => {
+  if (appState.sessionRole.toLowerCase() !== "admin") {
+    showToast("Only admins can delete reports.", { type: "error" });
+    return;
+  }
+
+  if (
+    !confirm(
+      "Are you sure you want to delete all reports? This cannot be undone.",
+    )
+  ) {
+    return;
+  }
+
+  deleteReportsButton.disabled = true;
+  try {
+    await submitDeleteReports();
+    showToast("All reports deleted.", { type: "success" });
+  } catch (error) {
+    showToast(error?.message || "Failed to delete reports.", {
+      type: "error",
+    });
+  } finally {
+    deleteReportsButton.disabled = false;
   }
 });
 

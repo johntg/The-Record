@@ -74,6 +74,7 @@ body.modal-open {
   margin: 6px 0 0;
   color: var(--text-muted);
   font-size: 0.95rem;
+  text-transform: uppercase;
 }
 
 .header-action-btn {
@@ -88,7 +89,7 @@ body.modal-open {
 }
 
 .header-action-btn:hover {
-  background: #f5f7fa;
+  background: var(--iconClr);
 }
 
 .reports-page {
@@ -806,6 +807,20 @@ select {
 .btn-primary {
   background: var(--primary);
   color: var(--white);
+}
+
+.report-actions .btn-primary {
+  border: 2px solid white;
+}
+
+#delete-reports-btn {
+  background: #dc3545;
+  color: var(--white);
+  border: 2px solid white;
+}
+
+#delete-reports-btn:hover:not(:disabled) {
+  background: #c82333;
 }
 
 @media (max-width: 640px) {
