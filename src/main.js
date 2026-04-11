@@ -177,6 +177,11 @@ function renderCards() {
                     <input type="checkbox" ${row.interviewed ? "checked" : ""} onchange="window.updateField('${row.id}', 'interviewed', this.checked)">
                     <span>Interview completed</span>
                   </label>
+
+                  <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: ${row.prev_release ? "#fff2d8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                    <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
+                    <span>Reminder: verify previous release</span>
+                  </label>
                 </div>
                 <p style="margin: 0; color: #444;">Status: <strong>${row.status || "In Progress"}</strong></p>
              </div>
@@ -217,11 +222,13 @@ window.updateAssignment = async (id, field, value) => {
 
 window.updateField = async (id, field, value) => {
   // Prepare the update object
-  const updateData = { [field]: value };
+  const updateData = {};
 
-  // For interview completion, unchecked should be null in DB (not false)
-  if (field === "interviewed" && value === false) {
-    updateData[field] = null;
+  // interviewed uses one timestamp column: checked => timestamp, unchecked => null
+  if (field === "interviewed") {
+    updateData[field] = value ? new Date().toISOString() : null;
+  } else {
+    updateData[field] = value;
   }
 
   // Add timestamp when checkbox is checked
