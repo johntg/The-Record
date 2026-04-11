@@ -41,6 +41,7 @@ const appState = {
   ],
   expandedGridId: null,
   expandedSustainingIds: new Set(),
+  showAllCallingsForStake: false,
 };
 
 function resolveFirstField(row, candidates, fallback) {
@@ -105,6 +106,59 @@ function normalizeStatusOptions(rows) {
     .filter(Boolean);
 
   return [...new Set(values)];
+}
+
+function getAuthPasswordType() {
+  return (localStorage.getItem("authPasswordType") || "").toLowerCase();
+}
+
+function hasAdminPasswordAccess() {
+  return getAuthPasswordType() === "admin";
+}
+
+function isStakePasswordSession() {
+  return getAuthPasswordType() === "stake";
+}
+
+function getAssignmentFieldCandidates() {
+  return [
+    "interview_by",
+    "sustaining_by",
+    "sus_assigned",
+    "sus_assign",
+    "sustain_by",
+    "setting_apart_by",
+    "sa_assign",
+    "set_apart_by",
+  ];
+}
+
+function normalizeComparableName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function isAssignedToCurrentUser(row) {
+  const currentUser = normalizeComparableName(
+    localStorage.getItem("currentUser"),
+  );
+  if (!currentUser) return false;
+
+  return getAssignmentFieldCandidates().some((field) => {
+    const assignedTo = normalizeComparableName(row[field]);
+    return assignedTo && assignedTo === currentUser;
+  });
+}
+
+function canUpdateAssignmentField(field) {
+  const assignmentFields = new Set(getAssignmentFieldCandidates());
+
+  if (!assignmentFields.has(field)) {
+    return true;
+  }
+
+  return hasAdminPasswordAccess();
 }
 
 // 4. CORE LOGIC
@@ -201,6 +255,7 @@ window.login = async function (e) {
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("currentUser", person.name);
     localStorage.setItem("userRole", person.role); // Sets 'admin', 'assign', or 'viewer'
+    localStorage.setItem("authPasswordType", requiredType);
     window.location.reload();
   } else {
     alert(
@@ -213,8 +268,25 @@ function renderCards() {
   const list = document.getElementById("data-list");
   if (!list) return;
 
-  list.innerHTML = appState.callings
+  const rowsToRender =
+    isStakePasswordSession() && !appState.showAllCallingsForStake
+      ? appState.callings.filter((row) => isAssignedToCurrentUser(row))
+      : appState.callings;
+
+  if (!rowsToRender.length) {
+    list.innerHTML = `
+      <article class="card">
+        <div style="padding: 25px; text-align: center; color: #666;">
+          No assigned callings to display.
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  list.innerHTML = rowsToRender
     .map((row) => {
+      const canAssign = hasAdminPasswordAccess();
       const isExpanded = appState.expandedGridId === row.id;
       const isRelease = row.type?.toUpperCase() === "RELEASE";
       const sustainingByField = resolveSustainingByField(row);
@@ -230,6 +302,11 @@ function renderCards() {
       if (currentStatus && !statusOptions.includes(currentStatus)) {
         statusOptions.unshift(currentStatus);
       }
+      const visibleStatusOptions = hasAdminPasswordAccess()
+        ? statusOptions
+        : statusOptions.filter(
+            (status) => status.toLowerCase().trim() !== "archived",
+          );
 
       return `
       <article class="card">
@@ -272,6 +349,7 @@ function renderCards() {
                     <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Interview assigned to</label>
                     <select
                       onchange="window.updateAssignment('${row.id}', 'interview_by', this.value)"
+                      ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                       style="width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
                     >
                       <option value="">Select interviewer...</option>
@@ -289,17 +367,26 @@ function renderCards() {
                     <span>Interview completed</span>
                   </label>
 
-                  <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: ${row.prev_release ? "#fff2d8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                  ${
+                    isRelease
+                      ? ""
+                      : `<label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: ${row.prev_release ? "#fff2d8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
                     <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
                     <span>Reminder: verify previous release</span>
-                  </label>
+                  </label>`
+                  }
                 </div>
 
+                ${
+                  isRelease
+                    ? ""
+                    : `
                 <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e0e0e0;">
                   <div style="margin-bottom: 12px;">
                     <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
                     <select
                       onchange="window.updateAssignment('${row.id}', '${sustainingByField}', this.value)"
+                      ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                       style="width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
                     >
                       <option value="">Select assignee...</option>
@@ -352,6 +439,7 @@ function renderCards() {
                     <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Setting apart assigned to</label>
                     <select
                       onchange="window.updateAssignment('${row.id}', '${settingApartByField}', this.value)"
+                      ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                       style="width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
                     >
                       <option value="">Select assignee...</option>
@@ -374,6 +462,8 @@ function renderCards() {
                     <span>Recorded in LCR</span>
                   </label>
                 </div>
+                `
+                }
 
                 <div style="margin: 14px 0 0 0;">
                   <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Status</label>
@@ -381,7 +471,7 @@ function renderCards() {
                     onchange="window.updateAssignment('${row.id}', 'status', this.value)"
                     style="width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
                   >
-                    ${statusOptions
+                    ${visibleStatusOptions
                       .map(
                         (status) =>
                           `<option value="${status}" ${currentStatus === status ? "selected" : ""}>${status}</option>`,
@@ -448,6 +538,20 @@ window.updateSustainedUnits = async (id, unitName) => {
 };
 
 window.updateAssignment = async (id, field, value) => {
+  if (!canUpdateAssignmentField(field)) {
+    alert("Assignments require signing in with the admin password.");
+    return;
+  }
+
+  if (
+    field === "status" &&
+    String(value).toLowerCase().trim() === "archived" &&
+    !hasAdminPasswordAccess()
+  ) {
+    alert("Archiving requires signing in with the admin password.");
+    return;
+  }
+
   const { error } = await supabase
     .from("callings")
     .update({ [field]: value || null })
@@ -520,6 +624,16 @@ window.updateField = async (id, field, value) => {
   }
 };
 
+window.toggleCallingScope = () => {
+  if (!isStakePasswordSession()) {
+    return;
+  }
+
+  appState.showAllCallingsForStake = !appState.showAllCallingsForStake;
+  renderHeader();
+  renderCards();
+};
+
 function renderLogin() {
   document.getElementById("app").innerHTML = `
     <div class="login-container">
@@ -547,11 +661,27 @@ function renderLogin() {
 
 function renderHeader() {
   const app = document.getElementById("app");
+  const existingHeader = app.querySelector(".main-header");
+  if (existingHeader) {
+    existingHeader.remove();
+  }
+
+  const showScopeToggle = isStakePasswordSession();
+  const scopeLabel = appState.showAllCallingsForStake
+    ? "Show My Assignments"
+    : "Show All Callings";
   const header = document.createElement("header");
   header.className = "main-header";
   header.innerHTML = `
     <h1>Stake Callings</h1>
-    <button onclick="localStorage.clear(); location.reload();">Sign Out</button>
+    <div class="main-header-actions">
+      ${
+        showScopeToggle
+          ? `<button onclick="window.toggleCallingScope()">${scopeLabel}</button>`
+          : ""
+      }
+      <button onclick="localStorage.clear(); location.reload();">Sign Out</button>
+    </div>
   `;
   app.prepend(header);
 
