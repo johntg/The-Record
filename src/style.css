@@ -276,8 +276,7 @@ body.modal-open {
 
 /* Card Container Adjustments */
 .card {
-  width: 95vw;
-  max-width: 960px; /* Limit width  */
+  max-width: calc(95vw - 40px); /* Limit width  */
   margin: 20px auto; /* Center on page */
   background-color: #fff !important; /* Force white background */
   border-radius: 16px;

@@ -27,6 +27,7 @@ const appState = {
   callings: [],
   members: [], // Loaded from your 'members' table [cite: 1]
   assignableNames: [],
+  statusOptions: [],
   units: [
     "Allenton Ward",
     "Ashburton Ward",
@@ -42,12 +43,87 @@ const appState = {
   expandedSustainingIds: new Set(),
 };
 
+function resolveFirstField(row, candidates, fallback) {
+  for (const key of candidates) {
+    if (Object.prototype.hasOwnProperty.call(row, key)) {
+      return key;
+    }
+  }
+  return fallback;
+}
+
+function resolveSettingApartByField(row) {
+  return resolveFirstField(
+    row,
+    ["setting_apart_by", "sa_assign", "set_apart_by"],
+    "setting_apart_by",
+  );
+}
+
+function resolveSustainingByField(row) {
+  return resolveFirstField(
+    row,
+    ["sustaining_by", "sus_assigned", "sus_assign", "sustain_by"],
+    "sustaining_by",
+  );
+}
+
+function resolveSettingApartDoneField(row) {
+  return resolveFirstField(
+    row,
+    ["setting_apart_done", "sa_done", "set_apart_done"],
+    "setting_apart_done",
+  );
+}
+
+function resolveLcrRecordedField(row) {
+  return resolveFirstField(
+    row,
+    ["lcr_recorded", "recorded_in_lcr", "lcr_done"],
+    "lcr_recorded",
+  );
+}
+
+function isCompletedValue(value) {
+  if (value == null) return false;
+  if (typeof value === "boolean") return value;
+  const text = String(value).toLowerCase().trim();
+  return text !== "" && text !== "false" && text !== "0";
+}
+
+function normalizeStatusOptions(rows) {
+  if (!Array.isArray(rows)) return [];
+
+  const values = rows
+    .map((row) => {
+      if (!row || typeof row !== "object") return "";
+      return (
+        row.status ??
+        row.name ??
+        row.label ??
+        row.value ??
+        row.option ??
+        ""
+      );
+    })
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+
+  return [...new Set(values)];
+}
+
 // 4. CORE LOGIC
 async function startApp() {
   const app = document.getElementById("app");
 
-  // Fetch members from database
-  const { data: members, error } = await supabase.from("members").select("*");
+  // Fetch members and status options from database
+  const [membersResult, statusesResult] = await Promise.all([
+    supabase.from("members").select("*"),
+    supabase.from("status_options").select("*"),
+  ]);
+
+  const { data: members, error } = membersResult;
+  const { data: statusRows, error: statusError } = statusesResult;
 
   if (error) {
     console.error("Error fetching members:", error);
@@ -61,6 +137,12 @@ async function startApp() {
       .filter((m) => m.role !== "viewer")
       .map((m) => m.name);
   }
+
+  if (statusError) {
+    console.warn("Could not load status options:", statusError.message);
+  }
+
+  appState.statusOptions = normalizeStatusOptions(statusRows);
 
   const isLoggedIn = localStorage.getItem("isLoggedIn");
   if (isLoggedIn) {
@@ -140,6 +222,19 @@ function renderCards() {
     .map((row) => {
       const isExpanded = appState.expandedGridId === row.id;
       const isRelease = row.type?.toUpperCase() === "RELEASE";
+      const sustainingByField = resolveSustainingByField(row);
+      const sustainingBy = row[sustainingByField] || "";
+      const settingApartByField = resolveSettingApartByField(row);
+      const settingApartDoneField = resolveSettingApartDoneField(row);
+      const lcrRecordedField = resolveLcrRecordedField(row);
+      const settingApartBy = row[settingApartByField] || "";
+      const settingApartDone = isCompletedValue(row[settingApartDoneField]);
+      const lcrRecorded = isCompletedValue(row[lcrRecordedField]);
+      const currentStatus = (row.status || "In Progress").trim();
+      const statusOptions = [...appState.statusOptions];
+      if (currentStatus && !statusOptions.includes(currentStatus)) {
+        statusOptions.unshift(currentStatus);
+      }
 
       return `
       <article class="card">
@@ -206,6 +301,22 @@ function renderCards() {
                 </div>
 
                 <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e0e0e0;">
+                  <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
+                    <select
+                      onchange="window.updateAssignment('${row.id}', '${sustainingByField}', this.value)"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
+                    >
+                      <option value="">Select assignee...</option>
+                      ${appState.assignableNames
+                        .map(
+                          (name) =>
+                            `<option value="${name}" ${sustainingBy === name ? "selected" : ""}>${name}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+
                   <button onclick="window.toggleSustainingUnits('${row.id}')" style="width: 100%; padding: 10px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; font-weight: 600; color: #1976d2; cursor: pointer; font-size: 0.9rem;">
                     ${appState.expandedSustainingIds.has(row.id) ? "▲ Hide" : "▼ Show"} Sustaining Units
                   </button>
@@ -241,7 +352,48 @@ function renderCards() {
                   }
                 </div>
 
-                <p style="margin: 14px 0 0 0; color: #444;">Status: <strong>${row.status || "In Progress"}</strong></p>
+                <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e0e0e0; display: grid; gap: 12px;">
+                  <div>
+                    <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Setting apart assigned to</label>
+                    <select
+                      onchange="window.updateAssignment('${row.id}', '${settingApartByField}', this.value)"
+                      style="width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
+                    >
+                      <option value="">Select assignee...</option>
+                      ${appState.assignableNames
+                        .map(
+                          (name) =>
+                            `<option value="${name}" ${settingApartBy === name ? "selected" : ""}>${name}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+
+                  <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: ${settingApartDone ? "#dff5e8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                    <input type="checkbox" ${settingApartDone ? "checked" : ""} onchange="window.updateField('${row.id}', '${settingApartDoneField}', this.checked)">
+                    <span>Setting apart completed</span>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: ${lcrRecorded ? "#dff5e8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                    <input type="checkbox" ${lcrRecorded ? "checked" : ""} onchange="window.updateField('${row.id}', '${lcrRecordedField}', this.checked)">
+                    <span>Recorded in LCR</span>
+                  </label>
+                </div>
+
+                <div style="margin: 14px 0 0 0;">
+                  <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Status</label>
+                  <select
+                    onchange="window.updateAssignment('${row.id}', 'status', this.value)"
+                    style="width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
+                  >
+                    ${statusOptions
+                      .map(
+                        (status) =>
+                          `<option value="${status}" ${currentStatus === status ? "selected" : ""}>${status}</option>`,
+                      )
+                      .join("")}
+                  </select>
+                </div>
              </div>
           </div>
         </div>
@@ -323,9 +475,14 @@ window.updateAssignment = async (id, field, value) => {
 window.updateField = async (id, field, value) => {
   // Prepare the update object
   const updateData = {};
+  const isSettingApartDoneField = [
+    "setting_apart_done",
+    "sa_done",
+    "set_apart_done",
+  ].includes(field);
 
   // interviewed uses one timestamp column: checked => timestamp, unchecked => null
-  if (field === "interviewed") {
+  if (field === "interviewed" || isSettingApartDoneField) {
     updateData[field] = value ? new Date().toISOString() : null;
   } else {
     updateData[field] = value;
