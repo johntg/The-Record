@@ -345,27 +345,39 @@ body.modal-open {
 }
 
 .editable-field {
+  display: inline-block;
+  max-width: 100%;
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  padding: 6px 26px 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #d6e4ff;
+  background: #f4f8ff;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
   position: relative;
 }
 
 .editable-field:hover {
-  background-color: #f0f7ff;
-  outline: 1px dashed var(--primary);
+  background-color: #eaf2ff;
+  border-color: #8fb3ff;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+}
+
+.editable-field::after {
+  content: "✎";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8em;
+  color: var(--primary);
+  opacity: 0.45;
 }
 
 .editable-field:hover::after {
-  content: "✎";
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.85em;
-  color: var(--primary);
-  opacity: 0.6;
+  opacity: 0.85;
 }
 
 .inline-edit-input {
