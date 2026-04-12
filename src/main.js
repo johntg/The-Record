@@ -52,6 +52,7 @@ const appState = {
   members: [], // Loaded from your 'members' table [cite: 1]
   assignableNames: [],
   statusOptions: [],
+  themeMode: "light",
   cardSortOrder: "newest",
   currentPage: "callings",
   currentReportType: "awaiting-shc",
@@ -192,6 +193,17 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function applyThemeMode(mode) {
+  const resolvedMode = mode === "dark" ? "dark" : "light";
+  appState.themeMode = resolvedMode;
+
+  if (typeof document !== "undefined") {
+    document.body.classList.toggle("dark-mode", resolvedMode === "dark");
+  }
+
+  localStorage.setItem("themeMode", resolvedMode);
 }
 
 if (typeof window !== "undefined") {
@@ -560,6 +572,9 @@ function canUpdateAssignmentField(field) {
 async function startApp() {
   const app = document.getElementById("app");
 
+  const savedThemeMode = localStorage.getItem("themeMode") || "light";
+  applyThemeMode(savedThemeMode);
+
   if (!supabase) {
     showFatalError(
       "Missing configuration",
@@ -749,42 +764,42 @@ function renderCards() {
             class="editable-field"
             title="Click to edit position"
             onclick="window.editCardField('${row.id}', 'position')"
-            style="color: #666; margin: 4px 0;"
+            style="color: var(--text-muted); margin: 4px 0;"
           >${escapeHtml(row.position || "")}</p>
-          <p style="color: #c24d7c; font-weight: bold;">${row.unit}</p>
+          <p style="color: var(--unit-soft); font-weight: bold;">${row.unit}</p>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0;">
-            <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "#d5e9f4" : "#eef7fb"}; border-radius: 12px; cursor: pointer;">
+            <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <input type="checkbox" ${row.sp_approved ? "checked" : ""} onchange="window.updateField('${row.id}', 'sp_approved', this.checked)">
                 <span style="font-weight: bold;">S.Pres Approved</span>
               </div>
-              ${row.sp_approved_date ? `<span style="font-size: 0.75rem; color: #666; margin-left: 26px;">${new Date(row.sp_approved_date).toLocaleDateString()}</span>` : ""}
+              ${row.sp_approved_date ? `<span style="font-size: 0.75rem; color: var(--workflow-date); margin-left: 26px;">${new Date(row.sp_approved_date).toLocaleDateString()}</span>` : ""}
             </label>
-            <label class="workflow-block ${row.hc_sustained ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.hc_sustained ? "#d5e9f4" : "#eef7fb"}; border-radius: 12px; cursor: pointer;">
+            <label class="workflow-block ${row.hc_sustained ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.hc_sustained ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <input type="checkbox" ${row.hc_sustained ? "checked" : ""} onchange="window.updateField('${row.id}', 'hc_sustained', this.checked)">
                 <span style="font-weight: bold;">SHC Sustained</span>
               </div>
-              ${row.hc_sustained_date ? `<span style="font-size: 0.75rem; color: #666; margin-left: 26px;">${new Date(row.hc_sustained_date).toLocaleDateString()}</span>` : ""}
+              ${row.hc_sustained_date ? `<span style="font-size: 0.75rem; color: var(--workflow-date); margin-left: 26px;">${new Date(row.hc_sustained_date).toLocaleDateString()}</span>` : ""}
             </label>
           </div>
 
             <button onclick="window.toggleDetails('${row.id}')" 
-              style="width: 100%; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; font-weight: bold; color: #555; cursor: pointer;">
+              style="width: 100%; padding: 10px; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 8px; font-weight: bold; color: var(--text-muted); cursor: pointer;">
             ${isExpanded ? "▲ Hide Details" : "▼ More Details"}
           </button>
 
-           <div style="display: ${isExpanded ? "block" : "none"}; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #ccc;">
-             <p style="font-size: 0.8rem; color: #888; margin-bottom: 8px;">DETAILED STEPS:</p>
-             <div style="background: #fdfdfd; padding: 12px; border-radius: 10px; border: 1px solid #eee;">
+           <div style="display: ${isExpanded ? "block" : "none"}; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border);">
+             <p style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 8px;">DETAILED STEPS:</p>
+             <div style="background: var(--surface-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
                <div style="display: grid; gap: 10px; margin-bottom: 10px;">
                   <div>
-                    <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Interview assigned to</label>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Interview assigned to</label>
                     <select
                       onchange="window.updateAssignment('${row.id}', 'interview_by', this.value)"
                       ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
-                      style="width: 100%; padding: 8px 10px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
                     >
                       <option value="">Select interviewer...</option>
                       ${appState.assignableNames
@@ -796,7 +811,7 @@ function renderCards() {
                     </select>
                   </div>
 
-                  <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.interviewed ? "#dff5e8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                  <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.interviewed ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
                     <input type="checkbox" ${row.interviewed ? "checked" : ""} onchange="window.updateField('${row.id}', 'interviewed', this.checked)">
                     <span>Interview completed</span>
                   </label>
@@ -804,7 +819,7 @@ function renderCards() {
                   ${
                     isRelease
                       ? ""
-                      : `<label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.prev_release ? "#fff2d8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                      : `<label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.prev_release ? "var(--warning-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
                     <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
                     <span>Reminder: verify previous release</span>
                   </label>`
@@ -815,13 +830,13 @@ function renderCards() {
                   isRelease
                     ? ""
                     : `
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e0e0e0;">
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
                   <div style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
                     <select
                       onchange="window.updateAssignment('${row.id}', '${sustainingByField}', this.value)"
                       ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
-                      style="width: 100%; padding: 8px 10px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
                     >
                       <option value="">Select assignee...</option>
                       ${appState.assignableNames
@@ -833,15 +848,15 @@ function renderCards() {
                     </select>
                   </div>
 
-                  <button onclick="window.toggleSustainingUnits('${row.id}')" style="width: 100%; padding: 8px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; font-weight: 600; color: #1976d2; cursor: pointer; font-size: 0.9rem;">
+                  <button onclick="window.toggleSustainingUnits('${row.id}')" style="width: 100%; padding: 8px; background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 8px; font-weight: 600; color: var(--accent-text); cursor: pointer; font-size: 0.9rem;">
                     ${appState.expandedSustainingIds.has(row.id) ? "▲ Hide" : "▼ Show"} Sustaining Units
                   </button>
 
                   ${
                     appState.expandedSustainingIds.has(row.id)
                       ? `
-                    <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 8px;">
-                      <p style="font-size: 0.75rem; color: #666; font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">Units to sustain</p>
+                    <div style="margin-top: 10px; padding: 10px; background: var(--surface-muted); border-radius: 8px;">
+                      <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">Units to sustain</p>
                       <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                         ${appState.units
                           .map((unit) => {
@@ -854,7 +869,7 @@ function renderCards() {
                             return `
                             <button
                               onclick="window.updateSustainedUnits('${row.id}', '${unit}')"
-                              style="padding: 7px 10px; border-radius: 20px; border: 1px solid #ccc; background: ${isSelected ? "#4CAF50" : "#fff"}; color: ${isSelected ? "#fff" : "#333"}; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                              style="padding: 7px 10px; border-radius: 20px; border: 1px solid var(--border); background: ${isSelected ? "var(--chip-selected-bg)" : "var(--white)"}; color: ${isSelected ? "var(--chip-selected-text)" : "var(--text)"}; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
                             >
                               ${unit}
                             </button>
@@ -868,13 +883,13 @@ function renderCards() {
                   }
                 </div>
 
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e0e0e0; display: grid; gap: 10px;">
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: grid; gap: 10px;">
                   <div>
-                    <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Setting apart assigned to</label>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Setting apart assigned to</label>
                     <select
                       onchange="window.updateAssignment('${row.id}', '${settingApartByField}', this.value)"
                       ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
-                      style="width: 100%; padding: 8px 10px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
+                      style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
                     >
                       <option value="">Select assignee...</option>
                       ${appState.assignableNames
@@ -886,12 +901,12 @@ function renderCards() {
                     </select>
                   </div>
 
-                  <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${settingApartDone ? "#dff5e8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                  <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${settingApartDone ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
                     <input type="checkbox" ${settingApartDone ? "checked" : ""} onchange="window.updateField('${row.id}', '${settingApartDoneField}', this.checked)">
                     <span>Setting apart completed</span>
                   </label>
 
-                  <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${lcrRecorded ? "#dff5e8" : "#f5f7fa"}; color: #333; font-weight: 600; cursor: pointer;">
+                  <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${lcrRecorded ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
                     <input type="checkbox" ${lcrRecorded ? "checked" : ""} onchange="window.updateField('${row.id}', '${lcrRecordedField}', this.checked)">
                     <span>Recorded in LCR</span>
                   </label>
@@ -900,10 +915,10 @@ function renderCards() {
                 }
 
                 <div style="margin: 10px 0 0 0;">
-                  <label style="display: block; font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Status</label>
+                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Status</label>
                   <select
                     onchange="window.updateAssignment('${row.id}', 'status', this.value)"
-                    style="width: 100%; padding: 8px 10px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff; color: #333; font-size: 0.95rem;"
+                    style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
                   >
                     ${visibleStatusOptions
                       .map(
@@ -916,7 +931,7 @@ function renderCards() {
                   <button
                     onclick="window.archiveCalling('${row.id}')"
                     ${hasAdminPasswordAccess() ? "" : "disabled title='Admin password required to archive'"}
-                    style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff3f3; color: #8b1e1e; font-weight: 700; cursor: ${hasAdminPasswordAccess() ? "pointer" : "not-allowed"};"
+                    style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: var(--danger-text); font-weight: 700; cursor: ${hasAdminPasswordAccess() ? "pointer" : "not-allowed"};"
                   >
                     Archive
                   </button>
@@ -1152,6 +1167,12 @@ window.toggleCardSortOrder = () => {
     appState.cardSortOrder === "newest" ? "oldest" : "newest";
   renderHeader();
   renderCurrentPage();
+};
+
+window.toggleThemeMode = () => {
+  const nextMode = appState.themeMode === "dark" ? "light" : "dark";
+  applyThemeMode(nextMode);
+  renderHeader();
 };
 
 window.selectReportType = (value) => {
@@ -1516,6 +1537,7 @@ function renderHeader() {
     ? "Show My Assignments"
     : "Show All Callings";
   const sortLabel = appState.cardSortOrder === "newest" ? "Newest" : "Oldest";
+  const themeLabel = appState.themeMode === "dark" ? "Light" : "Dark";
   const pageToggleLabel =
     appState.currentPage === "callings" ? "Open Reports" : "Open Callings";
   const header = document.createElement("header");
@@ -1526,6 +1548,7 @@ function renderHeader() {
     <div class="main-header-actions">
       <button onclick="window.togglePage()">${pageToggleLabel}</button>
       <button onclick="window.toggleCardSortOrder()">${sortLabel}</button>
+      <button onclick="window.toggleThemeMode()">${themeLabel}</button>
       ${
         showScopeToggle
           ? `<button onclick="window.toggleCallingScope()">${scopeLabel}</button>`

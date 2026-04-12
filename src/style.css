@@ -1,7 +1,8 @@
 :root {
   --primary: #1a73e8;
   --primary-dark: #155fbe;
-  --bg-muted: #a7b8bd;
+  --bg-muted: #cdd8de;
+  --bg-overlay: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1));
   --error: #d93025;
   --white: #ffffff;
   --text: #21313b;
@@ -16,14 +17,73 @@
 
   --block-pending: #eef7fb; /* Even softer light blue */
   --block-done: #d5e9f4; /* Slightly deeper but still soft */
+  --workflow-text: #1f2f40;
+  --workflow-date: #3f566d;
   --stake-blue: #4e5ff2;
   --pos-soft: #7a8ba3; /* Soft gray-blue for the position */
   --unit-soft: #c24d7c;
+  --surface-subtle: #f8f9fa;
+  --surface-muted: #f5f7fa;
+  --surface-panel: #fdfdfd;
+  --success-soft: #dff5e8;
+  --warning-soft: #fff2d8;
+  --accent-soft: #e3f2fd;
+  --accent-border: #90caf9;
+  --accent-text: #1976d2;
+  --danger-soft: #fff3f3;
+  --danger-text: #8b1e1e;
+  --chip-selected-bg: #4caf50;
+  --chip-selected-text: #ffffff;
 
   --card-bg: #000000; /* The card itself is now black */
   --block-pending: #eef7fb; /* Keeping your soft blue blocks */
   --block-done: #d5e9f4; /* Keeping your "done" blue blocks */
   --stake-blue: #4e5ff2;
+}
+
+body.dark-mode .card {
+  background-color: #111827 !important;
+  color: var(--text);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .main-header {
+  /* background: #1f2937; */
+  background: #520096;
+}
+body.dark-mode .main-header h1 {
+  color: #f8fafc;
+}
+
+body.dark-mode .main-header button {
+  background: #8d1de8;
+  color: #eddaff;
+}
+
+body.dark-mode .main-header button:hover {
+  background: #4b5563;
+}
+
+body.dark-mode .reports-header,
+body.dark-mode .report-card .report-summary,
+body.dark-mode .modal,
+body.dark-mode .login-card {
+  background: #111827;
+  color: var(--text);
+}
+
+body.dark-mode input,
+body.dark-mode select {
+  background: #0b1220;
+  color: var(--text);
+  border-color: #334155;
+}
+
+body.dark-mode .editable-field:hover,
+body.dark-mode .editable-field:focus-visible {
+  background-color: #1e293b;
+  border-color: #64748b;
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
 }
 
 * {
@@ -39,9 +99,39 @@ body {
   padding: 10px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg-muted);
-  background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3Cstyle%3E.cls-1,.cls-2,.cls-3,.cls-4,.cls-5%7Bfill:%23027da5;%7D.cls-6%7Bfill:%23fff;%7D.cls-2%7Bopacity:.6;%7D.cls-3%7Bopacity:.7;%7D.cls-4%7Bopacity:.9;%7D.cls-5%7Bopacity:.8;%7D%3C/style%3E%3C/defs%3E%3Cg id='Layer_5'%3E%3Crect class='cls-6' width='512' height='512'/%3E%3C/g%3E%3Cg id='Layer_1'%3E%3Crect class='cls-1' x='-.33' width='512' height='512'/%3E%3C/g%3E%3Cg id='Layer_3'%3E%3Cpolyline class='cls-1' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3Cpolyline class='cls-1' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3Cpolyline class='cls-6' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3Cpolyline class='cls-4' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3C/g%3E%3Cg id='Layer_4'%3E%3Cpolygon class='cls-6' points='0 512 511.67 112.56 511.67 512 0 512'/%3E%3Cpolygon class='cls-5' points='0 512 511.67 112.56 511.67 512 0 512'/%3E%3C/g%3E%3Cg id='Layer_6'%3E%3Cpolygon class='cls-6' points='-.33 512 511.67 289.22 511.67 512 -.33 512'/%3E%3Cpolyline class='cls-3' points='511.67 512 -.33 512 511.67 289.22'/%3E%3C/g%3E%3Cg id='Layer_7'%3E%3Cpolygon class='cls-6' points='-.33 512 511.67 393.67 512 512 -.33 512'/%3E%3Cpolyline class='cls-2' points='512 512 -.33 512 511.67 393.67'/%3E%3C/g%3E%3C/svg%3E");
+  background-image:
+    var(--bg-overlay),
+    url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3Cstyle%3E.cls-1,.cls-2,.cls-3,.cls-4,.cls-5%7Bfill:%23027da5;%7D.cls-6%7Bfill:%23fff;%7D.cls-2%7Bopacity:.6;%7D.cls-3%7Bopacity:.7;%7D.cls-4%7Bopacity:.9;%7D.cls-5%7Bopacity:.8;%7D%3C/style%3E%3C/defs%3E%3Cg id='Layer_5'%3E%3Crect class='cls-6' width='512' height='512'/%3E%3C/g%3E%3Cg id='Layer_1'%3E%3Crect class='cls-1' x='-.33' width='512' height='512'/%3E%3C/g%3E%3Cg id='Layer_3'%3E%3Cpolyline class='cls-1' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3Cpolyline class='cls-1' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3Cpolyline class='cls-6' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3Cpolyline class='cls-4' points='511.67 512 511.67 0 424.33 0 -.33 512'/%3E%3C/g%3E%3Cg id='Layer_4'%3E%3Cpolygon class='cls-6' points='0 512 511.67 112.56 511.67 512 0 512'/%3E%3Cpolygon class='cls-5' points='0 512 511.67 112.56 511.67 512 0 512'/%3E%3C/g%3E%3Cg id='Layer_6'%3E%3Cpolygon class='cls-6' points='-.33 512 511.67 289.22 511.67 512 -.33 512'/%3E%3Cpolyline class='cls-3' points='511.67 512 -.33 512 511.67 289.22'/%3E%3C/g%3E%3Cg id='Layer_7'%3E%3Cpolygon class='cls-6' points='-.33 512 511.67 393.67 512 512 -.33 512'/%3E%3Cpolyline class='cls-2' points='512 512 -.33 512 511.67 393.67'/%3E%3C/g%3E%3C/svg%3E");
   background-size: cover;
   /* max-width: 100%; */
+}
+
+body.dark-mode {
+  --bg-muted: #314155;
+  --bg-overlay: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45));
+  --text: #e6edf6;
+  --text-muted: #b8c4d4;
+  --text-subtle: #9aa8bb;
+  --border: #334155;
+  --white: #111827;
+  --unit-soft: #f497bf;
+  --surface-subtle: #1a2332;
+  --surface-muted: #182232;
+  --surface-panel: #111a28;
+  --warning-soft: #3a3218;
+  --accent-soft: #16283d;
+  --accent-border: #355c8a;
+  --accent-text: #8cc3ff;
+  --danger-soft: #3a1f24;
+  --danger-text: #ff9ca8;
+  --chip-selected-bg: #2e8b57;
+  --chip-selected-text: #ffffff;
+  --block-pending: #2b3f56;
+  --block-done: #35516f;
+  --workflow-text: #e9f2ff;
+  --workflow-date: #c5d7eb;
+  background: var(--bg-muted);
+  color: var(--text);
 }
 
 body.modal-open {
@@ -68,6 +158,7 @@ body.modal-open {
 
 .app-header {
   background: #ffe958;
+
   padding: 15px;
   border-radius: 10px;
   margin-bottom: 15px;
@@ -952,7 +1043,6 @@ select {
   flex-direction: column;
   gap: 15px;
   align-items: center;
-  border-bottom: 2px solid red;
 }
 
 .main-header-actions {
@@ -1084,10 +1174,6 @@ select {
   margin: 0;
   cursor: pointer;
   accent-color: var(--stake-blue);
-}
-h1 span {
-  display: block;
-  font-size: 0.7em;
 }
 
 @media (max-width: 640px) {
