@@ -1,7 +1,7 @@
 # Stake Callings
 
 A Vite-powered PWA-style interface for tracking Church callings and releases from a Google Spreadsheet.
-TO BE UPDATED
+TO BE UPDATED sson
 
 The app is designed to be hosted on **GitHub Pages** and to use **Google Apps Script** as its API layer for reading from and writing to the spreadsheet.
 
