@@ -673,7 +673,7 @@ function renderCards() {
 
             <button onclick="window.toggleDetails('${row.id}')" 
               style="width: 100%; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; font-weight: bold; color: #555; cursor: pointer;">
-            ${isExpanded ? "▲ Hide Details" : "▼ Show Workflow Details"}
+            ${isExpanded ? "▲ Hide Details" : "▼ More Details"}
           </button>
 
            <div style="display: ${isExpanded ? "block" : "none"}; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #ccc;">
