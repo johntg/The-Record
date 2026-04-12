@@ -1126,7 +1126,7 @@ select {
     rgba(255, 72, 0, 1) 100%
   );
   border-radius: 0 0 20px 20px;
-  padding: 20px;
+  padding: 30px 20px 20px;
   text-align: center;
   margin: -10px -10px 25px -10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -1140,7 +1140,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
+  flex-wrap: no-wrap;
   gap: 8px;
 }
 
