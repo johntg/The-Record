@@ -454,6 +454,17 @@ async function startApp() {
     return;
   }
 
+  // Validate passwords are configured
+  const stakePw = import.meta.env.VITE_STAKE_PW || "";
+  const adminPw = import.meta.env.VITE_ADMIN_PW || "";
+  if (!stakePw || !adminPw) {
+    showFatalError(
+      "Missing configuration",
+      "VITE_STAKE_PW and VITE_ADMIN_PW must be set for this build.",
+    );
+    return;
+  }
+
   // Fetch members and status options from database
   const [membersResult, statusesResult] = await Promise.all([
     supabase.from("members").select("*"),
@@ -511,9 +522,11 @@ window.login = async function (e) {
   const selectedName = formData.get("authName");
   const enteredPassword = formData.get("authPassword");
 
-  // 1. Define the master passwords clearly
-  const STAKE_PW = "stake2026";
-  const ADMIN_PW = "admin789";
+  // 1. Load master passwords from environment variables
+  // They will be injected via GitHub Secrets at build time on GitHub Pages
+  // or from .env locally during development
+  const STAKE_PW = import.meta.env.VITE_STAKE_PW || "";
+  const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "";
 
   // 2. Find the person in your loaded appState.members
   const person = appState.members.find((m) => m.name === selectedName);
