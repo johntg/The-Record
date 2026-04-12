@@ -775,6 +775,14 @@ function renderCards() {
                       )
                       .join("")}
                   </select>
+
+                  <button
+                    onclick="window.archiveCalling('${row.id}')"
+                    ${hasAdminPasswordAccess() ? "" : "disabled title='Admin password required to archive'"}
+                    style="margin-top: 10px; width: 100%; padding: 10px 12px; border: 1px solid #d7dbe3; border-radius: 8px; background: #fff3f3; color: #8b1e1e; font-weight: 700; cursor: ${hasAdminPasswordAccess() ? "pointer" : "not-allowed"};"
+                  >
+                    Archive
+                  </button>
                 </div>
              </div>
           </div>
@@ -866,6 +874,20 @@ window.updateAssignment = async (id, field, value) => {
   }
 
   renderCurrentPage();
+};
+
+window.archiveCalling = async (id) => {
+  if (!hasAdminPasswordAccess()) {
+    alert("Archiving requires signing in with the admin password.");
+    return;
+  }
+
+  const confirmed = window.confirm("Archive this item?");
+  if (!confirmed) {
+    return;
+  }
+
+  await window.updateAssignment(id, "status", "Archived");
 };
 
 window.updateField = async (id, field, value) => {
