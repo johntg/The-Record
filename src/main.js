@@ -46,10 +46,10 @@ if (!import.meta.env.DEV && typeof window !== "undefined") {
   }
 }
 
-// 3. APP STATE (Preserving your Role & Member logic)
+// 3. APP STATE
 const appState = {
   callings: [],
-  members: [], // Loaded from your 'members' table [cite: 1]
+  members: [],
   assignableNames: [],
   statusOptions: [],
   themeMode: "system",
@@ -173,18 +173,11 @@ function canAssignMember(member) {
     return false;
   }
 
-  const sharedPasswordType = String(member.shared_password_type ?? "")
-    .toLowerCase()
-    .trim();
   const roleType = String(member.role ?? "")
     .toLowerCase()
     .trim();
 
-  if (sharedPasswordType.includes("admin")) {
-    return true;
-  }
-
-  return roleType !== "viewer";
+  return roleType === "assign";
 }
 
 function getAssignmentFieldCandidates() {
@@ -505,11 +498,9 @@ function buildUnassignedAssignmentsReport(rows) {
 }
 
 function buildSustainSetApartReleaseReport(rows) {
-  // Get all units from the calling records
   const unitsSet = new Set(rows.map((r) => r.unit).filter(Boolean));
   const units = Array.from(unitsSet).sort();
 
-  // Separate releases and callings that need sustaining/setapart
   const releases = rows.filter(
     (row) =>
       String(row.type || "").toUpperCase() === "RELEASE" &&
@@ -526,10 +517,8 @@ function buildSustainSetApartReleaseReport(rows) {
       (isCompletedValue(row.sp_approved) || isCompletedValue(row.hc_sustained)),
   );
 
-  // Build unit reports - releases first, then callings
   const reportSections = [];
 
-  // Process Stake business first (if any Stake items exist)
   const stakeReleases = releases.filter((r) => r.unit === "Stake");
   const stakeToSustain = toSustain.filter((r) => r.unit === "Stake");
 
@@ -539,9 +528,8 @@ function buildSustainSetApartReleaseReport(rows) {
     );
   }
 
-  // Then process each other unit
   for (const unit of units) {
-    if (unit === "Stake") continue; // Already processed above
+    if (unit === "Stake") continue;
 
     const unitReleases = releases.filter((r) => r.unit === unit);
     const unitToSustain = toSustain.filter((r) => r.unit === unit);
@@ -566,7 +554,6 @@ function buildUnitSection(unitTitle, releases, toSustain) {
   lines.push(`${unitTitle}`);
   lines.push("-".repeat(unitTitle.length));
 
-  // Releases first (with vote of thanks)
   if (releases.length > 0) {
     lines.push("RELEASE - Vote of Thanks for Service:");
     releases.forEach((row, index) => {
@@ -577,7 +564,6 @@ function buildUnitSection(unitTitle, releases, toSustain) {
     lines.push("");
   }
 
-  // Callings to sustain and set apart
   if (toSustain.length > 0) {
     lines.push("TO BE SUSTAINED:");
     toSustain.forEach((row, index) => {
@@ -680,7 +666,6 @@ function canUpdateAssignmentField(field) {
   return hasAdminPasswordAccess();
 }
 
-// 4. CORE LOGIC
 async function startApp() {
   const app = document.getElementById("app");
 
@@ -695,7 +680,6 @@ async function startApp() {
     return;
   }
 
-  // Validate passwords are configured
   const stakePw = import.meta.env.VITE_STAKE_PW || "";
   const adminPw = import.meta.env.VITE_ADMIN_PW || "";
   if (!stakePw || !adminPw) {
@@ -706,7 +690,6 @@ async function startApp() {
     return;
   }
 
-  // Fetch members and status options from database
   const [membersResult, statusesResult] = await Promise.all([
     supabase.from("members").select("*"),
     supabase.from("status_options").select("*"),
@@ -756,20 +739,15 @@ async function fetchCallings() {
   if (!error) appState.callings = data;
 }
 
-// 5. LOGIN LOGIC (Restoring the Admin/Stake Password logic )
 window.login = async function (e) {
   e.preventDefault();
   const formData = new FormData(e.target);
   const selectedName = formData.get("authName");
   const enteredPassword = formData.get("authPassword");
 
-  // 1. Load master passwords from environment variables
-  // They will be injected via GitHub Secrets at build time on GitHub Pages
-  // or from .env locally during development
   const STAKE_PW = import.meta.env.VITE_STAKE_PW || "";
   const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "";
 
-  // 2. Find the person in your loaded appState.members
   const person = appState.members.find((m) => m.name === selectedName);
 
   if (!person) {
@@ -777,31 +755,21 @@ window.login = async function (e) {
     return;
   }
 
-  // 3. Resolve required password type robustly.
-  // Prefer explicit shared_password_type, but fall back to role when needed.
   const sharedPasswordType = String(person.shared_password_type ?? "")
     .toLowerCase()
     .trim();
-  const roleType = String(person.role ?? "")
-    .toLowerCase()
-    .trim();
 
-  const isAdminType =
-    sharedPasswordType.includes("admin") ||
-    (!sharedPasswordType && roleType.includes("admin"));
+  const requiredType = sharedPasswordType === "admin" ? "admin" : "stake";
+  const correctPassword = requiredType === "admin" ? ADMIN_PW : STAKE_PW;
 
-  const requiredType = isAdminType ? "admin" : "stake";
-  const correctPassword = isAdminType ? ADMIN_PW : STAKE_PW;
-
-  // DEBUG LOG - Open your console (F12) to see this!
   console.log(
-    `[Stake Callings] Logging in as: ${selectedName} | role=${roleType || "(none)"} | shared_password_type=${sharedPasswordType || "(none)"} | expects=${requiredType}`,
+    `[Stake Callings] Logging in as: ${selectedName} | shared_password_type=${sharedPasswordType || "(none)"} | expects=${requiredType}`,
   );
 
   if (enteredPassword.trim() === correctPassword) {
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("currentUser", person.name);
-    localStorage.setItem("userRole", person.role); // Stored for reference/UI; access is determined by authPasswordType.
+    localStorage.setItem("userRole", person.role);
     localStorage.setItem("authPasswordType", requiredType);
     window.location.reload();
   } else {
@@ -811,7 +779,6 @@ window.login = async function (e) {
   }
 };
 
-// 6. UI RENDERING (White Cards / Blue Blocks)
 function renderCards() {
   const list = document.getElementById("data-list");
   if (!list) return;
@@ -1051,9 +1018,7 @@ function renderCards() {
   focusActiveInlineEdit();
 }
 
-// 7. HELPER FUNCTIONS
 window.toggleDetails = (id) => {
-  // If the clicked card is already open, close it (null). Otherwise, open it.
   appState.expandedGridId = appState.expandedGridId === id ? null : id;
   renderCards();
 };
@@ -1075,17 +1040,14 @@ window.updateSustainedUnits = async (id, unitName) => {
     ? [...item.units_sustained]
     : [];
 
-  // Toggle the unit
   if (sustaining.includes(unitName)) {
     sustaining = sustaining.filter((u) => u !== unitName);
   } else {
     sustaining.push(unitName);
   }
 
-  // Update local state
   item.units_sustained = sustaining;
 
-  // Update database
   const { error } = await supabase
     .from("callings")
     .update({ units_sustained: sustaining })
@@ -1238,7 +1200,6 @@ window.archiveCalling = async (id) => {
 };
 
 window.updateField = async (id, field, value) => {
-  // Prepare the update object
   const updateData = {};
   const isSettingApartDoneField = [
     "set_apart",
@@ -1247,14 +1208,12 @@ window.updateField = async (id, field, value) => {
     "set_apart_done",
   ].includes(field);
 
-  // interviewed uses one timestamp column: checked => timestamp, unchecked => null
   if (field === "interviewed" || isSettingApartDoneField) {
     updateData[field] = value ? new Date().toISOString() : null;
   } else {
     updateData[field] = value;
   }
 
-  // Add timestamp when checkbox is checked
   if (value === true) {
     const timestamp = new Date().toISOString();
     if (field === "sp_approved") {
@@ -1263,7 +1222,6 @@ window.updateField = async (id, field, value) => {
       updateData.hc_sustained_date = timestamp;
     }
   } else if (value === false) {
-    // Clear timestamp when unchecked - use null for timestamp columns
     if (field === "sp_approved") {
       updateData.sp_approved_date = null;
     } else if (field === "hc_sustained") {
@@ -1284,7 +1242,6 @@ window.updateField = async (id, field, value) => {
   } else {
     console.log("Update successful");
     const item = appState.callings.find((c) => c.id === id);
-    // Update all fields in local state
     Object.assign(item, updateData);
     renderCurrentPage();
   }
@@ -1313,20 +1270,6 @@ window.toggleCardSortOrder = () => {
   renderHeader();
   renderCurrentPage();
 };
-
-// window.toggleThemeMode = () => {
-//   const currentMode = appState.themeMode || "system";
-
-//   const nextMode =
-//     currentMode === "light"
-//       ? "dark"
-//       : currentMode === "dark"
-//         ? "system"
-//         : "light";
-
-//   applyThemeMode(nextMode);
-//   renderHeader();
-// };
 
 window.selectReportType = (value) => {
   appState.currentReportType = value;
@@ -1480,7 +1423,6 @@ function syncFabVisibility() {
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const shouldShowReset = hasAuthenticatedShell || isLoggedIn;
 
-  // quickResetButton.style.display = shouldShowReset ? "inline-flex" : "none";
   quickResetButton.style.display = shouldShowReset ? "none" : "none";
 
   if (!fab) {
@@ -1488,7 +1430,7 @@ function syncFabVisibility() {
     return;
   }
 
-  const shouldShow = hasAuthenticatedShell;
+  const shouldShow = hasAuthenticatedShell && hasAdminPasswordAccess();
   fab.style.display = shouldShow ? "flex" : "none";
   fab.style.visibility = shouldShow ? "visible" : "hidden";
 
@@ -1510,12 +1452,10 @@ function ensureCreateCallingUi() {
     fab.onclick = () => window.openCreateCallingModal();
   }
 
-  // Mount FAB at body-level so card/list containers cannot clip or hide it.
   if (fab.parentElement !== document.body) {
     document.body.appendChild(fab);
   }
 
-  // Inline safety styles to guarantee visibility even if future CSS overrides occur.
   Object.assign(fab.style, {
     position: "fixed",
     right: "20px",
@@ -1583,6 +1523,11 @@ function ensureCreateCallingUi() {
 }
 
 window.openCreateCallingModal = () => {
+  if (!hasAdminPasswordAccess()) {
+    alert("Creating entries requires signing in with the admin password.");
+    return;
+  }
+
   const modal = document.getElementById("create-calling-modal");
   if (!modal) return;
 
@@ -1617,6 +1562,11 @@ window.closeCreateCallingModal = () => {
 
 window.submitNewCalling = async (event) => {
   event.preventDefault();
+
+  if (!hasAdminPasswordAccess()) {
+    alert("Creating entries requires signing in with the admin password.");
+    return;
+  }
 
   const form = event.target;
   const formData = new FormData(form);
@@ -1683,7 +1633,6 @@ window.setThemeMode = (mode) => {
   applyThemeMode(mode);
   renderHeader();
 };
-4;
 
 function renderHeader() {
   const app = document.getElementById("app");
@@ -1697,26 +1646,18 @@ function renderHeader() {
     ? "Show My Assignments"
     : "Show All Callings";
   const sortLabel = appState.cardSortOrder === "newest" ? "Newest" : "Oldest";
-  // const themeLabel =
-  //   appState.themeMode === "light"
-  //     ? "Light"
-  //     : appState.themeMode === "dark"
-  //       ? "Dark"
-  //       : "System";
   const pageToggleLabel =
     appState.currentPage === "callings" ? "Reports" : "Callings";
   const header = document.createElement("header");
   header.className = "main-header";
-  var currentMode = appState.themeMode || "system";
+  const currentMode = appState.themeMode || "system";
 
-  let activeClr, otherClr;
+  let activeClr;
 
   if (currentMode === "dark") {
     activeClr = "#5cb5f7";
-    otherClr = "#1472ba";
-  } else if (currentMode === "light") {
+  } else {
     activeClr = "#f75ced";
-    otherClr = "#303030";
   }
 
   header.innerHTML = `
@@ -1759,7 +1700,6 @@ function renderHeader() {
 `;
   app.prepend(header);
 
-  // Create the data-list container if it doesn't exist
   if (!document.getElementById("data-list")) {
     const list = document.createElement("div");
     list.id = "data-list";
