@@ -689,28 +689,49 @@ async function archiveCallingRecord(id, options = {}) {
     return false;
   }
 
+  const isDeleteMistake = item.status === "Mistake: DELETE";
+
   if (confirm) {
-    const confirmed = window.confirm("Archive this item?");
+    const message = isDeleteMistake
+      ? `This item is marked "Mistake: DELETE".\n\nName: ${item.name || "(no name)"}\n\nPress OK to permanently remove it from the database.\nThis cannot be undone.`
+      : "Archive this item?";
+
+    const confirmed = window.confirm(message);
+
     if (!confirmed) {
       renderCurrentPage();
       return false;
     }
   }
 
-  // ✅ NEW: call RPC instead of insert/delete
-  const { error } = await supabase.rpc("move_calling_to_archive", {
-    row_id: id,
-  });
+  let error;
 
-  if (error) {
-    console.error("Archive RPC error:", error);
+  if (isDeleteMistake) {
+    const result = await supabase.rpc("delete_calling_permanently", {
+      row_id: id,
+    });
+    error = result.error;
 
-    alert(`Failed to archive item: ${error.message}`);
-    renderCurrentPage();
-    return false;
+    if (error) {
+      console.error("Permanent delete RPC error:", error);
+      alert(`Failed to permanently delete item: ${error.message}`);
+      renderCurrentPage();
+      return false;
+    }
+  } else {
+    const result = await supabase.rpc("move_calling_to_archive", {
+      row_id: id,
+    });
+    error = result.error;
+
+    if (error) {
+      console.error("Archive RPC error:", error);
+      alert(`Failed to archive item: ${error.message}`);
+      renderCurrentPage();
+      return false;
+    }
   }
 
-  // ✅ Update local state
   appState.callings = appState.callings.filter((calling) => calling.id !== id);
 
   renderCurrentPage();
