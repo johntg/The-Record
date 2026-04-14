@@ -359,47 +359,46 @@ body.modal-open {
   resize: vertical;
 }
 .terminal-box {
-    width: var(--container-width);
-    height: 60px;
-    background: #1a1a1a;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    font-family: 'Courier New', Courier, monospace;
-    overflow: hidden;
-    position: relative;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  }
+  width: var(--container-width);
+  height: 60px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-family: "Courier New", Courier, monospace;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
 
-  #text-container {
-    white-space: nowrap;
-    color: var(--text-color);
-    font-size: 1.2rem;
-    font-weight: bold;
-    display: flex;
-  }
+#text-container {
+  white-space: nowrap;
+  color: var(--text-color);
+  font-size: 1.2rem;
+  font-weight: bold;
+  display: flex;
+}
 
-  /* The magic: Letters fade out as they move right */
-  .char {
-    display: inline-block;
-    animation: move-and-fade 4s linear forwards;
-  }
+/* The magic: Letters fade out as they move right */
+.char {
+  display: inline-block;
+  animation: move-and-fade 4s linear forwards;
+}
 
-  @keyframes move-and-fade {
-    0% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    80% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-      transform: translateX(var(--container-width));
-    }
+@keyframes move-and-fade {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
   }
-
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(var(--container-width));
+  }
+}
 
 .report-card .btn {
   margin-top: 12px;
@@ -1113,7 +1112,7 @@ select {
 
 .btn-secondary {
   background: #eee;
-  color: var(--btn2text);
+  color: var(--btn2Text);
 }
 
 .btn-primary {
