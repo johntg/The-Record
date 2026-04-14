@@ -697,49 +697,22 @@ async function archiveCallingRecord(id, options = {}) {
     }
   }
 
-  const archivePayload = {
-    ...item,
-    status: "Archived",
-  };
+  // ✅ NEW: call RPC instead of insert/delete
+  const { error } = await supabase.rpc("move_calling_to_archive", {
+    row_id: id,
+  });
 
-  const { error: insertError } = await supabase
-    .from(archiveTableName)
-    .insert([archivePayload]);
+  if (error) {
+    console.error("Archive RPC error:", error);
 
-  if (insertError) {
-    console.error("Archive insert error:", insertError);
-    alert(
-      `Failed to move the item to the ${archiveTableName} table: ${insertError.message}`,
-    );
+    alert(`Failed to archive item: ${error.message}`);
     renderCurrentPage();
     return false;
   }
 
-  const { error: deleteError } = await supabase
-    .from("callings")
-    .delete()
-    .eq("id", id);
-
-  if (deleteError) {
-    console.error("Archive delete error:", deleteError);
-
-    const { error: rollbackError } = await supabase
-      .from(archiveTableName)
-      .delete()
-      .eq("id", id);
-
-    if (rollbackError) {
-      console.error("Archive rollback error:", rollbackError);
-    }
-
-    alert(
-      `Failed to remove the archived item from active callings: ${deleteError.message}`,
-    );
-    renderCurrentPage();
-    return false;
-  }
-
+  // ✅ Update local state
   appState.callings = appState.callings.filter((calling) => calling.id !== id);
+
   renderCurrentPage();
   return true;
 }

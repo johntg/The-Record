@@ -102,6 +102,28 @@ If deploying through GitHub Actions or another CI system, make sure these enviro
 - `VITE_STAKE_PW`
 - `VITE_ADMIN_PW`
 
+## Supabase Row Level Security (RLS) setup
+
+The app attempts to archive items by moving rows from the `callings` table to the `archive` table.
+
+If you see an alert about "Archive table write is blocked by Supabase Row Level Security," it means the `archive` table doesn't have an `INSERT` policy enabled for your app's auth role.
+
+**To enable row archiving:**
+
+See [SUPABASE_RLS_SETUP.md](./SUPABASE_RLS_SETUP.md) for detailed steps to add an `INSERT` policy to the `archive` table.
+
+Quick summary:
+
+1. Open Supabase console → **SQL Editor**
+2. Add an `INSERT` policy for authenticated users on the `archive` table
+3. Test archiving in the app
+
+If archiving still isn't working after adding the policy, check:
+
+- The policy is on the correct table (`archive`)
+- Your authentication role matches the policy condition
+- You have SELECT access to the `archive` table (to see archived rows)
+
 ## Apps Script notes
 
 The Apps Script code remains useful as:
