@@ -132,7 +132,7 @@ html {
 
 body {
   margin: 0;
-  padding: 10px;
+  padding: 0;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -1278,17 +1278,21 @@ select {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  min-height: 100vh;
   padding: 20px;
+  background-image: url(/public/background.svg);
+  background-size: cover;
+  background-repeat: repeat;
+  background-position: bottom right;
 }
 
 .login-card {
-  background: #000 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
   color: #fff;
   padding: 40px;
   border-radius: 16px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   margin: 0 auto;
   border: 1px solid #333;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
@@ -1305,7 +1309,6 @@ select {
 .login-card form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
 }
 
 .login-card select,
@@ -1314,9 +1317,8 @@ select {
   padding: 14px;
   border-radius: 8px;
   border: 1px solid #444;
-  background: #fff;
   color: #000;
-  font-size: 1rem;
+  font-size: rem;
 }
 
 .login-card button {
@@ -1351,6 +1353,11 @@ select {
   flex: 0 0 auto;
   cursor: pointer;
   accent-color: var(--stake-blue);
+}
+
+.login-card .loginEntry {
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
 }
 
 /* Larger mobile-friendly checkboxes throughout app cards */

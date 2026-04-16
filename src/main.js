@@ -811,11 +811,11 @@ function renderLogin() {
       <div class="login-card">
         <h2>Sign In</h2>
         <form onsubmit="window.login(event)">
-          <select name="authName" required>
+          <select name="authName" required class="loginEntry">
             <option value="">Select Name...</option>
             ${appState.members.map((m) => `<option value="${m.name}">${m.name}</option>`).join("")}
           </select>
-          <input id="pw-input" type="password" name="authPassword" placeholder="Password" required>
+          <input id="pw-input" type="password" name="authPassword" placeholder="Password" required class="loginEntry">
           <label>
             <input
               type="checkbox"
