@@ -76,6 +76,12 @@ body.dark-mode .card {
   color: var(--text);
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
 }
+body.dark-mode .card {
+  border: 2px solid var(--banner-call-bg);
+}
+body.dark-mode .card.type-release {
+  border: 2px solid var(--banner-release-bg);
+}
 
 body.dark-mode .main-header {
   /* background: #1f2937; */
@@ -551,13 +557,12 @@ body.modal-open {
   text-transform: uppercase;
 }
 
-.banner-call {
-  background-color: #2e7d32; /* Green for Callings */
+/* .banner-call {
+  background-color: #2e7d32; 
 }
-
 .banner-release {
-  background-color: #d32f2f; /* Red for Releases */
-}
+  background-color: #d32f2f; 
+} */
 /* Content Padding */
 .card-content {
   padding: 15px;
