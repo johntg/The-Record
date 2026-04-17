@@ -114,7 +114,9 @@ export function createCardsRenderer({
         const isHcDetailsExpanded = appState.expandedHcDetailsIds.has(row.id);
         const hasExtraHcDetails =
           appState.hcVotingTableAvailable &&
-          (hasAdminPasswordAccess() || Boolean(row.hc_sustained_date) || isHcBypassed);
+          (hasAdminPasswordAccess() ||
+            Boolean(row.hc_sustained_date) ||
+            isHcBypassed);
         const currentStatus = (row.status || "In Progress").trim();
         const statusOptions = [...appState.statusOptions];
         if (currentStatus && !statusOptions.includes(currentStatus)) {
@@ -172,9 +174,11 @@ export function createCardsRenderer({
                     >Sustain</button>
                     <button
                       type="button"
-                      onclick="window.submitHighCouncilVote('${row.id}', 'concern')"
-                      style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${currentUserVote === "concern" ? "var(--danger-soft)" : "var(--white)"}; color: ${currentUserVote === "concern" ? "var(--danger-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
-                    >Concern</button>
+                      class="concern-btn ${currentUserVote === "concern" ? "is-selected" : ""}"
+                      data-calling-id="${row.id}"
+                      onclick="window.handleConcernClick(event, '${row.id}')"
+                      style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700;"
+                    >${currentUserVote === "concern" ? "Concerned" : "Concern"}</button>
                   </div>
                   <button
                     type="button"

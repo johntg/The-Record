@@ -44,6 +44,9 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const archiveTableName = import.meta.env.VITE_ARCHIVE_TABLE || "archive";
+const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
+const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
+
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
@@ -591,6 +594,49 @@ async function fetchCallings() {
   }
 }
 
+async function sendConcernEmail(row) {
+  if (!concernEmailUrl) {
+    console.warn("Concern email URL not configured.");
+    return {
+      ok: false,
+      skipped: true,
+      error: "Missing VITE_CONCERN_EMAIL_URL",
+    };
+  }
+
+  const payload = {
+    token: concernEmailToken,
+    callingId: row.id,
+    personName: row.name || "",
+    position: row.position || "",
+    unit: row.unit || "",
+    type: row.type || "",
+    status: row.status || "",
+    votedBy: getCurrentUserName() || "",
+    votedAt: new Date().toISOString(),
+    pageUrl: window.location.href,
+  };
+
+  console.log("Sending concern email payload:", payload);
+
+  try {
+    await fetch(concernEmailUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // With no-cors, the browser won't let us inspect the response.
+    return { ok: true, opaque: true };
+  } catch (error) {
+    console.error("Concern email failed:", error);
+    return { ok: false, error: error.message || "Unknown error" };
+  }
+}
+
 const cardsRenderer = createCardsRenderer({
   appState,
   getSortedVisibleCallings,
@@ -644,6 +690,29 @@ window.login = async function (e) {
   }
 };
 
+window.handleConcernClick = async (event, id) => {
+  const btn = event.currentTarget;
+
+  // instant feedback
+  btn.classList.add("sending");
+  btn.textContent = "Sending...";
+
+  try {
+    await window.submitHighCouncilVote(id, "concern");
+
+    // success state
+    btn.classList.remove("sending");
+    btn.classList.add("sent");
+    btn.textContent = "Concern Sent";
+  } catch (err) {
+    console.error(err);
+
+    btn.classList.remove("sending");
+    btn.textContent = "Concern";
+    alert("Failed to record concern.");
+  }
+};
+
 function renderCards() {
   cardsRenderer.renderCards();
 }
@@ -662,6 +731,7 @@ const callingsActions = createCallingsActions({
   renderCurrentPage,
   archiveCallingRecord,
   showConcernNoticeModal: () => window.showConcernNoticeModal(),
+  sendConcernEmail,
 });
 
 window.toggleDetails = (id) => callingsActions.toggleDetails(id);
@@ -780,7 +850,6 @@ window.printReport = () => {
       </head>
       <body>
         <pre>${escapeHtml(appState.reportOutput)}</pre>
-        
       </body>
     </html>
   `);
@@ -812,6 +881,44 @@ window.resetCacheAndReload = async () => {
 
   localStorage.clear();
   window.location.reload();
+};
+
+window.handleConcernClick = async (event, id) => {
+  const button = event?.currentTarget;
+
+  if (button) {
+    button.classList.add("is-sending");
+    button.textContent = "Sending";
+  }
+
+  try {
+    await window.submitHighCouncilVote(id, "concern");
+
+    const item = appState.callings.find((calling) => calling.id === id);
+    const summary = getHighCouncilVoteSummary(id);
+    const currentUserVote = summary.currentUserVote;
+
+    if (button) {
+      button.classList.remove("is-sending");
+
+      if (currentUserVote === "concern") {
+        button.classList.add("is-sent", "is-selected");
+        button.textContent = "Concerned";
+      } else {
+        button.classList.remove("is-sent", "is-selected");
+        button.textContent = "Concern";
+      }
+    }
+  } catch (error) {
+    console.error("Concern click failed:", error);
+
+    if (button) {
+      button.classList.remove("is-sending");
+      button.textContent = "Concern";
+    }
+
+    alert("Failed to record concern.");
+  }
 };
 
 function renderLogin() {

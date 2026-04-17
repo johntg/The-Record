@@ -12,6 +12,7 @@ export function createCallingsActions({
   renderCurrentPage,
   archiveCallingRecord,
   showConcernNoticeModal = null,
+  sendConcernEmail = null,
 }) {
   function canUpdateAssignmentField(field) {
     const assignmentFields = new Set(getAssignmentFieldCandidates());
@@ -218,11 +219,21 @@ export function createCallingsActions({
     }
 
     if (normalizedVote === "concern" && previousVote !== "concern") {
+      if (typeof sendConcernEmail === "function") {
+        const emailResult = await sendConcernEmail(item);
+
+        if (!emailResult?.ok && !emailResult?.skipped) {
+          alert(
+            `Concern recorded, but the email notification failed: ${emailResult.error || "Unknown error"}`,
+          );
+        }
+      }
+
       if (typeof showConcernNoticeModal === "function") {
         showConcernNoticeModal();
       } else {
         alert(
-          "You have indicated a concern. Please contact a member of the Stake Presidency as soon as possible.",
+          "You have indicated a concern. Please contact a member of the Stake Presidency as soon as possible. An email indicating your concern will be sent to them.",
         );
       }
     }

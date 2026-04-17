@@ -34,11 +34,12 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /DB-Stake-Callings/
-          VITE_APPS_SCRIPT_URL: ${{ secrets.VITE_APPS_SCRIPT_URL }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_STAKE_PW: ${{ secrets.VITE_STAKE_PW }}
           VITE_ADMIN_PW: ${{ secrets.VITE_ADMIN_PW }}
+          VITE_CONCERN_EMAIL_URL: ${{ secrets.VITE_CONCERN_EMAIL_URL }}
+          VITE_CONCERN_EMAIL_TOKEN: ${{ secrets.VITE_CONCERN_EMAIL_TOKEN }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
