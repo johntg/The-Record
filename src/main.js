@@ -637,6 +637,7 @@ async function sendConcernEmail(row) {
   }
 }
 
+
 const cardsRenderer = createCardsRenderer({
   appState,
   getSortedVisibleCallings,
@@ -733,6 +734,29 @@ const callingsActions = createCallingsActions({
   showConcernNoticeModal: () => window.showConcernNoticeModal(),
   sendConcernEmail,
 });
+
+window.showToast = (message) => {
+  let toast = document.getElementById("app-toast");
+
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "app-toast";
+    toast.className = "toast";
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.classList.add("visible");
+
+  setTimeout(() => {
+    toast.classList.remove("visible");
+  }, 2500);
+};
+
+await window.submitHighCouncilVote(id, "concern");
+
+window.showToast("Concern recorded");
+
 
 window.toggleDetails = (id) => callingsActions.toggleDetails(id);
 
