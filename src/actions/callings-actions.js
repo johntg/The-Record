@@ -463,12 +463,99 @@ export function createCallingsActions({
     }
   }
 
+  async function clearHighCouncilVoteForVoter(id, voterName) {
+    if (!hasAdminPasswordAccess()) {
+      alert("Admin password is required to clear another member's vote.");
+      return;
+    }
+
+    const item = appState.callings.find((calling) => calling.id === id);
+    if (!item) {
+      alert("Could not find this item to update.");
+      return;
+    }
+
+    const targetVoter = String(voterName || "").trim();
+    if (!targetVoter) {
+      alert("No voter name was provided.");
+      return;
+    }
+
+    const { error: deleteError } = await supabase
+      .from("calling_hc_votes")
+      .delete()
+      .eq("calling_id", id)
+      .eq("voter_name", targetVoter);
+
+    if (deleteError) {
+      console.error("Failed to clear HC vote for voter:", deleteError);
+      alert(`Failed to clear vote: ${deleteError.message}`);
+      return;
+    }
+
+    const { data: latestVotes, error: fetchVotesError } = await supabase
+      .from("calling_hc_votes")
+      .select("calling_id, voter_name, vote, voted_at")
+      .eq("calling_id", id);
+
+    if (fetchVotesError) {
+      console.error("Failed to refresh HC votes:", fetchVotesError);
+      alert(
+        `Vote cleared, but refreshing vote totals failed: ${fetchVotesError.message}`,
+      );
+      return;
+    }
+
+    appState.hcVotesByCalling[id] = latestVotes || [];
+
+    const previousSustained = Boolean(item.hc_sustained);
+    const previousSustainedDate = item.hc_sustained_date;
+    applyHighCouncilSummaryToCalling(item);
+    const nextSustained = Boolean(item.hc_sustained);
+
+    const updateData = {
+      hc_sustained: nextSustained,
+      hc_sustained_date: nextSustained
+        ? item.hc_sustained_date || new Date().toISOString()
+        : null,
+    };
+
+    const shouldPersist =
+      nextSustained !== previousSustained ||
+      (nextSustained && !previousSustainedDate) ||
+      (!nextSustained && previousSustainedDate);
+
+    if (shouldPersist) {
+      const { error: callingUpdateError } = await supabase
+        .from("callings")
+        .update(updateData)
+        .eq("id", id);
+
+      if (callingUpdateError) {
+        console.error(
+          "Failed to persist derived hc_sustained fields:",
+          callingUpdateError,
+        );
+        alert(
+          `Vote cleared, but updating call status failed: ${callingUpdateError.message}`,
+        );
+        return;
+      }
+
+      item.hc_sustained = updateData.hc_sustained;
+      item.hc_sustained_date = updateData.hc_sustained_date;
+    }
+
+    renderCurrentPage();
+  }
+
   return {
     toggleDetails,
     toggleHighCouncilDetails,
     toggleSustainingUnits,
     updateSustainedUnits,
     submitHighCouncilVote,
+    clearHighCouncilVoteForVoter,
     setHighCouncilBypass,
     updateAssignment,
     startInlineEdit,

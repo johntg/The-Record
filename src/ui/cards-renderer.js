@@ -181,14 +181,28 @@ export function createCardsRenderer({
                         onclick="window.submitHighCouncilVote('${row.id}', 'sustain')"
                         style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${currentUserVote === "sustain" ? "var(--chip-selected-bg)" : "var(--white)"}; color: ${currentUserVote === "sustain" ? "var(--chip-selected-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
                       >Sustain</button>
+                     
                       <button
-                        type="button"
-                        class="concern-btn ${currentUserVote === "concern" ? "is-selected" : ""}"
-                        data-calling-id="${row.id}"
-                        onclick="window.handleConcernClick(event, '${row.id}')"
-                        style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700;"
-                      >${currentUserVote === "concern" ? "Concerned" : "Concern"}</button>
-                    </div>
+                          type="button"
+                          class="concern-btn ${currentUserVote === "concern" ? "is-selected" : ""}"
+                          onclick="${
+                            currentUserVote === "concern" &&
+                            hasAdminPasswordAccess()
+                              ? `window.submitHighCouncilVote('${row.id}', 'clear')`
+                              : `window.handleConcernClick(event, '${row.id}')`
+                          }"
+                          style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700;"
+                          ${currentUserVote === "concern" && !hasAdminPasswordAccess() ? "disabled" : ""}
+                        >
+                          ${
+                            currentUserVote === "concern"
+                              ? hasAdminPasswordAccess()
+                                ? "Undo Concern"
+                                : "Concerned"
+                              : "Concern"
+                          }
+                        </button>
+
                     <button
                       type="button"
                       onclick="window.submitHighCouncilVote('${row.id}', 'clear')"
@@ -230,8 +244,61 @@ export function createCardsRenderer({
                       hasAdminPasswordAccess()
                         ? `
                       <div style="margin-top: 4px; font-size: 0.75rem; color: var(--workflow-date); display: grid; gap: 3px;">
-                        <span><strong>Sustained by:</strong> ${voteSummary.sustainVoters.length ? escapeHtml(voteSummary.sustainVoters.join(", ")) : "None"}</span>
-                        <span><strong>Unable to sustain:</strong> ${voteSummary.concernVoters.length ? escapeHtml(voteSummary.concernVoters.join(", ")) : "None"}</span>
+                        
+                      <div>
+                        <strong>Sustained by:</strong>
+                        ${
+                          voteSummary.sustainVoters.length
+                            ? `
+                          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+                            ${voteSummary.sustainVoters
+                              .map(
+                                (name) => `
+                              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: var(--surface-subtle); border: 1px solid var(--border); color: var(--text);">
+                                ${escapeHtml(name)}
+                                <button
+                                  type="button"
+                                  onclick="window.clearHighCouncilVoteForVoter('${row.id}', '${escapeHtml(name)}')"
+                                  style="border: none; background: transparent; color: var(--danger-text); font-weight: 700; cursor: pointer; padding: 0;"
+                                  title="Clear this vote"
+                                >×</button>
+                              </span>
+                            `,
+                              )
+                              .join("")}
+                          </div>
+                        `
+                            : " None"
+                        }
+                      </div>
+
+                      <div>
+                        <strong>Unable to sustain:</strong>
+                        ${
+                          voteSummary.concernVoters.length
+                            ? `
+                          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+                            ${voteSummary.concernVoters
+                              .map(
+                                (name) => `
+                              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: var(--danger-soft); border: 1px solid var(--border); color: var(--danger-text);">
+                                ${escapeHtml(name)}
+                                <button
+                                  type="button"
+                                  onclick="window.clearHighCouncilVoteForVoter('${row.id}', '${escapeHtml(name)}')"
+                                  style="border: none; background: transparent; color: var(--danger-text); font-weight: 700; cursor: pointer; padding: 0;"
+                                  title="Clear this vote"
+                                >×</button>
+                              </span>
+                            `,
+                              )
+                              .join("")}
+                          </div>
+                        `
+                            : " None"
+                        }
+                      </div>
+
                       </div>
                       <div style="margin-top: 6px; display: grid; gap: 6px;">
                         <button

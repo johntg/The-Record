@@ -704,6 +704,9 @@ window.handleConcernClick = async (event, id) => {
     btn.classList.remove("sending");
     btn.classList.add("sent");
     btn.textContent = "Concern Sent";
+
+    // ✅ ADD THIS
+    btn.disabled = true;
   } catch (err) {
     console.error(err);
 
@@ -736,7 +739,6 @@ const callingsActions = createCallingsActions({
 
 window.showToast = (message) => {
   let toast = document.getElementById("app-toast");
-
   if (!toast) {
     toast = document.createElement("div");
     toast.id = "app-toast";
@@ -762,6 +764,9 @@ window.toggleHighCouncilDetails = (id) =>
 
 window.updateSustainedUnits = async (id, unitName) =>
   callingsActions.updateSustainedUnits(id, unitName);
+
+window.clearHighCouncilVoteForVoter = async (id, voterName) =>
+  callingsActions.clearHighCouncilVoteForVoter(id, voterName);
 
 window.submitHighCouncilVote = async (id, vote) =>
   callingsActions.submitHighCouncilVote(id, vote);
