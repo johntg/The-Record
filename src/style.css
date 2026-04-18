@@ -39,11 +39,50 @@
   --danger-text: #8b1e1e;
   --chip-selected-bg: #4caf50;
   --chip-selected-text: #ffffff;
+  --recordClr: #fff8be;
 
   --card-bg: #000000; /* The card itself is now black */
   --block-pending: #eef7fb; /* Keeping your soft blue blocks */
   --block-done: #d5e9f4; /* Keeping your "done" blue blocks */
   --stake-blue: #4e5ff2;
+}
+
+.login-splash {
+  text-align: center;
+}
+
+.login-splash h1,
+.main-header h1 {
+  display: block;
+  position: relative;
+  color: var(--recordClr);
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 3.5rem;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.login-splash h1::before,
+.main-header h1::before {
+  content: "The";
+  display: block;
+  position: absolute;
+  font-size: 0.5em;
+  transform: translate(105%, -20px);
+  width: fit-content;
+}
+
+.login-splash h3 {
+  color: var(--white);
+  font-size: 1.1rem;
+  font-weight: 200;
+  line-height: 1em;
+  margin: 0 0 1rem;
+}
+
+.login-splash h2 {
+  margin: 20px 0 0;
 }
 
 #report-content {
@@ -1453,7 +1492,8 @@ select {
 }
 
 .login-card button:hover {
-  background: #3d4fdb;
+  /* background: #3d4fdb; */
+  background: var(--loginBtn);
 }
 
 .login-card label {
@@ -1476,6 +1516,14 @@ select {
 .login-card .loginEntry {
   background: rgba(0, 0, 0, 0.4);
   color: white;
+}
+
+.login-card button[type="submit"] {
+  background-color: #fff8be;
+  color: #323232;
+}
+.login-card button[type="submit"]:hover {
+  background-color: #ffe958;
 }
 
 /* Larger mobile-friendly checkboxes throughout app cards */

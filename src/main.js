@@ -948,7 +948,11 @@ function renderLogin() {
   document.getElementById("app").innerHTML = `
     <div class="login-container">
       <div class="login-card">
-        <h2>Sign In</h2>
+      <div class="login-splash">
+        <h1>Record</h1>
+        <h3>From inspiration to setting apart</h3>
+        <!--<h2>Sign In</h2>-->
+        </div>
         <form onsubmit="window.login(event)">
           <select name="authName" required class="loginEntry">
             <option value="">Select Name...</option>

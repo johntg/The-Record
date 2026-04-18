@@ -1,22 +1,22 @@
 {
-  "name": "DB-Stake-Callings",
-  "short_name": "Callings",
+  "name": "The Record",
+  "short_name": "The Record",
   "description": "Track Church callings and releases.",
-  "start_url": "DB-Stake-Callings/",
-  "scope": "/DB-Stake-Callings/",
+  "start_url": "/The-Record/",
+  "scope": "/The-Record/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#a7b8bd",
   "theme_color": "#1a73e8",
   "icons": [
     {
-      "src": "/DB-Stake-Callings/icons/logo-gradient-192.png",
+      "src": "/The-Record/icons/logo-gradient-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/DB-Stake-Callings/icons/logo-gradient-512.png",
+      "src": "/The-Record/icons/logo-gradient-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

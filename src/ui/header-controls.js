@@ -98,7 +98,7 @@ export function renderHeader({
 
   header.innerHTML = `
   <div class="main-header-left">
-    <h1>Stake Callings<span>Christchurch</span></h1>
+    <h1>Record<span>Christchurch Stake</span></h1>
   </div>
 
   <div class="main-header-center">
