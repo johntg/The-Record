@@ -103,16 +103,16 @@ export function createCardsRenderer({
         const settingApartDone = isCompletedValue(row[settingApartDoneField]);
         const lcrRecorded = isCompletedValue(row[lcrRecordedField]);
         const voteSummary = getHighCouncilVoteSummary(row.id);
-        const isHcMajoritySustained =
-          appState.hcVotingTableAvailable && voteSummary.isMajoritySustained;
         const isHcBypassed = row.hc_sustained_bypass === true;
         const currentUserVote = voteSummary.currentUserVote;
         const showVotingControls =
+          !isRelease &&
           appState.hcVotingTableAvailable &&
           isStakePasswordSession() &&
           voteSummary.canVote;
         const isHcDetailsExpanded = appState.expandedHcDetailsIds.has(row.id);
         const hasExtraHcDetails =
+          !isRelease &&
           appState.hcVotingTableAvailable &&
           (hasAdminPasswordAccess() ||
             Boolean(row.hc_sustained_date) ||
@@ -148,159 +148,159 @@ export function createCardsRenderer({
                 </div>
                 ${row.sp_approved_date ? `<span style="font-size: 0.75rem; color: var(--workflow-date); margin-left: 26px;">${new Date(row.sp_approved_date).toLocaleDateString()}</span>` : ""}
               </label>
+
               <div class="workflow-block ${row.hc_sustained ? "done" : ""}" style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: ${row.hc_sustained ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px;">
                 <span style="font-weight: bold;">SHC Sustaining</span>
+
                 ${
                   isRelease
                     ? `
                   <div style="padding: 6px; border-radius: 6px; background: var(--surface-muted); text-align: center; font-weight: 700; color: var(--text-muted);">
                     N/A
                   </div>
-`
-                    : `
-                ${
-                  appState.hcVotingTableAvailable
-                    ? `
-                  <span style="font-size: 0.78rem; color: var(--workflow-date);">Sustain: ${voteSummary.sustainCount} | Concern: ${voteSummary.concernCount} | Pending: ${voteSummary.pendingCount}</span>
                 `
                     : `
-                  <span style="font-size: 0.78rem; color: #8b1e1e; font-weight: 600;">
-                    Voting table missing in database. Run migration to enable per-member SHC votes.
-                  </span>
-                `
-                }
-
-                ${
-                  showVotingControls
-                    ? `
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
-                    <button
-                      type="button"
-                      onclick="window.submitHighCouncilVote('${row.id}', 'sustain')"
-                      style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${currentUserVote === "sustain" ? "var(--chip-selected-bg)" : "var(--white)"}; color: ${currentUserVote === "sustain" ? "var(--chip-selected-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
-                    >Sustain</button>
-                    <button
-                      type="button"
-                      class="concern-btn ${currentUserVote === "concern" ? "is-selected" : ""}"
-                      data-calling-id="${row.id}"
-                      onclick="window.handleConcernClick(event, '${row.id}')"
-                      style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700;"
-                    >${currentUserVote === "concern" ? "Concerned" : "Concern"}</button>
-                  </div>
-                  <button
-                    type="button"
-                    onclick="window.submitHighCouncilVote('${row.id}', 'clear')"
-                    style="margin-top: 2px; padding: 5px 8px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;"
-                  >Clear my vote</button>
-                `
-                    : ""
-                }
-
-                ${
-                  hasExtraHcDetails
-                    ? `
-                  <button
-                    type="button"
-                    onclick="window.toggleHighCouncilDetails('${row.id}')"
-                    style="margin-top: 2px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--accent-border); background: var(--accent-soft); color: var(--accent-text); font-weight: 700; cursor: pointer;"
-                  >${isHcDetailsExpanded ? "▲ Hide SHC details" : "▼ Show SHC details"}</button>
-                `
-                    : ""
-                }
-
-                ${
-                  isHcDetailsExpanded && appState.hcVotingTableAvailable
-                    ? `
-                  <div style="margin-top: 4px; display: grid; gap: 4px; font-size: 0.75rem; color: var(--workflow-date);">
-                    <span>Majority required: ${voteSummary.majorityCount || "-"} of ${voteSummary.eligibleCount}</span>
-                    ${
-                      isHcBypassed
-                        ? `<span style="color: var(--danger-text); font-weight: 700;">Admin bypass enabled${row.hc_sustained_bypass_by ? ` by ${escapeHtml(row.hc_sustained_bypass_by)}` : ""}</span>`
-                        : ""
-                    }
-                    ${
-                      row.hc_sustained_date
-                        ? `<span>Majority reached: ${new Date(row.hc_sustained_date).toLocaleDateString()}</span>`
-                        : ""
-                    }
-                  </div>
                   ${
-                    hasAdminPasswordAccess()
+                    appState.hcVotingTableAvailable
                       ? `
-                    <div style="margin-top: 4px; font-size: 0.75rem; color: var(--workflow-date); display: grid; gap: 3px;">
-                      <span><strong>Sustained by:</strong> ${voteSummary.sustainVoters.length ? escapeHtml(voteSummary.sustainVoters.join(", ")) : "None"}</span>
-                      <span><strong>Unable to sustain:</strong> ${voteSummary.concernVoters.length ? escapeHtml(voteSummary.concernVoters.join(", ")) : "None"}</span>
-                    </div>
-                    <div style="margin-top: 6px; display: grid; gap: 6px;">
+                    <span style="font-size: 0.78rem; color: var(--workflow-date);">Sustain: ${voteSummary.sustainCount} | Concern: ${voteSummary.concernCount} | Pending: ${voteSummary.pendingCount}</span>
+                  `
+                      : `
+                    <span style="font-size: 0.78rem; color: #8b1e1e; font-weight: 600;">
+                      Voting table missing in database. Run migration to enable per-member SHC votes.
+                    </span>
+                  `
+                  }
+
+                  ${
+                    showVotingControls
+                      ? `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
                       <button
                         type="button"
-                        onclick="window.setHighCouncilBypass('${row.id}', ${isHcBypassed ? "false" : "true"})"
-                        style="padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${isHcBypassed ? "var(--danger-soft)" : "var(--surface-subtle)"}; color: ${isHcBypassed ? "var(--danger-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
-                      >${isHcBypassed ? "Disable training bypass" : "Enable training bypass (mark pass)"}</button>
+                        onclick="window.submitHighCouncilVote('${row.id}', 'sustain')"
+                        style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${currentUserVote === "sustain" ? "var(--chip-selected-bg)" : "var(--white)"}; color: ${currentUserVote === "sustain" ? "var(--chip-selected-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
+                      >Sustain</button>
+                      <button
+                        type="button"
+                        class="concern-btn ${currentUserVote === "concern" ? "is-selected" : ""}"
+                        data-calling-id="${row.id}"
+                        onclick="window.handleConcernClick(event, '${row.id}')"
+                        style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700;"
+                      >${currentUserVote === "concern" ? "Concerned" : "Concern"}</button>
+                    </div>
+                    <button
+                      type="button"
+                      onclick="window.submitHighCouncilVote('${row.id}', 'clear')"
+                      style="margin-top: 2px; padding: 5px 8px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;"
+                    >Clear my vote</button>
+                  `
+                      : ""
+                  }
+
+                  ${
+                    hasExtraHcDetails
+                      ? `
+                    <button
+                      type="button"
+                      onclick="window.toggleHighCouncilDetails('${row.id}')"
+                      style="margin-top: 2px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--accent-border); background: var(--accent-soft); color: var(--accent-text); font-weight: 700; cursor: pointer;"
+                    >${isHcDetailsExpanded ? "▲ Hide SHC details" : "▼ Show SHC details"}</button>
+                  `
+                      : ""
+                  }
+
+                  ${
+                    isHcDetailsExpanded && appState.hcVotingTableAvailable
+                      ? `
+                    <div style="margin-top: 4px; display: grid; gap: 4px; font-size: 0.75rem; color: var(--workflow-date);">
+                      <span>Majority required: ${voteSummary.majorityCount || "-"} of ${voteSummary.eligibleCount}</span>
                       ${
-                        !appState.hcBypassAvailable
-                          ? `<span style="font-size: 0.72rem; color: #8b1e1e; font-weight: 600;">Bypass DB columns not found. Run migration to enable this control.</span>`
+                        isHcBypassed
+                          ? `<span style="color: var(--danger-text); font-weight: 700;">Admin bypass enabled${row.hc_sustained_bypass_by ? ` by ${escapeHtml(row.hc_sustained_bypass_by)}` : ""}</span>`
                           : ""
                       }
-                      
+                      ${
+                        row.hc_sustained_date
+                          ? `<span>Majority reached: ${new Date(row.hc_sustained_date).toLocaleDateString()}</span>`
+                          : ""
+                      }
                     </div>
+                    ${
+                      hasAdminPasswordAccess()
+                        ? `
+                      <div style="margin-top: 4px; font-size: 0.75rem; color: var(--workflow-date); display: grid; gap: 3px;">
+                        <span><strong>Sustained by:</strong> ${voteSummary.sustainVoters.length ? escapeHtml(voteSummary.sustainVoters.join(", ")) : "None"}</span>
+                        <span><strong>Unable to sustain:</strong> ${voteSummary.concernVoters.length ? escapeHtml(voteSummary.concernVoters.join(", ")) : "None"}</span>
+                      </div>
+                      <div style="margin-top: 6px; display: grid; gap: 6px;">
+                        <button
+                          type="button"
+                          onclick="window.setHighCouncilBypass('${row.id}', ${isHcBypassed ? "false" : "true"})"
+                          style="padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${isHcBypassed ? "var(--danger-soft)" : "var(--surface-subtle)"}; color: ${isHcBypassed ? "var(--danger-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
+                        >${isHcBypassed ? "Disable training bypass" : "Enable training bypass (mark pass)"}</button>
+                        ${
+                          !appState.hcBypassAvailable
+                            ? `<span style="font-size: 0.72rem; color: #8b1e1e; font-weight: 600;">Bypass DB columns not found. Run migration to enable this control.</span>`
+                            : ""
+                        }
+                      </div>
+                    `
+                        : ""
+                    }
                   `
                       : ""
                   }
                 `
-                    : ""
                 }
-                
               </div>
-              `
-                }
             </div>
 
-              <button onclick="window.toggleDetails('${row.id}')" 
-                style="width: 100%; padding: 10px; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 8px; font-weight: bold; color: var(--text-muted); cursor: pointer;">
+            <button onclick="window.toggleDetails('${row.id}')" 
+              style="width: 100%; padding: 10px; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 8px; font-weight: bold; color: var(--text-muted); cursor: pointer;">
               ${isExpanded ? "▲ Hide Details" : "▼ More Details"}
             </button>
 
-             <div style="display: ${isExpanded ? "block" : "none"}; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border);">
-               <p style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 8px;">DETAILED STEPS:</p>
-               <div style="background: var(--surface-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
-                 <div style="display: grid; gap: 10px; margin-bottom: 10px;">
-                    <div>
-                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Interview assigned to</label>
-                      <select
-                        onchange="window.updateAssignment('${row.id}', 'interview_by', this.value)"
-                        ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
-                        style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
-                      >
-                        <option value="">Assignment pending...</option>
-                        ${appState.assignableNames
-                          .map(
-                            (name) =>
-                              `<option value="${name}" ${row.interview_by === name ? "selected" : ""}>${name}</option>`,
-                          )
-                          .join("")}
-                      </select>
-                    </div>
-
-                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.interviewed ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
-                      <input type="checkbox" ${row.interviewed ? "checked" : ""} onchange="window.updateField('${row.id}', 'interviewed', this.checked)">
-                      <span>Interview completed</span>
-                    </label>
-
-                    ${
-                      isRelease
-                        ? ""
-                        : `<label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.prev_release ? "var(--warning-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
-                      <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
-                      <span>Reminder: verify previous release</span>
-                    </label>`
-                    }
+            <div style="display: ${isExpanded ? "block" : "none"}; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border);">
+              <p style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 8px;">DETAILED STEPS:</p>
+              <div style="background: var(--surface-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
+                <div style="display: grid; gap: 10px; margin-bottom: 10px;">
+                  <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Interview assigned to</label>
+                    <select
+                      onchange="window.updateAssignment('${row.id}', 'interview_by', this.value)"
+                      ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
+                      style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
+                    >
+                      <option value="">Assignment pending...</option>
+                      ${appState.assignableNames
+                        .map(
+                          (name) =>
+                            `<option value="${name}" ${row.interview_by === name ? "selected" : ""}>${name}</option>`,
+                        )
+                        .join("")}
+                    </select>
                   </div>
+
+                  <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.interviewed ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
+                    <input type="checkbox" ${row.interviewed ? "checked" : ""} onchange="window.updateField('${row.id}', 'interviewed', this.checked)">
+                    <span>Interview completed</span>
+                  </label>
 
                   ${
                     isRelease
                       ? ""
-                      : `
+                      : `<label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.prev_release ? "var(--warning-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
+                    <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
+                    <span>Reminder: verify previous release</span>
+                  </label>`
+                  }
+                </div>
+
+                ${
+                  isRelease
+                    ? ""
+                    : `
                   <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
                     <div style="margin-bottom: 10px;">
                       <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
@@ -361,7 +361,8 @@ export function createCardsRenderer({
                         onchange="window.updateAssignment('${row.id}', '${settingApartByField}', this.value)"
                         ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                         style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
-                      >Assignment pending...</option>
+                      >
+                        <option value="">Assignment pending...</option>
                         ${appState.assignableNames
                           .map(
                             (name) =>
@@ -382,36 +383,36 @@ export function createCardsRenderer({
                     </label>
                   </div>
                   `
-                  }
+                }
 
-                  <div style="margin: 10px 0 0 0;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Status</label>
-                    <select
-                      onchange="window.updateAssignment('${row.id}', 'status', this.value)"
-                      style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
+                <div style="margin: 10px 0 0 0;">
+                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Status</label>
+                  <select
+                    onchange="window.updateAssignment('${row.id}', 'status', this.value)"
+                    style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
+                  >
+                    ${visibleStatusOptions
+                      .map(
+                        (status) =>
+                          `<option value="${status}" ${currentStatus === status ? "selected" : ""}>${status}</option>`,
+                      )
+                      .join("")}
+                  </select>
+
+                  ${
+                    hasAdminPasswordAccess()
+                      ? `
+                    <button
+                      onclick="window.archiveCalling('${row.id}')"
+                      style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: var(--danger-text); font-weight: 700; cursor: pointer;"
                     >
-                      ${visibleStatusOptions
-                        .map(
-                          (status) =>
-                            `<option value="${status}" ${currentStatus === status ? "selected" : ""}>${status}</option>`,
-                        )
-                        .join("")}
-                    </select>
-
-                    ${
-                      hasAdminPasswordAccess()
-                        ? `
-                      <button
-                        onclick="window.archiveCalling('${row.id}')"
-                        style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: var(--danger-text); font-weight: 700; cursor: pointer;"
-                      >
-                        Archive
-                      </button>
+                      Archive
+                    </button>
   `
-                        : ""
-                    }
-                  </div>
-               </div>
+                      : ""
+                  }
+                </div>
+              </div>
             </div>
           </div>
         </article>

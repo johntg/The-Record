@@ -637,7 +637,6 @@ async function sendConcernEmail(row) {
   }
 }
 
-
 const cardsRenderer = createCardsRenderer({
   appState,
   getSortedVisibleCallings,
@@ -752,11 +751,6 @@ window.showToast = (message) => {
     toast.classList.remove("visible");
   }, 2500);
 };
-
-await window.submitHighCouncilVote(id, "concern");
-
-window.showToast("Concern recorded");
-
 
 window.toggleDetails = (id) => callingsActions.toggleDetails(id);
 
