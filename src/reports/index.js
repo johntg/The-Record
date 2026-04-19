@@ -183,7 +183,7 @@ function buildUnitSection(unitTitle, releases, toSustain) {
     });
     lines.push("");
     lines.push(
-      "It is proposed they be given a vote of thanks for their service. Those in favour manifest it by the raising of the right hand.",
+      "It is proposed they be given a vote of thanks for their service. Those in favour manifest it by the uplifted hand.",
     );
     lines.push("");
   }
@@ -196,7 +196,7 @@ function buildUnitSection(unitTitle, releases, toSustain) {
       );
     });
     lines.push(
-      "It is proposed they be sustained. Those in favour manifest it by the raising of the right hand. Any opposed by the same sign",
+      "It is proposed they be sustained. Those in favour manifest it by the uplifted hand. Any opposed by the same sign",
     );
   }
 

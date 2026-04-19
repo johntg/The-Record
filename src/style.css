@@ -39,8 +39,8 @@
   --danger-text: #8b1e1e;
   --chip-selected-bg: #4caf50;
   --chip-selected-text: #ffffff;
-  --recordClr: #fff8be;
-
+  --login-recordClr: #fff8be;
+  --recordClr: #e55000;
   --card-bg: #000000; /* The card itself is now black */
   --block-pending: #eef7fb; /* Keeping your soft blue blocks */
   --block-done: #d5e9f4; /* Keeping your "done" blue blocks */
@@ -51,30 +51,28 @@
   text-align: center;
 }
 
-.login-splash h1,
-.main-header h1 {
+.login-splash h1 {
   display: block;
   position: relative;
-  color: var(--recordClr);
+  color: var(--login-recordClr);
   font-family: "Cinzel", serif;
   font-weight: 700;
-  font-size: 3.5rem;
-  padding: 0;
-  margin: 10px 0 0;
+  font-size: 3rem;
+  text-align: left;
+  line-height: 0.9em;
+  margin: 0;
 }
-
-.login-splash h1::before,
-.main-header h1::before {
-  content: "The";
+.login-splash h1 span {
   display: block;
-  position: absolute;
   font-size: 0.5em;
-  transform: translate(105%, -20px);
-  width: fit-content;
+  text-align: left;
+  line-height: 1em;
+  color: var(--login-recordClr);
+  margin: 0;
 }
 
 .login-splash h3 {
-  color: var(--white);
+  color: #ffffff;
   font-size: 1.1rem;
   font-weight: 200;
   line-height: 1em;
@@ -110,6 +108,34 @@
   /* fill: var(--iconClr); */
 }
 
+.main-header-title h1 span {
+  display: block;
+  font-size: 0.5em;
+  text-align: left;
+  line-height: 1em;
+  color: var(--recordClr);
+  margin: 0;
+}
+.main-header-title h1 {
+  display: block;
+  position: relative;
+  color: var(--recordClr);
+  font-family: "Cinzel", serif;
+  font-weight: 700;
+  font-size: 3rem;
+  text-align: left;
+  line-height: 0.9em;
+  margin: 0;
+}
+
+.main-header-subtitle {
+  color: var(--workflow-text);
+  font-size: 1rem;
+  font-weight: 300;
+  margin: 0;
+  letter-spacing: 0.22em;
+}
+
 .themeIcon svg:hover {
   fill: var(--iconClr);
 }
@@ -129,17 +155,18 @@ body.dark-mode .main-header {
     rgba(143, 0, 0, 1) 98%
   );
 }
-body.dark-mode .main-header h1 {
+/* body.dark-mode .main-header h1 {
   color: #f8fafc;
-}
+} */
 
 body.dark-mode .main-header button {
   background: #00528f;
-  color: #5cb5f7;
+  color: #b8e0ff;
+  font-weight: 300;
 }
 
 body.dark-mode .main-header button:hover {
-  background: #5cb5f7;
+  background: #b8e0ff;
   color: #00528f;
 }
 
@@ -237,6 +264,7 @@ body.dark-mode {
   --banner-release-bg: hsl(190, 100%, 29%);
   --banner-release-text: #fff3c4;
   --btn2text: #333;
+  --recordClr: #fff8be;
   background: var(--bg-muted);
   color: var(--text);
 }
@@ -1397,7 +1425,7 @@ select {
   gap: 6px;
 }
 
-.main-header h1 {
+/* .main-header h1 {
   margin: 0;
   color: #1a1a1a;
   font-size: 2rem;
@@ -1412,7 +1440,7 @@ select {
   letter-spacing: 4.6px;
   color: #939393;
   font-weight: 300;
-}
+} */
 
 .main-header button {
   padding: 10px 20px;

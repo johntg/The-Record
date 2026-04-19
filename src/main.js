@@ -949,9 +949,10 @@ function renderLogin() {
     <div class="login-container">
       <div class="login-card">
       <div class="login-splash">
-        <h1>Record</h1>
+        <div class="login-splash"><h1><span>The</span>
+        Record</h1>
         <h3>From inspiration to setting apart</h3>
-        <!--<h2>Sign In</h2>-->
+        <!--<h2>Sign In</jh2>-->
         </div>
         <form onsubmit="window.login(event)">
           <select name="authName" required class="loginEntry">
