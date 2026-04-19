@@ -29,7 +29,7 @@ function buildAwaitingShcReport(rows, reportContext = {}) {
   );
 
   if (!awaiting.length) {
-    return `${formatReportHeader("Calls/Releases Awaiting HC Sustaining", 0)}\n\nNo calls or releases are currently awaiting High Council sustaining.`;
+    return `${formatReportHeader("Awaiting HC Sustaining", 0)}\n\nNo calls or releases are currently awaiting High Council sustaining.`;
   }
 
   const body = awaiting
@@ -53,7 +53,7 @@ function buildAwaitingShcReport(rows, reportContext = {}) {
     })
     .join("\n");
 
-  return `${formatReportHeader("Calls/Releases Awaiting HC Sustaining", awaiting.length)}\n\n${body}`;
+  return `${formatReportHeader("Awaiting HC Sustaining", awaiting.length)}\n\n${body}`;
 }
 
 function buildAssignmentsByPersonReport(rows) {
@@ -249,10 +249,10 @@ function buildSustainSetApartReleaseReport(rows) {
 
   const totalItems = releases.length + toSustain.length;
   if (reportSections.length === 0) {
-    return `${formatReportHeader("Sustain, Set Apart, and Release Report", 0)}\n\nNo members require sustaining, setting apart, or release at this time.`;
+    return `${formatReportHeader("Stake Business - in wards", 0)}\n\nNo members require sustaining, setting apart, or release at this time.`;
   }
 
-  return `${formatReportHeader("Sustain, Set Apart, and Release Report", totalItems)}\n\n${reportSections.join("\n\n")}`;
+  return `${formatReportHeader("Stake Business - in wards", totalItems)}\n\n${reportSections.join("\n\n")}`;
 }
 
 export function generateReport(type, rows, reportContext = {}) {
