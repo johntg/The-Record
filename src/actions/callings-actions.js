@@ -11,6 +11,7 @@ export function createCallingsActions({
   renderCards,
   renderCurrentPage,
   archiveCallingRecord,
+  applyHiddenVisibilityForRow = null,
   showConcernNoticeModal = null,
   sendConcernEmail = null,
 }) {
@@ -376,6 +377,7 @@ export function createCallingsActions({
     const currentValue = String(item[field] || "");
     const label = field === "name" ? "name" : "position";
     const cleaned = String(nextValue).trim();
+
     if (!cleaned) {
       appState.activeInlineEdit = null;
       renderCards();
@@ -388,10 +390,12 @@ export function createCallingsActions({
       return;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("callings")
       .update({ [field]: cleaned })
-      .eq("id", id);
+      .eq("id", id)
+      .select()
+      .single();
 
     if (error) {
       console.error(`Failed to update ${field}:`, error);
@@ -400,6 +404,11 @@ export function createCallingsActions({
     }
 
     item[field] = cleaned;
+
+    if (field === "name" && typeof applyHiddenVisibilityForRow === "function") {
+      await applyHiddenVisibilityForRow(data);
+    }
+
     appState.activeInlineEdit = null;
     renderCurrentPage();
   }

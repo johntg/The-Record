@@ -137,22 +137,21 @@ export async function submitNewCalling({
   supabase,
   appState,
   fetchCallings,
+  applyHiddenVisibilityForRow,
   closeCreateCallingModal,
   renderCurrentPage,
-  documentRef = document,
-  alertFn = alert,
 }) {
   event.preventDefault();
 
   if (!hasAdminPasswordAccess()) {
-    alertFn("Creating entries requires signing in with the admin password.");
+    alert("Creating entries requires signing in with the admin password.");
     return;
   }
 
   const form = event.target;
   const formData = new FormData(form);
-  const submitButton = documentRef.getElementById("create-calling-submit");
-  const message = documentRef.getElementById("create-calling-message");
+  const submitButton = document.getElementById("create-calling-submit");
+  const message = document.getElementById("create-calling-message");
 
   const payload = {
     type: String(formData.get("type") || "")
@@ -184,7 +183,7 @@ export async function submitNewCalling({
   const { data, error } = await supabase
     .from("callings")
     .insert([payload])
-    .select("*")
+    .select()
     .single();
 
   if (submitButton) {
@@ -198,6 +197,10 @@ export async function submitNewCalling({
       message.classList.add("error");
     }
     return;
+  }
+
+  if (typeof applyHiddenVisibilityForRow === "function") {
+    await applyHiddenVisibilityForRow(data);
   }
 
   if (data) {

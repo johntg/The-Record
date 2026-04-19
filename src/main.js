@@ -50,6 +50,34 @@ const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
+async function applyHiddenVisibilityForRow(callingRow) {
+  const personName = String(callingRow.name || "").trim();
+  if (!personName) return;
+
+  const { data: member, error } = await supabase
+    .from("members")
+    .select("name")
+    .eq("name", personName)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Member lookup failed:", error);
+    return;
+  }
+
+  if (!member) return;
+
+  const { error: hideError } = await supabase
+    .from("calling_hidden_for_members")
+    .upsert([{ calling_id: callingRow.id, member_name: member.name }], {
+      onConflict: "calling_id,member_name",
+    });
+
+  if (hideError) {
+    console.error("Failed to apply hidden visibility:", hideError);
+  }
+}
+
 if (import.meta.env.DEV && typeof window !== "undefined") {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -186,10 +214,19 @@ function isAssignedToCurrentUser(row) {
   });
 }
 
+// function getVisibleCallings() {
+//   return isStakePasswordSession() && !appState.showAllCallingsForStake
+//     ? appState.callings.filter((row) => isAssignedToCurrentUser(row))
+//     : appState.callings;
+// }
+
 function getVisibleCallings() {
-  return isStakePasswordSession() && !appState.showAllCallingsForStake
-    ? appState.callings.filter((row) => isAssignedToCurrentUser(row))
-    : appState.callings;
+  const currentUserKey = normalizeComparableName(getCurrentUserName());
+
+  return appState.callings.filter((row) => {
+    const rowNameKey = normalizeComparableName(row?.name);
+    return !(currentUserKey && rowNameKey && currentUserKey === rowNameKey);
+  });
 }
 
 function getHighCouncilEligibleNames() {
@@ -733,6 +770,7 @@ const callingsActions = createCallingsActions({
   renderCards,
   renderCurrentPage,
   archiveCallingRecord,
+  applyHiddenVisibilityForRow,
   showConcernNoticeModal: () => window.showConcernNoticeModal(),
   sendConcernEmail,
 });
@@ -1035,6 +1073,34 @@ function syncFabVisibility() {
   });
 }
 
+// async function applyHiddenVisibilityForRow(callingRow) {
+//   const personName = String(callingRow?.name || "").trim();
+//   if (!personName) return;
+
+//   const { data: member, error: memberError } = await supabase
+//     .from("members")
+//     .select("name")
+//     .eq("name", personName)
+//     .maybeSingle();
+
+//   if (memberError) {
+//     console.error("Member lookup failed:", memberError);
+//     return;
+//   }
+
+//   if (!member) return;
+
+//   const { error: hideError } = await supabase
+//     .from("calling_hidden_for_members")
+//     .upsert([{ calling_id: callingRow.id, member_name: member.name }], {
+//       onConflict: "calling_id,member_name",
+//     });
+
+//   if (hideError) {
+//     console.error("Failed to apply hidden visibility:", hideError);
+//   }
+// }
+
 function ensureCreateCallingUi() {
   ensureCreateCallingUiUi({
     appState,
@@ -1052,7 +1118,6 @@ window.openCreateCallingModal = () => {
 window.closeCreateCallingModal = () => {
   closeCreateCallingModalUi({});
 };
-
 window.submitNewCalling = async (event) => {
   await submitNewCallingUi({
     event,
@@ -1060,10 +1125,95 @@ window.submitNewCalling = async (event) => {
     supabase,
     appState,
     fetchCallings,
+    applyHiddenVisibilityForRow,
     closeCreateCallingModal: () => window.closeCreateCallingModal(),
     renderCurrentPage,
   });
 };
+// export async function submitNewCalling({
+//   event,
+//   hasAdminPasswordAccess,
+//   supabase,
+//   appState,
+//   fetchCallings,
+//   applyHiddenVisibilityForRow,
+//   closeCreateCallingModal,
+//   renderCurrentPage,
+// }) {
+//   event.preventDefault();
+
+//   if (!hasAdminPasswordAccess()) {
+//     alert("Creating entries requires signing in with the admin password.");
+//     return;
+//   }
+
+//   const form = event.target;
+//   const formData = new FormData(form);
+//   const submitButton = document.getElementById("create-calling-submit");
+//   const message = document.getElementById("create-calling-message");
+
+//   const payload = {
+//     type: String(formData.get("type") || "")
+//       .trim()
+//       .toUpperCase(),
+//     name: String(formData.get("name") || "").trim(),
+//     position: String(formData.get("position") || "").trim(),
+//     unit: String(formData.get("unit") || "").trim(),
+//     status: "In Progress",
+//   };
+
+//   if (!payload.type || !payload.name || !payload.position || !payload.unit) {
+//     if (message) {
+//       message.textContent = "Please complete all fields.";
+//       message.classList.add("error");
+//     }
+//     return;
+//   }
+
+//   if (message) {
+//     message.textContent = "Saving...";
+//     message.classList.remove("error");
+//   }
+
+//   if (submitButton) {
+//     submitButton.disabled = true;
+//   }
+
+//   // ✅ ONLY ONE INSERT
+//   const { data, error } = await supabase
+//     .from("callings")
+//     .insert([payload])
+//     .select()
+//     .single();
+
+//   if (submitButton) {
+//     submitButton.disabled = false;
+//   }
+
+//   if (error) {
+//     console.error("Create entry error:", error);
+//     if (message) {
+//       message.textContent = `Failed to save entry: ${error.message}`;
+//       message.classList.add("error");
+//     }
+//     return;
+//   }
+
+//   // ✅ APPLY HIDDEN VISIBILITY HERE
+//   if (typeof applyHiddenVisibilityForRow === "function") {
+//     await applyHiddenVisibilityForRow(data);
+//   }
+
+//   // Update local state
+//   if (data) {
+//     appState.callings.unshift(data);
+//   } else {
+//     await fetchCallings();
+//   }
+
+//   closeCreateCallingModal();
+//   renderCurrentPage();
+// }
 
 window.setThemeMode = (mode) => {
   applyThemeMode(mode, appState);
