@@ -1,12 +1,12 @@
 import "./style.css";
-import {
-  getCurrentUserName,
-  getRequiredPasswordType,
-  hasAdminPasswordAccess,
-  isLoggedInSession,
-  isStakePasswordSession,
-  setSessionAfterLogin,
-} from "./auth/session.js";
+// import {
+//   getCurrentUserName,
+//   getRequiredPasswordType,
+//   hasAdminPasswordAccess,
+//   isLoggedInSession,
+//   isStakePasswordSession,
+//   setSessionAfterLogin,
+// } from "./auth/session.js";
 import {
   applyThemeMode,
   getSavedThemeMode,
@@ -81,6 +81,28 @@ const appState = {
   activeInlineEdit: null,
 };
 
+function getCurrentRole() {
+  return String(appState.currentRole || "")
+    .toLowerCase()
+    .trim();
+}
+
+function isAdminRole() {
+  return getCurrentRole() === "admin";
+}
+
+function isStakeRole() {
+  return getCurrentRole() === "stake";
+}
+
+function isAuthenticatedMember() {
+  return !!appState.currentUser && !!appState.currentMember;
+}
+
+function getCurrentUserNameFromAuth() {
+  return appState.currentMember?.name || "";
+}
+
 window.openReportInReader = function () {
   const content = appState.reportOutput || "";
   const base = import.meta.env.BASE_URL || "/";
@@ -135,12 +157,7 @@ function canAssignMember(member) {
     return false;
   }
 
-  const role = String(member.role ?? "").toLowerCase();
-  return role.includes("assign");
-}
-
-function getCurrentUserNameFromAuth() {
-  return appState.currentMember?.name || getCurrentUserName() || "";
+  return member.can_be_assigned === true;
 }
 
 if (import.meta.env.DEV && typeof window !== "undefined") {
@@ -318,7 +335,7 @@ function getHighCouncilVoteSummary(callingId) {
         normalizeComparableName(getCurrentUserNameFromAuth()),
       )?.vote || "",
     canVote:
-      isStakePasswordSession() &&
+      isStakeRole() &&
       eligibleByKey.has(normalizeComparableName(getCurrentUserNameFromAuth())),
     isMajoritySustained: majorityCount > 0 && sustainCount >= majorityCount,
   };
@@ -487,8 +504,8 @@ function renderCurrentPage() {
 async function archiveCallingRecord(id, options = {}) {
   const { confirm = true } = options;
 
-  if (!hasAdminPasswordAccess()) {
-    alert("Archiving requires signing in with the admin password.");
+  if (!isAdminRole()) {
+    alert("Only admins can archive items.");
     renderCurrentPage();
     return false;
   }
@@ -595,8 +612,8 @@ async function sendConcernEmail(row) {
 const cardsRenderer = createCardsRenderer({
   appState,
   getSortedVisibleCallings,
-  hasAdminPasswordAccess,
-  isStakePasswordSession,
+  hasAdminPasswordAccess: isAdminRole,
+  isStakePasswordSession: isStakeRole,
   getHighCouncilVoteSummary,
   resolveSustainingByField,
   resolveSettingApartByField,
@@ -613,8 +630,8 @@ function renderCards() {
 const callingsActions = createCallingsActions({
   appState,
   supabase,
-  hasAdminPasswordAccess,
-  isStakePasswordSession,
+  hasAdminPasswordAccess: isAdminRole,
+  isStakePasswordSession: isStakeRole,
   getCurrentUserName: getCurrentUserNameFromAuth,
   normalizeComparableName,
   getHighCouncilVoteSummary,
@@ -672,7 +689,7 @@ window.updateField = async (id, field, value) =>
   callingsActions.updateField(id, field, value);
 
 window.toggleCallingScope = () => {
-  if (!isStakePasswordSession()) {
+  if (!isStakeRole()) {
     return;
   }
 
@@ -947,8 +964,8 @@ window.closeConcernNoticeModal = () => {
 
 function syncFabVisibility() {
   syncFabVisibilityUi({
-    hasAdminPasswordAccess,
-    isLoggedInSession,
+    hasAdminPasswordAccess: isAdminRole,
+    isLoggedInSession: isAuthenticatedMember,
     onResetCache: () => window.resetCacheAndReload(),
   });
 }
@@ -964,7 +981,7 @@ function ensureCreateCallingUi() {
 }
 
 window.openCreateCallingModal = () => {
-  openCreateCallingModalUi({ hasAdminPasswordAccess });
+  openCreateCallingModalUi({ hasAdminPasswordAccess: isAdminRole });
 };
 
 window.closeCreateCallingModal = () => {
@@ -974,7 +991,7 @@ window.closeCreateCallingModal = () => {
 window.submitNewCalling = async (event) => {
   await submitNewCallingUi({
     event,
-    hasAdminPasswordAccess,
+    hasAdminPasswordAccess: isAdminRole,
     supabase,
     appState,
     fetchCallings,
@@ -992,7 +1009,7 @@ window.setThemeMode = (mode) => {
 function renderHeader() {
   renderHeaderUi({
     appState,
-    isStakePasswordSession,
+    isStakePasswordSession: isStakeRole,
     ensureCreateCallingUi,
   });
 
@@ -1040,7 +1057,7 @@ async function startApp() {
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError) {
+  if (userError && userError.name !== "AuthSessionMissingError") {
     console.error("Auth user lookup failed:", userError);
     renderLogin();
     return;
@@ -1070,29 +1087,20 @@ async function startApp() {
     return;
   }
 
-  const sharedPasswordType = String(matchedMember.shared_password_type ?? "")
-    .toLowerCase()
-    .trim();
-  const derivedPasswordType = getRequiredPasswordType(sharedPasswordType);
-
   appState.currentUser = user;
   appState.currentMember = matchedMember;
   appState.currentRole = String(matchedMember.role || "")
     .toLowerCase()
     .trim();
 
-  setSessionAfterLogin({
-    userName: matchedMember.name,
-    userRole: matchedMember.role,
-    passwordType: derivedPasswordType,
-  });
-
   appState.highCouncilNames = [
     ...new Set(
       appState.members
         .filter(
           (member) =>
-            getRequiredPasswordType(member?.shared_password_type) === "stake",
+            String(member.role || "")
+              .toLowerCase()
+              .trim() === "stake",
         )
         .map((member) => String(member.name ?? "").trim())
         .filter(Boolean),
