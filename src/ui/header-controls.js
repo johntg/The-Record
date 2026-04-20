@@ -116,7 +116,8 @@ export function renderHeader({
           ? `<button onclick="window.toggleCallingScope()">${scopeLabel}</button>`
           : ""
       }
-      <button onclick="localStorage.clear(); location.reload();">Sign Out</button>
+     <button onclick="window.logout()">Logout</button>
+      
     </div>
   </div>
 

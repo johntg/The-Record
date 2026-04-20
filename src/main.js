@@ -36,32 +36,70 @@ import {
   resolveSettingApartDoneField,
   resolveSustainingByField,
 } from "./utils/app-utils.js";
-
-// 1. STABLE IMPORT (Avoids the 'Failed to resolve' error)
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// 2. DATABASE SETUP
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-const archiveTableName = import.meta.env.VITE_ARCHIVE_TABLE || "archive";
 const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
 const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
 
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
-async function applyHiddenVisibilityForRow(callingRow) {
-  const personName = String(callingRow.name || "").trim();
-  if (!personName) return;
+const appState = {
+  callings: [],
+  members: [],
+  highCouncilNames: [],
+  hcVotesByCalling: {},
+  hcVotingTableAvailable: true,
+  hcBypassAvailable: true,
+  assignableNames: [],
+  statusOptions: [],
+  themeMode: "system",
+  cardSortOrder: "newest",
+  currentPage: "callings",
+  currentReportType: "awaiting-shc",
+  reportOutput: "",
+  currentUser: null,
+  currentMember: null,
+  currentRole: null,
+  units: [
+    "Allenton Ward",
+    "Ashburton Ward",
+    "Avon River Ward",
+    "Cashmere Ward",
+    "Hagley Ward",
+    "Mona Vale Ward",
+    "Rangiora Ward",
+    "Riccarton Ward",
+    "Stake",
+  ],
+  expandedGridId: null,
+  expandedSustainingIds: new Set(),
+  expandedHcDetailsIds: new Set(),
+  showAllCallingsForStake: false,
+  activeInlineEdit: null,
+};
 
-  const { data: member, error } = await supabase
+window.openReportInReader = function () {
+  const content = appState.reportOutput || "";
+  const base = import.meta.env.BASE_URL || "/";
+  const url = `${base}report.html?content=${encodeURIComponent(content)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
+async function applyHiddenVisibilityForRow(callingRow) {
+  const personName = String(callingRow?.name || "").trim();
+  if (!personName || !supabase) return;
+
+  const { data: member, error: memberError } = await supabase
     .from("members")
     .select("name")
     .eq("name", personName)
     .maybeSingle();
 
-  if (error) {
-    console.error("Member lookup failed:", error);
+  if (memberError) {
+    console.error("Member lookup failed:", memberError);
     return;
   }
 
@@ -76,6 +114,33 @@ async function applyHiddenVisibilityForRow(callingRow) {
   if (hideError) {
     console.error("Failed to apply hidden visibility:", hideError);
   }
+}
+
+function showFatalError(title, message) {
+  if (typeof document === "undefined") return;
+
+  const app = document.getElementById("app");
+  if (!app) return;
+
+  app.innerHTML = `
+    <div class="card" style="padding: 20px; margin-top: 20px;">
+      <h2 style="margin-top: 0;">${escapeHtml(title)}</h2>
+      <p style="margin-bottom: 8px;">${escapeHtml(message)}</p>
+    </div>
+  `;
+}
+
+function canAssignMember(member) {
+  if (!member || typeof member !== "object") {
+    return false;
+  }
+
+  const role = String(member.role ?? "").toLowerCase();
+  return role.includes("assign");
+}
+
+function getCurrentUserNameFromAuth() {
+  return appState.currentMember?.name || getCurrentUserName() || "";
 }
 
 if (import.meta.env.DEV && typeof window !== "undefined") {
@@ -115,73 +180,6 @@ if (!import.meta.env.DEV && typeof window !== "undefined") {
   }
 }
 
-// 3. APP STATE
-const appState = {
-  callings: [],
-  members: [],
-  highCouncilNames: [],
-  hcVotesByCalling: {},
-  hcVotingTableAvailable: true,
-  hcBypassAvailable: true,
-  assignableNames: [],
-  statusOptions: [],
-  themeMode: "system",
-  cardSortOrder: "newest",
-  currentPage: "callings",
-  currentReportType: "awaiting-shc",
-  reportOutput: "",
-  units: [
-    "Allenton Ward",
-    "Ashburton Ward",
-    "Avon River Ward",
-    "Cashmere Ward",
-    "Hagley Ward",
-    "Mona Vale Ward",
-    "Rangiora Ward",
-    "Riccarton Ward",
-    "Stake",
-  ],
-  expandedGridId: null,
-  expandedSustainingIds: new Set(),
-  expandedHcDetailsIds: new Set(),
-  showAllCallingsForStake: false,
-  activeInlineEdit: null,
-};
-
-window.openReportInReader = function () {
-  const content = appState.reportOutput || "";
-  const base = import.meta.env.BASE_URL || "/";
-  const url = `${base}report.html?content=${encodeURIComponent(content)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
-};
-
-function showFatalError(title, message) {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  const app = document.getElementById("app");
-  if (!app) {
-    return;
-  }
-
-  app.innerHTML = `
-    <div class="card" style="padding: 20px; margin-top: 20px;">
-      <h2 style="margin-top: 0;">${escapeHtml(title)}</h2>
-      <p style="margin-bottom: 8px;">${escapeHtml(message)}</p>
-    </div>
-  `;
-}
-
-function canAssignMember(member) {
-  if (!member || typeof member !== "object") {
-    return false;
-  }
-
-  const role = String(member.role ?? "").toLowerCase();
-  return role.includes("assign");
-}
-
 if (typeof window !== "undefined") {
   setupSystemThemeChangeListener(appState, () => {
     applyThemeMode("system", appState);
@@ -205,7 +203,7 @@ if (typeof window !== "undefined") {
 }
 
 function isAssignedToCurrentUser(row) {
-  const currentUser = normalizeComparableName(getCurrentUserName());
+  const currentUser = normalizeComparableName(getCurrentUserNameFromAuth());
   if (!currentUser) return false;
 
   return getAssignmentFieldCandidates().some((field) => {
@@ -214,14 +212,8 @@ function isAssignedToCurrentUser(row) {
   });
 }
 
-// function getVisibleCallings() {
-//   return isStakePasswordSession() && !appState.showAllCallingsForStake
-//     ? appState.callings.filter((row) => isAssignedToCurrentUser(row))
-//     : appState.callings;
-// }
-
 function getVisibleCallings() {
-  const currentUserKey = normalizeComparableName(getCurrentUserName());
+  const currentUserKey = normalizeComparableName(getCurrentUserNameFromAuth());
 
   return appState.callings.filter((row) => {
     const rowNameKey = normalizeComparableName(row?.name);
@@ -243,14 +235,8 @@ function getVoteValue(rawVote) {
     .toLowerCase()
     .trim();
 
-  if (normalized === "sustain") {
-    return "sustain";
-  }
-
-  if (normalized === "concern") {
-    return "concern";
-  }
-
+  if (normalized === "sustain") return "sustain";
+  if (normalized === "concern") return "concern";
   return "";
 }
 
@@ -270,6 +256,7 @@ function getHighCouncilVoteSummary(callingId) {
     const voterName = String(voteRow?.voter_name || "").trim();
     const voterKey = normalizeComparableName(voterName);
     const vote = getVoteValue(voteRow?.vote);
+
     if (!voterKey || !vote || !eligibleByKey.has(voterKey)) {
       return;
     }
@@ -327,19 +314,18 @@ function getHighCouncilVoteSummary(callingId) {
     concernVoters,
     pendingVoters,
     currentUserVote:
-      latestVoteByVoterKey.get(normalizeComparableName(getCurrentUserName()))
-        ?.vote || "",
+      latestVoteByVoterKey.get(
+        normalizeComparableName(getCurrentUserNameFromAuth()),
+      )?.vote || "",
     canVote:
       isStakePasswordSession() &&
-      eligibleByKey.has(normalizeComparableName(getCurrentUserName())),
+      eligibleByKey.has(normalizeComparableName(getCurrentUserNameFromAuth())),
     isMajoritySustained: majorityCount > 0 && sustainCount >= majorityCount,
   };
 }
 
 function applyHighCouncilSummaryToCalling(calling) {
-  if (!calling) {
-    return;
-  }
+  if (!calling) return;
 
   const summary = getHighCouncilVoteSummary(calling.id);
   const isBypassEnabled = calling.hc_sustained_bypass === true;
@@ -385,9 +371,7 @@ async function fetchHighCouncilVotes() {
   const grouped = {};
   (data || []).forEach((row) => {
     const callingId = row?.calling_id;
-    if (!callingId) {
-      return;
-    }
+    if (!callingId) return;
 
     if (!grouped[callingId]) {
       grouped[callingId] = [];
@@ -397,6 +381,21 @@ async function fetchHighCouncilVotes() {
   });
 
   appState.hcVotesByCalling = grouped;
+}
+
+async function fetchCallings() {
+  const [{ data, error }] = await Promise.all([
+    supabase
+      .from("callings")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    fetchHighCouncilVotes(),
+  ]);
+
+  if (!error) {
+    appState.callings = data || [];
+    applyHighCouncilSummaryToAllCallings();
+  }
 }
 
 function getSortedVisibleCallings() {
@@ -442,11 +441,27 @@ function renderReportsPage() {
 
     <section class="report-actions">
       <select id="report-type" onchange="window.selectReportType(this.value)">
-        <option value="sustain-setapart-release" ${appState.currentReportType === "sustain-setapart-release" ? "selected" : ""}>Sustain, Set Apart, and Release</option>
-        <option value="awaiting-shc" ${appState.currentReportType === "awaiting-shc" ? "selected" : ""}>Calls/Releases Awaiting HC Sustaining</option>
-        <option value="unassigned-assignments" ${appState.currentReportType === "unassigned-assignments" ? "selected" : ""}>Assignments Not Yet Made</option>
-        <option value="assignments-by-person" ${appState.currentReportType === "assignments-by-person" ? "selected" : ""}>Assignments by Person</option>
-        <option value="status-summary" ${appState.currentReportType === "status-summary" ? "selected" : ""}>Status Summary</option>
+        <option value="sustain-setapart-release" ${
+          appState.currentReportType === "sustain-setapart-release"
+            ? "selected"
+            : ""
+        }>Sustain, Set Apart, and Release</option>
+        <option value="awaiting-shc" ${
+          appState.currentReportType === "awaiting-shc" ? "selected" : ""
+        }>Calls/Releases Awaiting HC Sustaining</option>
+        <option value="unassigned-assignments" ${
+          appState.currentReportType === "unassigned-assignments"
+            ? "selected"
+            : ""
+        }>Assignments Not Yet Made</option>
+        <option value="assignments-by-person" ${
+          appState.currentReportType === "assignments-by-person"
+            ? "selected"
+            : ""
+        }>Assignments by Person</option>
+        <option value="status-summary" ${
+          appState.currentReportType === "status-summary" ? "selected" : ""
+        }>Status Summary</option>
       </select>
       <button type="button" class="btn btn-primary" onclick="window.generateCurrentReport()">Generate Report</button>
     </section>
@@ -489,7 +504,9 @@ async function archiveCallingRecord(id, options = {}) {
 
   if (confirm) {
     const message = isDeleteMistake
-      ? `This item is marked "Mistake: DELETE".\n\nName: ${item.name || "(no name)"}\n\nPress OK to permanently remove it from the database.\nThis cannot be undone.`
+      ? `This item is marked "Mistake: DELETE".\n\nName: ${
+          item.name || "(no name)"
+        }\n\nPress OK to permanently remove it from the database.\nThis cannot be undone.`
       : "Archive this item?";
 
     const confirmed = window.confirm(message);
@@ -529,106 +546,8 @@ async function archiveCallingRecord(id, options = {}) {
   }
 
   appState.callings = appState.callings.filter((calling) => calling.id !== id);
-
   renderCurrentPage();
   return true;
-}
-
-async function startApp() {
-  const app = document.getElementById("app");
-
-  const savedThemeMode = getSavedThemeMode();
-  applyThemeMode(savedThemeMode, appState);
-
-  if (!supabase) {
-    showFatalError(
-      "Missing configuration",
-      "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for this build.",
-    );
-    return;
-  }
-
-  const stakePw = import.meta.env.VITE_STAKE_PW || "";
-  const adminPw = import.meta.env.VITE_ADMIN_PW || "";
-  if (!stakePw || !adminPw) {
-    showFatalError(
-      "Missing configuration",
-      "VITE_STAKE_PW and VITE_ADMIN_PW must be set for this build.",
-    );
-    return;
-  }
-
-  const [membersResult, statusesResult] = await Promise.all([
-    supabase.from("members").select("*"),
-    supabase.from("status_options").select("*"),
-  ]);
-
-  const { data: members, error } = membersResult;
-  const { data: statusRows, error: statusError } = statusesResult;
-
-  if (error) {
-    console.error("Error fetching members:", error);
-    alert(`Database Error: ${error.message}`);
-    showFatalError(
-      "Could not load app data",
-      `The app could not fetch members from Supabase. ${error.message}`,
-    );
-    return;
-  }
-
-  if (members) {
-    appState.members = members;
-    appState.highCouncilNames = [
-      ...new Set(
-        members
-          .filter(
-            (member) =>
-              getRequiredPasswordType(member?.shared_password_type) === "stake",
-          )
-          .map((member) => String(member.name ?? "").trim())
-          .filter(Boolean),
-      ),
-    ];
-
-    appState.assignableNames = [
-      ...new Set(
-        members
-          .filter((member) => canAssignMember(member))
-          .map((member) => String(member.name ?? "").trim())
-          .filter(Boolean),
-      ),
-    ];
-  }
-
-  if (statusError) {
-    console.warn("Could not load status options:", statusError.message);
-  }
-
-  appState.statusOptions = normalizeStatusOptions(statusRows);
-
-  const isLoggedIn = isLoggedInSession();
-  if (isLoggedIn) {
-    await fetchCallings();
-    renderHeader();
-    renderCurrentPage();
-  } else {
-    renderLogin();
-  }
-}
-
-async function fetchCallings() {
-  const [{ data, error }] = await Promise.all([
-    supabase
-      .from("callings")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    fetchHighCouncilVotes(),
-  ]);
-
-  if (!error) {
-    appState.callings = data || [];
-    applyHighCouncilSummaryToAllCallings();
-  }
 }
 
 async function sendConcernEmail(row) {
@@ -649,7 +568,7 @@ async function sendConcernEmail(row) {
     unit: row.unit || "",
     type: row.type || "",
     status: row.status || "",
-    votedBy: getCurrentUserName() || "",
+    votedBy: getCurrentUserNameFromAuth(),
     votedAt: new Date().toISOString(),
     pageUrl: window.location.href,
   };
@@ -666,7 +585,6 @@ async function sendConcernEmail(row) {
       body: JSON.stringify(payload),
     });
 
-    // With no-cors, the browser won't let us inspect the response.
     return { ok: true, opaque: true };
   } catch (error) {
     console.error("Concern email failed:", error);
@@ -688,71 +606,6 @@ const cardsRenderer = createCardsRenderer({
   escapeHtml,
 });
 
-window.login = async function (e) {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const selectedName = formData.get("authName");
-  const enteredPassword = formData.get("authPassword");
-
-  const STAKE_PW = import.meta.env.VITE_STAKE_PW || "";
-  const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "";
-
-  const person = appState.members.find((m) => m.name === selectedName);
-
-  if (!person) {
-    alert("Please select a name from the list first!");
-    return;
-  }
-
-  const sharedPasswordType = String(person.shared_password_type ?? "")
-    .toLowerCase()
-    .trim();
-
-  const requiredType = getRequiredPasswordType(sharedPasswordType);
-  const correctPassword = requiredType === "admin" ? ADMIN_PW : STAKE_PW;
-
-  console.log(
-    `[Stake Callings] Logging in as: ${selectedName} | shared_password_type=${sharedPasswordType || "(none)"} | expects=${requiredType}`,
-  );
-
-  if (enteredPassword.trim() === correctPassword) {
-    setSessionAfterLogin({
-      userName: person.name,
-      userRole: person.role,
-      passwordType: requiredType,
-    });
-    window.location.reload();
-  } else {
-    alert("Access Denied. Incorrect password.");
-  }
-};
-
-window.handleConcernClick = async (event, id) => {
-  const btn = event.currentTarget;
-
-  // instant feedback
-  btn.classList.add("sending");
-  btn.textContent = "Sending...";
-
-  try {
-    await window.submitHighCouncilVote(id, "concern");
-
-    // success state
-    btn.classList.remove("sending");
-    btn.classList.add("sent");
-    btn.textContent = "Concern Sent";
-
-    // ✅ ADD THIS
-    btn.disabled = true;
-  } catch (err) {
-    console.error(err);
-
-    btn.classList.remove("sending");
-    btn.textContent = "Concern";
-    alert("Failed to record concern.");
-  }
-};
-
 function renderCards() {
   cardsRenderer.renderCards();
 }
@@ -762,7 +615,7 @@ const callingsActions = createCallingsActions({
   supabase,
   hasAdminPasswordAccess,
   isStakePasswordSession,
-  getCurrentUserName,
+  getCurrentUserName: getCurrentUserNameFromAuth,
   normalizeComparableName,
   getHighCouncilVoteSummary,
   applyHighCouncilSummaryToCalling,
@@ -793,41 +646,28 @@ window.showToast = (message) => {
 };
 
 window.toggleDetails = (id) => callingsActions.toggleDetails(id);
-
 window.toggleSustainingUnits = (id) =>
   callingsActions.toggleSustainingUnits(id);
-
 window.toggleHighCouncilDetails = (id) =>
   callingsActions.toggleHighCouncilDetails(id);
-
 window.updateSustainedUnits = async (id, unitName) =>
   callingsActions.updateSustainedUnits(id, unitName);
-
 window.clearHighCouncilVoteForVoter = async (id, voterName) =>
   callingsActions.clearHighCouncilVoteForVoter(id, voterName);
-
 window.submitHighCouncilVote = async (id, vote) =>
   callingsActions.submitHighCouncilVote(id, vote);
-
 window.setHighCouncilBypass = async (id, enabled) =>
   callingsActions.setHighCouncilBypass(id, enabled);
-
 window.updateAssignment = async (id, field, value) =>
   callingsActions.updateAssignment(id, field, value);
-
 window.startInlineEdit = (id, field) =>
   callingsActions.startInlineEdit(id, field);
-
 window.cancelInlineEdit = () => callingsActions.cancelInlineEdit();
-
 window.handleInlineEditKeyup = (event, id, field) =>
   callingsActions.handleInlineEditKeyup(event, id, field);
-
 window.commitInlineEdit = async (id, field, nextValue) =>
   callingsActions.commitInlineEdit(id, field, nextValue);
-
 window.archiveCalling = async (id) => callingsActions.archiveCalling(id);
-
 window.updateField = async (id, field, value) =>
   callingsActions.updateField(id, field, value);
 
@@ -925,6 +765,12 @@ window.resetCacheAndReload = async () => {
   if (!confirmed) return;
 
   try {
+    await supabase.auth.signOut();
+  } catch {
+    // ignore auth signout failure during forced reset
+  }
+
+  try {
     if ("serviceWorker" in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(
@@ -955,7 +801,6 @@ window.handleConcernClick = async (event, id) => {
   try {
     await window.submitHighCouncilVote(id, "concern");
 
-    const item = appState.callings.find((calling) => calling.id === id);
     const summary = getHighCouncilVoteSummary(id);
     const currentUserVote = summary.currentUserVote;
 
@@ -986,30 +831,56 @@ function renderLogin() {
   document.getElementById("app").innerHTML = `
     <div class="login-container">
       <div class="login-card">
-      <div class="login-splash">
-        <div class="login-splash"><h1><span>The</span>
-        Record</h1>
-        <h3>From inspiration to setting apart</h3>
-        <!--<h2>Sign In</jh2>-->
+        <div class="login-splash">
+          <h1><span>The</span> Record</h1>
+          <h3>From inspiration to setting apart</h3>
         </div>
-        <form onsubmit="window.login(event)">
-          <select name="authName" required class="loginEntry">
-            <option value="">Select Name...</option>
-            ${appState.members.map((m) => `<option value="${m.name}">${m.name}</option>`).join("")}
-          </select>
-          <input id="pw-input" type="password" name="authPassword" placeholder="Password" required class="loginEntry">
-          <label>
-            <input
-              type="checkbox"
-              onchange="document.getElementById('pw-input').type = this.checked ? 'text' : 'password'"
-            >
-            Show password
-          </label>
-          <button type="submit">Login</button>
+
+        <form id="magic-link-form">
+          <input
+            id="email-input"
+            type="email"
+            placeholder="Email address"
+            required
+            class="loginEntry"
+          />
+          <button type="submit">Email me a sign-in link</button>
         </form>
+
+        <p id="auth-message" class="form-message" aria-live="polite"></p>
       </div>
     </div>
   `;
+
+  const form = document.getElementById("magic-link-form");
+  const message = document.getElementById("auth-message");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("email-input").value.trim();
+    if (!email) return;
+
+    message.textContent = "Sending sign-in link...";
+    message.classList.remove("error");
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: window.location.origin + window.location.pathname,
+      },
+    });
+
+    if (error) {
+      console.error("Magic link error:", error);
+      message.textContent = error.message;
+      message.classList.add("error");
+      return;
+    }
+
+    message.textContent = "Check your email for the sign-in link.";
+  });
 
   syncFabVisibility();
 }
@@ -1049,6 +920,17 @@ function ensureConcernNoticeModal() {
   return modal;
 }
 
+window.logout = async () => {
+  try {
+    await supabase.auth.signOut();
+  } catch (error) {
+    console.warn("Supabase sign out failed:", error);
+  }
+
+  localStorage.clear();
+  window.location.reload();
+};
+
 window.showConcernNoticeModal = () => {
   const modal = ensureConcernNoticeModal();
   modal.classList.remove("hidden");
@@ -1057,9 +939,7 @@ window.showConcernNoticeModal = () => {
 
 window.closeConcernNoticeModal = () => {
   const modal = document.getElementById("concern-notice-modal");
-  if (!modal) {
-    return;
-  }
+  if (!modal) return;
 
   modal.classList.add("hidden");
   document.body.classList.remove("modal-open");
@@ -1072,34 +952,6 @@ function syncFabVisibility() {
     onResetCache: () => window.resetCacheAndReload(),
   });
 }
-
-// async function applyHiddenVisibilityForRow(callingRow) {
-//   const personName = String(callingRow?.name || "").trim();
-//   if (!personName) return;
-
-//   const { data: member, error: memberError } = await supabase
-//     .from("members")
-//     .select("name")
-//     .eq("name", personName)
-//     .maybeSingle();
-
-//   if (memberError) {
-//     console.error("Member lookup failed:", memberError);
-//     return;
-//   }
-
-//   if (!member) return;
-
-//   const { error: hideError } = await supabase
-//     .from("calling_hidden_for_members")
-//     .upsert([{ calling_id: callingRow.id, member_name: member.name }], {
-//       onConflict: "calling_id,member_name",
-//     });
-
-//   if (hideError) {
-//     console.error("Failed to apply hidden visibility:", hideError);
-//   }
-// }
 
 function ensureCreateCallingUi() {
   ensureCreateCallingUiUi({
@@ -1118,6 +970,7 @@ window.openCreateCallingModal = () => {
 window.closeCreateCallingModal = () => {
   closeCreateCallingModalUi({});
 };
+
 window.submitNewCalling = async (event) => {
   await submitNewCallingUi({
     event,
@@ -1130,90 +983,6 @@ window.submitNewCalling = async (event) => {
     renderCurrentPage,
   });
 };
-// export async function submitNewCalling({
-//   event,
-//   hasAdminPasswordAccess,
-//   supabase,
-//   appState,
-//   fetchCallings,
-//   applyHiddenVisibilityForRow,
-//   closeCreateCallingModal,
-//   renderCurrentPage,
-// }) {
-//   event.preventDefault();
-
-//   if (!hasAdminPasswordAccess()) {
-//     alert("Creating entries requires signing in with the admin password.");
-//     return;
-//   }
-
-//   const form = event.target;
-//   const formData = new FormData(form);
-//   const submitButton = document.getElementById("create-calling-submit");
-//   const message = document.getElementById("create-calling-message");
-
-//   const payload = {
-//     type: String(formData.get("type") || "")
-//       .trim()
-//       .toUpperCase(),
-//     name: String(formData.get("name") || "").trim(),
-//     position: String(formData.get("position") || "").trim(),
-//     unit: String(formData.get("unit") || "").trim(),
-//     status: "In Progress",
-//   };
-
-//   if (!payload.type || !payload.name || !payload.position || !payload.unit) {
-//     if (message) {
-//       message.textContent = "Please complete all fields.";
-//       message.classList.add("error");
-//     }
-//     return;
-//   }
-
-//   if (message) {
-//     message.textContent = "Saving...";
-//     message.classList.remove("error");
-//   }
-
-//   if (submitButton) {
-//     submitButton.disabled = true;
-//   }
-
-//   // ✅ ONLY ONE INSERT
-//   const { data, error } = await supabase
-//     .from("callings")
-//     .insert([payload])
-//     .select()
-//     .single();
-
-//   if (submitButton) {
-//     submitButton.disabled = false;
-//   }
-
-//   if (error) {
-//     console.error("Create entry error:", error);
-//     if (message) {
-//       message.textContent = `Failed to save entry: ${error.message}`;
-//       message.classList.add("error");
-//     }
-//     return;
-//   }
-
-//   // ✅ APPLY HIDDEN VISIBILITY HERE
-//   if (typeof applyHiddenVisibilityForRow === "function") {
-//     await applyHiddenVisibilityForRow(data);
-//   }
-
-//   // Update local state
-//   if (data) {
-//     appState.callings.unshift(data);
-//   } else {
-//     await fetchCallings();
-//   }
-
-//   closeCreateCallingModal();
-//   renderCurrentPage();
-// }
 
 window.setThemeMode = (mode) => {
   applyThemeMode(mode, appState);
@@ -1228,6 +997,120 @@ function renderHeader() {
   });
 
   ensureConcernNoticeModal();
+}
+
+async function startApp() {
+  const savedThemeMode = getSavedThemeMode();
+  applyThemeMode(savedThemeMode, appState);
+
+  if (!supabase) {
+    showFatalError(
+      "Missing configuration",
+      "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for this build.",
+    );
+    return;
+  }
+
+  const [membersResult, statusesResult] = await Promise.all([
+    supabase.from("members").select("*"),
+    supabase.from("status_options").select("*"),
+  ]);
+
+  const { data: members, error: membersError } = membersResult;
+  const { data: statusRows, error: statusError } = statusesResult;
+
+  if (membersError) {
+    console.error("Error fetching members:", membersError);
+    showFatalError(
+      "Could not load app data",
+      `The app could not fetch members from Supabase. ${membersError.message}`,
+    );
+    return;
+  }
+
+  appState.members = members || [];
+  appState.statusOptions = normalizeStatusOptions(statusRows);
+
+  if (statusError) {
+    console.warn("Could not load status options:", statusError.message);
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    console.error("Auth user lookup failed:", userError);
+    renderLogin();
+    return;
+  }
+
+  if (!user) {
+    renderLogin();
+    return;
+  }
+
+  const matchedMember =
+    appState.members.find(
+      (member) =>
+        String(member.email || "")
+          .trim()
+          .toLowerCase() ===
+        String(user.email || "")
+          .trim()
+          .toLowerCase(),
+    ) || null;
+
+  if (!matchedMember) {
+    showFatalError(
+      "Access denied",
+      "Your email address is not listed in the members table.",
+    );
+    return;
+  }
+
+  const sharedPasswordType = String(matchedMember.shared_password_type ?? "")
+    .toLowerCase()
+    .trim();
+  const derivedPasswordType = getRequiredPasswordType(sharedPasswordType);
+
+  appState.currentUser = user;
+  appState.currentMember = matchedMember;
+  appState.currentRole = String(matchedMember.role || "")
+    .toLowerCase()
+    .trim();
+
+  setSessionAfterLogin({
+    userName: matchedMember.name,
+    userRole: matchedMember.role,
+    passwordType: derivedPasswordType,
+  });
+
+  appState.highCouncilNames = [
+    ...new Set(
+      appState.members
+        .filter(
+          (member) =>
+            getRequiredPasswordType(member?.shared_password_type) === "stake",
+        )
+        .map((member) => String(member.name ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  appState.assignableNames = [
+    ...new Set(
+      appState.members
+        .filter((member) => canAssignMember(member))
+        .map((member) => String(member.name ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  await fetchCallings();
+  renderHeader();
+  renderCurrentPage();
 }
 
 startApp().catch((error) => {
