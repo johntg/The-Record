@@ -5,7 +5,7 @@
   "start_url": "/The-Record/",
   "scope": "/The-Record/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait", 
   "background_color": "#a7b8bd",
   "theme_color": "#1a73e8",
   "icons": [
