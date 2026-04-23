@@ -78,6 +78,7 @@
   line-height: 1em;
   margin: 0 0 1rem;
   text-align: left;
+  text-transform: uppercase;
 }
 
 .login-splash h2 {
