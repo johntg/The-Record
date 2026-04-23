@@ -137,14 +137,8 @@
   letter-spacing: 0.22em;
 }
 
-.themeIcon svg:hover {
-  fill: var(--iconClr);
-}
-
 body.dark-mode .card {
   background-color: #111827 !important;
-  color: var(--text);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .main-header {
@@ -1466,7 +1460,7 @@ select {
   align-items: center;
   min-height: 100vh;
   padding: 20px;
-  background-image: url(/public/background.svg);
+  background-image: url(/public/background-red.svg);
   background-size: cover;
   background-repeat: repeat;
   background-position: bottom right;
@@ -1474,6 +1468,7 @@ select {
 
 .login-card {
   background: rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 10px 10px 30px rgba(0, 0, 0, 0.8);
   color: #fff;
   padding: 40px;
   border-radius: 16px;
@@ -1481,7 +1476,6 @@ select {
   max-width: 420px;
   margin: 0 auto;
   border: 1px solid #333;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   overflow: visible;
 }
 
