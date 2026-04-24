@@ -137,6 +137,7 @@
   font-weight: 300;
   margin: 0;
   letter-spacing: 0.22em;
+  text-transform: uppercase;
 }
 
 .themeIcon svg:hover {
