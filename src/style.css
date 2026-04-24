@@ -117,6 +117,7 @@
   line-height: 1em;
   color: var(--recordClr);
   margin: 0;
+  text-transform: uppercase;
 }
 .main-header-title h1 {
   display: block;
@@ -124,7 +125,7 @@
   color: var(--recordClr);
   font-family: "Cinzel", serif;
   font-weight: 700;
-  font-size: 3rem;
+  font-size: 3.5rem;
   text-align: left;
   line-height: 0.9em;
   margin: 0;
