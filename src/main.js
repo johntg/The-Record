@@ -881,11 +881,13 @@ function renderLogin() {
     message.textContent = "Sending sign-in link...";
     message.classList.remove("error");
 
+    const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`;
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: window.location.origin + window.location.pathname,
+        emailRedirectTo: redirectTo,
       },
     });
 
