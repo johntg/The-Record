@@ -462,7 +462,7 @@ function renderReportsPage() {
           appState.currentReportType === "sustain-setapart-release"
             ? "selected"
             : ""
-        }>Sustain, Set Apart, and Release</option>
+        }>Stake Business in units</option>
         <option value="awaiting-shc" ${
           appState.currentReportType === "awaiting-shc" ? "selected" : ""
         }>Calls/Releases Awaiting HC Sustaining</option>
