@@ -884,7 +884,7 @@ function renderLogin() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: true,
+        shouldCreateUser: false,
         emailRedirectTo: window.location.origin + window.location.pathname,
       },
     });
