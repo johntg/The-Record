@@ -471,7 +471,7 @@ export function createCardsRenderer({
                       ? `
                     <button
                       onclick="window.archiveCalling('${row.id}')"
-                      style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: var(--danger-text); font-weight: 700; cursor: pointer;"
+                      style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: white; font-weight: 700; cursor: pointer;"
                     >
                       Archive
                     </button>
