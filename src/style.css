@@ -1202,7 +1202,7 @@ select {
 .form-message {
   min-height: 1.25rem;
   margin: 15px 0 12px;
-  color: var(--text);
+  color: whitesmoke;
   line-height: 1.45em;
 }
 
