@@ -75,7 +75,7 @@
   color: #ffffff;
   font-size: 1.1rem;
   font-weight: 200;
-  line-height: 1em;
+  line-height: 1.4em;
   margin: 0 0 1rem;
   text-align: left;
   text-transform: uppercase;
@@ -1201,8 +1201,9 @@ select {
 
 .form-message {
   min-height: 1.25rem;
-  margin: 0 0 12px;
-  color: var(--text-muted);
+  margin: 15px 0 12px;
+  color: var(--text);
+  line-height: 1.45em;
 }
 
 .form-message.error {
