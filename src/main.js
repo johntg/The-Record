@@ -1053,7 +1053,16 @@ async function startApp() {
   if (statusError) {
     console.warn("Could not load status options:", statusError.message);
   }
+  supabase.auth.onAuthStateChange((event) => {
+    console.log("Auth state changed:", event);
+  });
 
+  // const {
+  //   data: { user },
+  //   error: userError,
+  // } = await supabase.auth.getUser();
+
+  await supabase.auth.getSession();
   const {
     data: { user },
     error: userError,
