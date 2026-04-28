@@ -1027,9 +1027,6 @@ async function startApp() {
       "Missing configuration",
       "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for this build.",
     );
-    console.log("statusRows:", statusRows);
-    console.log("normalized:", normalizeStatusOptions(statusRows));
-    console.log("appState.statusOptions:", appState.statusOptions);
     return;
   }
 
@@ -1057,9 +1054,7 @@ async function startApp() {
     appState.statusOptions = normalizeStatusOptions([]);
   } else {
     console.log("Loaded status options:", statusRows);
-    appState.statusOptions = normalizeStatusOptions(
-      (statusRows || []).map((row) => row.name),
-    );
+    appState.statusOptions = normalizeStatusOptions(statusRows);
     console.log("appState.statusOptions:", appState.statusOptions);
   }
   supabase.auth.onAuthStateChange((event) => {
