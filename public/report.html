@@ -2,41 +2,236 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Report</title>
+    <title>Reading View</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <style>
-      body {
-        font-family: "Times New Roman", Times, serif;
-        background: #f4f4f4;
-        color: #333;
-        margin: 0;
-        padding: 20px;
-        max-width: 800px;
-        margin: 40px auto;
-        padding: 20px;
-        line-height: 1.6;
-        /* background: #fff;
-        color: #111; */
+      :root {
+        --bg: #f6f1e8;
+        --card: #fffdf8;
+        --text: #1f2933;
+        --muted: #667085;
+        --accent: #b3261e;
+        --border: #e4ddd1;
+        --soft: #f3eadc;
       }
 
-      pre {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        font-size: 1rem;
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", serif;
+        line-height: 1.75;
+        font-size: 20px;
+      }
+
+      .container {
+        max-width: 860px;
+        margin: 36px auto;
+        padding: 18px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      button {
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 999px;
+        padding: 9px 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 34px 38px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      }
+
+      h1 {
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        font-size: 1.65rem;
+        line-height: 1.25;
+        margin: 0 0 18px;
+        padding-bottom: 12px;
+        border-bottom: 3px solid var(--accent);
+        color: var(--accent);
+      }
+
+      h2 {
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        font-size: 1.2rem;
+        margin: 30px 0 10px;
+        padding: 10px 12px;
+        background: var(--soft);
+        border-left: 5px solid var(--accent);
+        border-radius: 10px;
+      }
+
+      p {
+        margin: 14px 0;
+      }
+
+      .item {
+        margin-left: 1rem;
+        padding-left: 0.6rem;
+      }
+
+      .spoken-line {
+        margin: 20px 0;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        font-size: 0.95rem;
+      }
+
+      .name-line strong {
+        font-weight: 800;
+      }
+
+      @media print {
+        body {
+          background: white;
+          font-size: 18px;
+        }
+        .actions {
+          display: none;
+        }
+        .container {
+          margin: 0;
+          max-width: none;
+        }
+        .card {
+          box-shadow: none;
+          border: none;
+        }
       }
     </style>
   </head>
   <body>
-    <pre id="report-content">Loading...</pre>
+    <main class="container">
+      <div class="actions">
+        <button onclick="window.print()">🖨 Print</button>
+        <button onclick="document.body.classList.toggle('large-text')">
+          Aa Larger
+        </button>
+        <button onclick="window.close()">Close</button>
+      </div>
+
+      <article class="card" id="report-content">Loading report...</article>
+    </main>
 
     <script>
+      document
+        .querySelector(".actions button:nth-child(2)")
+        .addEventListener("click", () => {
+          const current = parseFloat(getComputedStyle(document.body).fontSize);
+          document.body.style.fontSize = current >= 24 ? "20px" : "24px";
+        });
+
       const params = new URLSearchParams(window.location.search);
       const content = params.get("content");
 
-      document.getElementById("report-content").textContent = content
-        ? decodeURIComponent(content)
-        : "No report content.";
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function formatLine(line) {
+        const safe = escapeHtml(line);
+
+        const namePositionPattern = /^(\s*\d+\.\s*)(.+?)(\s+—\s+)(.+)$/;
+        const match = safe.match(namePositionPattern);
+
+        if (match) {
+          return `${match[1]}<strong>${match[2]}</strong>${match[3]}${match[4]}`;
+        }
+
+        return safe;
+      }
+
+      function formatReport(text) {
+        const lines = text.split("\n");
+        let html = "";
+        let usedMainTitle = false;
+
+        lines.forEach((line, index) => {
+          const trimmed = line.trim();
+
+          if (!trimmed || trimmed.match(/^[-=]{3,}$/)) {
+            html += `<div style="height: 12px"></div>`;
+            return;
+          }
+
+          if (trimmed.startsWith("Items:")) {
+            html += `<p class="muted">${escapeHtml(trimmed)}</p>`;
+            return;
+          }
+
+          const nextLine = lines[index + 1]?.trim() || "";
+          if (nextLine.match(/^={3,}$/) && !usedMainTitle) {
+            html += `<h1>${escapeHtml(trimmed)}</h1>`;
+            usedMainTitle = true;
+            return;
+          }
+
+          if (
+            trimmed === trimmed.toUpperCase() &&
+            /[A-Z]/.test(trimmed) &&
+            trimmed.length > 3
+          ) {
+            html += `<h2>${escapeHtml(trimmed)}</h2>`;
+            return;
+          }
+
+          if (/^\d+\./.test(trimmed) || trimmed.startsWith("-")) {
+            html += `<p class="item name-line">${formatLine(trimmed)}</p>`;
+            return;
+          }
+
+          html += `<p class="spoken-line">${escapeHtml(trimmed)}</p>`;
+        });
+
+        return html;
+      }
+
+      if (content) {
+        const decoded = decodeURIComponent(content);
+        document.getElementById("report-content").innerHTML =
+          formatReport(decoded);
+      } else {
+        document.getElementById("report-content").textContent =
+          "No report content.";
+      }
     </script>
   </body>
 </html>
