@@ -1048,10 +1048,13 @@ async function startApp() {
   }
 
   appState.members = members || [];
-  appState.statusOptions = normalizeStatusOptions(statusRows);
 
   if (statusError) {
-    console.warn("Could not load status options:", statusError.message);
+    console.error("Could not load status options:", statusError);
+    appState.statusOptions = normalizeStatusOptions([]);
+  } else {
+    console.log("Loaded status options:", statusRows);
+    appState.statusOptions = normalizeStatusOptions(statusRows);
   }
   supabase.auth.onAuthStateChange((event) => {
     console.log("Auth state changed:", event);
