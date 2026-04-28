@@ -1060,6 +1060,7 @@ async function startApp() {
     appState.statusOptions = normalizeStatusOptions(
       (statusRows || []).map((row) => row.name),
     );
+    console.log("appState.statusOptions:", appState.statusOptions);
   }
   supabase.auth.onAuthStateChange((event) => {
     console.log("Auth state changed:", event);
