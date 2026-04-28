@@ -1027,6 +1027,8 @@ async function startApp() {
       "Missing configuration",
       "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for this build.",
     );
+    console.log("statusRows:", statusRows);
+    console.log("normalized:", normalizeStatusOptions(statusRows));
     return;
   }
 
