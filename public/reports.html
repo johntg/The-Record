@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+        line-height: 1.6;
+        background: #fff;
+        color: #111;
+      }
+
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <pre id="report-content">Loading...</pre>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const content = params.get("content");
+
+      document.getElementById("report-content").textContent = content
+        ? decodeURIComponent(content)
+        : "No report content.";
+    </script>
+  </body>
+</html>
