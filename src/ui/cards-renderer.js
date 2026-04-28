@@ -145,12 +145,22 @@ export function createCardsRenderer({
           <div style="padding: 18px;">
             ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;")}
             ${renderEditableCardField(row, "position", "p", "color: var(--text-muted); margin: 4px 0;")}
-            ${renderEditableCardField(
-              row,
-              "unit",
-              "p",
-              "color: var(--unit-soft); font-weight: bold; margin: 4px 0;",
-            )}
+            <div style="margin: 4px 0 10px 0;">
+  <select
+    onchange="window.updateAssignment('${row.id}', 'unit', this.value)"
+    ${hasAdminPasswordAccess() ? "" : "disabled title='Admin access required to change unit'"}
+    style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--unit-soft); font-weight: bold;"
+  >
+    ${appState.units
+      .map(
+        (unit) =>
+          `<option value="${escapeHtml(unit)}" ${
+            row.unit === unit ? "selected" : ""
+          }>${escapeHtml(unit)}</option>`,
+      )
+      .join("")}
+  </select>
+</div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0;">
               <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
