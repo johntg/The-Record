@@ -1029,6 +1029,7 @@ async function startApp() {
     );
     console.log("statusRows:", statusRows);
     console.log("normalized:", normalizeStatusOptions(statusRows));
+    console.log("appState.statusOptions:", appState.statusOptions);
     return;
   }
 
