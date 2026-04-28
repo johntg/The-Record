@@ -21,7 +21,14 @@ export function createCardsRenderer({
   }
 
   function renderEditableCardField(row, field, tagName, style) {
-    const label = field === "name" ? "name" : "position";
+    const label =
+      field === "name"
+        ? "name"
+        : field === "position"
+          ? "position"
+          : field === "unit"
+            ? "unit"
+            : field;
     const currentValue = String(row[field] || "");
 
     if (isInlineEditingField(row.id, field)) {
@@ -138,7 +145,12 @@ export function createCardsRenderer({
           <div style="padding: 18px;">
             ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;")}
             ${renderEditableCardField(row, "position", "p", "color: var(--text-muted); margin: 4px 0;")}
-            <p style="color: var(--unit-soft); font-weight: bold;">${row.unit}</p>
+            ${renderEditableCardField(
+              row,
+              "unit",
+              "p",
+              "color: var(--unit-soft); font-weight: bold; margin: 4px 0;",
+            )}
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0;">
               <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
