@@ -1053,9 +1053,9 @@ async function startApp() {
     console.error("Could not load status options:", statusError);
     appState.statusOptions = normalizeStatusOptions([]);
   } else {
-    console.log("Loaded status options:", statusRows);
+    // console.log("Loaded status options:", statusRows);
     appState.statusOptions = normalizeStatusOptions(statusRows);
-    console.log("appState.statusOptions:", appState.statusOptions);
+    // console.log("appState.statusOptions:", appState.statusOptions);
   }
   supabase.auth.onAuthStateChange((event) => {
     console.log("Auth state changed:", event);
