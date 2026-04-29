@@ -1,3 +1,4 @@
+```javascript
 import {
   getAssignmentFieldCandidates,
   isCompletedValue,
@@ -11,9 +12,7 @@ function formatNameList(names) {
   return names.length ? names.join(", ") : "None";
 }
 
-function formatBypassLabel(row) {
-  return row?.hc_sustained_bypass === true ? " [PASS (Admin Bypass)]" : "";
-}
+// ❌ Removed admin bypass label entirely for reading clarity
 
 function buildAwaitingShcReport(rows, reportContext = {}) {
   const { getHighCouncilVoteSummary = null, hcVotingTableAvailable = true } =
@@ -105,11 +104,7 @@ function buildStatusSummaryReport(rows) {
 
 function buildUnassignedAssignmentsReport(rows) {
   const steps = [
-    {
-      label: "Interview",
-      fields: ["interview_by"],
-      appliesTo: () => true,
-    },
+    { label: "Interview", fields: ["interview_by"], appliesTo: () => true },
     {
       label: "Sustaining",
       fields: ["sustaining_by", "sus_assigned", "sus_assign", "sustain_by"],
@@ -134,11 +129,9 @@ function buildUnassignedAssignmentsReport(rows) {
       );
 
       if (!hasAssignment) {
-        grouped
-          .get(step.label)
-          .push(
-            `[${String(row.type || "CALL").toUpperCase()}] ${row.name || "(No name)"} — ${row.position || "(No position)"} (${row.unit || "No unit"})`,
-          );
+        grouped.get(step.label).push(
+          `[${String(row.type || "CALL").toUpperCase()}] ${row.name || "(No name)"} — ${row.position || "(No position)"} (${row.unit || "No unit"})`,
+        );
       }
     });
   });
@@ -169,40 +162,52 @@ function buildUnassignedAssignmentsReport(rows) {
 
 function buildUnitSection(unitTitle, releases, toSustain) {
   const lines = [];
-  lines.push(`${unitTitle}`);
-  lines.push("-".repeat(unitTitle.length));
 
+  lines.push(unitTitle);
+  lines.push("=".repeat(unitTitle.length));
+  lines.push("");
+
+  // RELEASES
   if (releases.length > 0) {
-    lines.push(
-      "RELEASE - The following have been released from positions in the Stake: ",
-    );
+    lines.push("RELEASES");
+    lines.push("");
+
     releases.forEach((row, index) => {
       lines.push(
-        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}`,
+        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}`
       );
     });
+
     lines.push("");
     lines.push(
-      "It is proposed they be given a vote of thanks for their service. Those in favour manifest it by the uplifted hand.",
+      "It is proposed they be given a vote of thanks for their service."
     );
+    lines.push("Those in favour manifest it by the uplifted hand.");
     lines.push("");
+    lines.push(""); // extra pause before next section
   }
 
+  // SUSTAININGS
   if (toSustain.length > 0) {
-    lines.push("The following have been called to positions in the Stake:");
+    lines.push("SUSTAININGS");
+    lines.push("");
+
     toSustain.forEach((row, index) => {
       lines.push(
-        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}${formatBypassLabel(row)}`,
+        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}`
       );
     });
-    lines.push(
-      "It is proposed they be sustained. Those in favour manifest it by the uplifted hand. Any opposed by the same sign",
-    );
+
+    lines.push("");
+    lines.push("It is proposed that they be sustained.");
+    lines.push("Those in favour manifest it by the uplifted hand.");
+    lines.push("Those opposed, if any, by the same sign.");
+    lines.push("");
   }
 
   return lines.join("\n");
 }
-
+  
 function buildSustainSetApartReleaseReport(rows) {
   const unitsSet = new Set(rows.map((row) => row.unit).filter(Boolean));
   const units = Array.from(unitsSet).sort();
@@ -274,3 +279,4 @@ export function generateReport(type, rows, reportContext = {}) {
 
   return buildAwaitingShcReport(rows, reportContext);
 }
+```

@@ -114,6 +114,54 @@
         font-weight: 800;
       }
 
+      .unit-title {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin-top: 32px;
+        margin-bottom: 10px;
+        border-bottom: 3px solid var(--accent);
+        padding-bottom: 6px;
+      }
+
+      .section-release {
+        background: #fff1f1;
+        border-left: 6px solid #c0392b;
+        padding: 12px;
+        border-radius: 10px;
+        margin-top: 16px;
+      }
+
+      .section-sustain {
+        background: #eef6ff;
+        border-left: 6px solid #2563eb;
+        padding: 12px;
+        border-radius: 10px;
+        margin-top: 16px;
+      }
+
+      .section-title {
+        font-weight: 800;
+        margin-bottom: 8px;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+
+      .list-item {
+        margin-left: 12px;
+        padding-left: 6px;
+      }
+
+      .motion {
+        margin-top: 14px;
+        font-style: italic;
+      }
+
       @media print {
         body {
           background: white;
@@ -181,45 +229,64 @@
 
       function formatReport(text) {
         const lines = text.split("\n");
+
         let html = "";
-        let usedMainTitle = false;
+        let currentSection = null;
 
         lines.forEach((line, index) => {
           const trimmed = line.trim();
+          const next = lines[index + 1]?.trim();
 
-          if (!trimmed || trimmed.match(/^[-=]{3,}$/)) {
-            html += `<div style="height: 12px"></div>`;
+          if (!trimmed) {
+            html += `<div style="height:10px"></div>`;
             return;
           }
 
-          if (trimmed.startsWith("Items:")) {
-            html += `<p class="muted">${escapeHtml(trimmed)}</p>`;
+          // UNIT HEADINGS (followed by ====)
+          if (next && next.match(/^=+$/)) {
+            html += `<div class="unit-title">${trimmed}</div>`;
             return;
           }
 
-          const nextLine = lines[index + 1]?.trim() || "";
-          if (nextLine.match(/^={3,}$/) && !usedMainTitle) {
-            html += `<h1>${escapeHtml(trimmed)}</h1>`;
-            usedMainTitle = true;
+          // SECTION HEADINGS
+          if (trimmed === "RELEASES") {
+            currentSection = "release";
+            html += `<div class="section-release"><div class="section-title">RELEASES</div>`;
+            return;
+          }
+
+          if (trimmed === "SUSTAININGS") {
+            currentSection = "sustain";
+            html += `</div><div class="section-sustain"><div class="section-title">SUSTAININGS</div>`;
+            return;
+          }
+
+          // LIST ITEMS
+          if (/^\d+\./.test(trimmed)) {
+            html += `<div class="list-item">${escapeHtml(trimmed)}</div>`;
+            return;
+          }
+
+          // MOTION TEXT
+          if (trimmed.startsWith("It is proposed")) {
+            html += `<div class="motion">${escapeHtml(trimmed)}</div>`;
             return;
           }
 
           if (
-            trimmed === trimmed.toUpperCase() &&
-            /[A-Z]/.test(trimmed) &&
-            trimmed.length > 3
+            trimmed.startsWith("Those in favour") ||
+            trimmed.startsWith("Those opposed")
           ) {
-            html += `<h2>${escapeHtml(trimmed)}</h2>`;
+            html += `<div class="motion">${escapeHtml(trimmed)}</div>`;
             return;
           }
 
-          if (/^\d+\./.test(trimmed) || trimmed.startsWith("-")) {
-            html += `<p class="item name-line">${formatLine(trimmed)}</p>`;
-            return;
-          }
-
-          html += `<p class="spoken-line">${escapeHtml(trimmed)}</p>`;
+          // default
+          html += `<p>${escapeHtml(trimmed)}</p>`;
         });
+
+        // close final section if open
+        html += `</div>`;
 
         return html;
       }
