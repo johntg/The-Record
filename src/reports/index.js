@@ -167,6 +167,10 @@ function buildUnitSection(unitTitle, releases, toSustain) {
   if (releases.length > 0) {
     lines.push("RELEASES");
     lines.push("");
+    lines.push(
+      "The following have been released from their positions in the Stake:",
+    );
+    lines.push("");
 
     releases.forEach((row, index) => {
       lines.push(
@@ -184,6 +188,10 @@ function buildUnitSection(unitTitle, releases, toSustain) {
 
   if (toSustain.length > 0) {
     lines.push("SUSTAININGS");
+    lines.push("");
+    lines.push(
+      "The following have been called to serve in positions in the Stake:",
+    );
     lines.push("");
 
     toSustain.forEach((row, index) => {

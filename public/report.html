@@ -188,7 +188,7 @@
         <button onclick="document.body.classList.toggle('large-text')">
           Aa Larger
         </button>
-        <button onclick="window.close()">Close</button>
+        <button onclick="goBackToApp()">Close</button>
       </div>
 
       <article class="card" id="report-content">Loading report...</article>
@@ -298,6 +298,11 @@
       } else {
         document.getElementById("report-content").textContent =
           "No report content.";
+      }
+
+      function goBackToApp() {
+        const basePath = "/The-Record/";
+        window.location.href = basePath;
       }
     </script>
   </body>
