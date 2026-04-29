@@ -1,4 +1,3 @@
-```javascript
 import {
   getAssignmentFieldCandidates,
   isCompletedValue,
@@ -11,8 +10,6 @@ function formatReportHeader(title, count) {
 function formatNameList(names) {
   return names.length ? names.join(", ") : "None";
 }
-
-// ❌ Removed admin bypass label entirely for reading clarity
 
 function buildAwaitingShcReport(rows, reportContext = {}) {
   const { getHighCouncilVoteSummary = null, hcVotingTableAvailable = true } =
@@ -39,7 +36,7 @@ function buildAwaitingShcReport(rows, reportContext = {}) {
         !hcVotingTableAvailable ||
         typeof getHighCouncilVoteSummary !== "function"
       ) {
-        return `${index + 1}. [${itemType}] ${row.name || "(No name)"} — ${row.position || "(No position)"} (${row.unit || "No unit"})\n   - HC voting participation: unavailable (database voting table not configured)`;
+        return `${index + 1}. [${itemType}] ${row.name || "(No name)"} — ${row.position || "(No position)"} (${row.unit || "No unit"})\n   - HC voting participation: unavailable`;
       }
 
       const voteSummary = getHighCouncilVoteSummary(row.id);
@@ -129,9 +126,11 @@ function buildUnassignedAssignmentsReport(rows) {
       );
 
       if (!hasAssignment) {
-        grouped.get(step.label).push(
-          `[${String(row.type || "CALL").toUpperCase()}] ${row.name || "(No name)"} — ${row.position || "(No position)"} (${row.unit || "No unit"})`,
-        );
+        grouped
+          .get(step.label)
+          .push(
+            `[${String(row.type || "CALL").toUpperCase()}] ${row.name || "(No name)"} — ${row.position || "(No position)"} (${row.unit || "No unit"})`,
+          );
       }
     });
   });
@@ -148,9 +147,7 @@ function buildUnassignedAssignmentsReport(rows) {
   const sections = steps
     .map((step) => {
       const items = grouped.get(step.label) || [];
-      if (!items.length) {
-        return `${step.label} (0)\n  - None`;
-      }
+      if (!items.length) return `${step.label} (0)\n  - None`;
 
       const lines = items.map((item) => `  - ${item}`).join("\n");
       return `${step.label} (${items.length})\n${lines}`;
@@ -167,34 +164,31 @@ function buildUnitSection(unitTitle, releases, toSustain) {
   lines.push("=".repeat(unitTitle.length));
   lines.push("");
 
-  // RELEASES
   if (releases.length > 0) {
     lines.push("RELEASES");
     lines.push("");
 
     releases.forEach((row, index) => {
       lines.push(
-        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}`
+        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}`,
       );
     });
 
     lines.push("");
     lines.push(
-      "It is proposed they be given a vote of thanks for their service."
+      "It is proposed they be given a vote of thanks for their service.",
     );
     lines.push("Those in favour manifest it by the uplifted hand.");
     lines.push("");
-    lines.push(""); // extra pause before next section
   }
 
-  // SUSTAININGS
   if (toSustain.length > 0) {
     lines.push("SUSTAININGS");
     lines.push("");
 
     toSustain.forEach((row, index) => {
       lines.push(
-        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}`
+        `  ${index + 1}. ${row.name || "(No name)"} — ${row.position || "(No position)"}`,
       );
     });
 
@@ -207,7 +201,7 @@ function buildUnitSection(unitTitle, releases, toSustain) {
 
   return lines.join("\n");
 }
-  
+
 function buildSustainSetApartReleaseReport(rows) {
   const unitsSet = new Set(rows.map((row) => row.unit).filter(Boolean));
   const units = Array.from(unitsSet).sort();
@@ -253,6 +247,7 @@ function buildSustainSetApartReleaseReport(rows) {
   }
 
   const totalItems = releases.length + toSustain.length;
+
   if (reportSections.length === 0) {
     return `${formatReportHeader("Stake Business - in wards", 0)}\n\nNo members require sustaining, setting apart, or release at this time.`;
   }
@@ -279,4 +274,3 @@ export function generateReport(type, rows, reportContext = {}) {
 
   return buildAwaitingShcReport(rows, reportContext);
 }
-```
