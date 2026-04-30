@@ -72,6 +72,117 @@ export function createCardsRenderer({
     });
   }
 
+  function normalizeCallingTitle(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replaceAll("quruom", "quorum")
+      .replaceAll("quorom", "quorum")
+      .replaceAll("counselor", "counsellor")
+      .replaceAll("counselors", "counsellors")
+      .replaceAll("1st", "first")
+      .replaceAll("2nd", "second")
+      .replaceAll("&", "and")
+      .replace(/[’']/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function normalizeUnit(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function getCallingGroupKey(position) {
+    const title = normalizeCallingTitle(position);
+
+    if (title.includes("elder") && title.includes("quorum")) {
+      return "elders quorum";
+    }
+
+    if (title.includes("relief") && title.includes("society")) {
+      return "relief society";
+    }
+
+    if (title.includes("primary")) return "primary";
+    if (title.includes("young") && title.includes("women"))
+      return "young women";
+    if (title.includes("young") && title.includes("men")) return "young men";
+    if (title.includes("sunday") && title.includes("school"))
+      return "sunday school";
+
+    if (title.includes("bishopric") || title.includes("bishop")) {
+      return "bishopric";
+    }
+
+    if (
+      title.includes("ward clerk") ||
+      title.includes("assistant ward clerk") ||
+      title.includes("executive secretary") ||
+      title.includes("assistant executive secretary") ||
+      title.includes("seminary")
+    ) {
+      return "ward support";
+    }
+
+    return "";
+  }
+
+  function getRelatedReleaseChecks(row) {
+    const groupKey = getCallingGroupKey(row.position);
+    const rowType = String(row.type || "")
+      .trim()
+      .toUpperCase();
+
+    if (!groupKey || rowType === "RELEASE") {
+      return [];
+    }
+
+    return appState.callings.filter((candidate) => {
+      const candidateType = String(candidate.type || "")
+        .trim()
+        .toUpperCase();
+
+      return (
+        candidate.id !== row.id &&
+        candidateType === "RELEASE" &&
+        normalizeUnit(candidate.unit) === normalizeUnit(row.unit) &&
+        getCallingGroupKey(candidate.position) === groupKey
+      );
+    });
+  }
+
+  function renderReleaseCheck(row) {
+    const groupKey = getCallingGroupKey(row.position);
+    const relatedReleases = getRelatedReleaseChecks(row);
+
+    if (!relatedReleases.length) {
+      return "";
+    }
+
+    return `
+    <div style="margin: 10px 0; padding: 10px; border-radius: 10px; background: var(--warning-soft); border: 1px solid var(--border);">
+      <div style="font-weight: 800; margin-bottom: 6px;">${getReleaseCheckTitle(groupKey)}</div>
+      <div style="display: grid; gap: 6px; font-size: 0.9rem;">
+        ${relatedReleases
+          .map((release) => {
+            const done = isCompletedValue(release.interviewed);
+            return `
+              <div>
+                ${done ? "✅" : "❌"}
+                ${escapeHtml(release.name || "(No name)")} — ${escapeHtml(release.position || "(No position)")}
+                <span style="color: var(--text-muted);">Release interview ${done ? "done" : "pending"}</span>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+  }
+
   function renderCards() {
     const list = documentRef.getElementById("data-list");
     if (!list) return;
@@ -391,8 +502,10 @@ export function createCardsRenderer({
                     ? ""
                     : `
                   <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
-                    <div style="margin-bottom: 10px;">
-                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
+  ${renderReleaseCheck(row)}
+
+  <div style="margin-bottom: 10px;">
+    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
                       <select
                         onchange="window.updateAssignment('${row.id}', '${sustainingByField}', this.value)"
                         ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
