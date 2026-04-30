@@ -154,6 +154,38 @@ export function createCardsRenderer({
     });
   }
 
+  function getReleaseCheckTitle(groupKey) {
+    if (groupKey === "ward support") {
+      return "Previous ward support release check";
+    }
+
+    if (groupKey === "bishopric") {
+      return "Previous bishopric release check";
+    }
+
+    if (groupKey === "elders quorum") {
+      return "Previous Elders Quorum presidency release check";
+    }
+
+    if (groupKey === "relief society") {
+      return "Previous Relief Society presidency release check";
+    }
+
+    if (groupKey === "primary") {
+      return "Previous Primary presidency release check";
+    }
+
+    if (groupKey === "young women") {
+      return "Previous Young Women presidency release check";
+    }
+
+    if (groupKey === "young men") {
+      return "Previous Young Men presidency release check";
+    }
+
+    return "Previous presidency release check";
+  }
+
   function renderReleaseCheck(row) {
     const groupKey = getCallingGroupKey(row.position);
     const relatedReleases = getRelatedReleaseChecks(row);
@@ -211,7 +243,10 @@ export function createCardsRenderer({
       .map((row) => {
         const canAssign = hasAdminPasswordAccess();
         const isExpanded = appState.expandedGridId === row.id;
-        const isRelease = row.type?.toUpperCase() === "RELEASE";
+        const isRelease =
+          String(row.type || "")
+            .trim()
+            .toUpperCase() === "RELEASE";
         const sustainingByField = resolveSustainingByField(row);
         const sustainingBy = row[sustainingByField] || "";
         const settingApartByField = resolveSettingApartByField(row);
@@ -245,7 +280,6 @@ export function createCardsRenderer({
           : statusOptions.filter(
               (status) => status.toLowerCase().trim() !== "archived",
             );
-
         return `
         <article class="card">
           <div style="background: ${isRelease ? "var(--banner-release-bg)" : "var(--banner-call-bg)"}; 
@@ -254,7 +288,7 @@ export function createCardsRenderer({
           </div>
 
           <div style="padding: 18px;">
-            ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;")}
+            ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);")}
             ${renderEditableCardField(row, "position", "p", "color: var(--text-muted); margin: 4px 0;")}
             <div style="margin: 4px 0 10px 0;">
   <select
@@ -272,7 +306,6 @@ export function createCardsRenderer({
       .join("")}
   </select>
 </div>
-
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0;">
               <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -501,12 +534,14 @@ export function createCardsRenderer({
                   isRelease
                     ? ""
                     : `
-                  <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
+                  
+<div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
   ${renderReleaseCheck(row)}
 
   <div style="margin-bottom: 10px;">
-    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
-                      <select
+    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>44
+
+                    <select
                         onchange="window.updateAssignment('${row.id}', '${sustainingByField}', this.value)"
                         ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                         style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
