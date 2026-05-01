@@ -471,7 +471,7 @@ export function createCardsRenderer({
                           type="button"
                           onclick="window.setHighCouncilBypass('${row.id}', ${isHcBypassed ? "false" : "true"})"
                           style="padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${isHcBypassed ? "var(--danger-soft)" : "var(--surface-subtle)"}; color: ${isHcBypassed ? "var(--danger-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
-                        >${isHcBypassed ? "Disable training bypass" : "Enable training bypass (mark pass)"}</button>
+                        >${isHcBypassed ? "Disable admin bypass" : "Enable admin bypass"}</button>
                         ${
                           !appState.hcBypassAvailable
                             ? `<span style="font-size: 0.72rem; color: #8b1e1e; font-weight: 600;">Bypass DB columns not found. Run migration to enable this control.</span>`
