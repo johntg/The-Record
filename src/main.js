@@ -845,7 +845,54 @@ window.handleConcernClick = async (event, id) => {
 };
 
 function renderLogin() {
-  document.getElementById("app").innerHTML = `
+  const app = document.getElementById("app");
+
+  const normalizeEmail = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  const formatOtpRequestError = (error) => {
+    const errorCode = String(error?.code || "").trim().toLowerCase();
+    const errorStatus = Number(error?.status || 0);
+
+    if (errorCode === "email_not_confirmed") {
+      return "This auth user exists, but their email is not confirmed in Supabase Auth yet.";
+    }
+
+    if (errorCode === "otp_disabled") {
+      return "Email OTP is disabled in Supabase Authentication settings.";
+    }
+
+    if (errorCode === "signup_disabled") {
+      return "Closed-group sign-in is enabled, and Supabase is refusing to create or use a new auth signup for this email.";
+    }
+
+    if (errorCode === "over_email_send_rate_limit") {
+      return "Too many login emails have been sent to this address. Please wait a little and try again.";
+    }
+
+    if (errorCode === "over_request_rate_limit") {
+      return "Too many login attempts have been made from this client. Please wait a few minutes and try again.";
+    }
+
+    if (errorCode === "email_address_not_authorized") {
+      return "Supabase's current email provider is not allowed to send to this address. Check your SMTP/provider configuration.";
+    }
+
+    if (errorCode === "unexpected_failure" || errorStatus >= 500) {
+      return "Supabase Auth hit a backend error. If this user was added manually to auth.users, recreate them with the admin provisioning script so their email identity and confirmation state are created correctly.";
+    }
+
+    if (/database error finding user/i.test(error?.message || "")) {
+      return "Supabase could not find a usable email auth identity for this address. The user may exist in auth.users but still be missing a valid email identity or confirmed email.";
+    }
+
+    return error?.message || "Unable to send the sign-in code right now.";
+  };
+
+  // Initial UI state: Email Entry
+  app.innerHTML = `
     <div class="login-container">
       <div class="login-card">
         <div class="login-splash">
@@ -853,52 +900,119 @@ function renderLogin() {
           <h3>From inspiration to setting apart</h3>
         </div>
 
-        <form id="magic-link-form">
-          <input
-            id="email-input"
-            type="email"
-            placeholder="Email address"
-            required
-            class="loginEntry"
-          />
-          <button type="submit">Email me a sign-in link</button>
-        </form>
+        <div id="auth-step-email">
+          <form id="otp-request-form">
+            <input
+              id="email-input"
+              type="email"
+              placeholder="Email address"
+              required
+              class="loginEntry"
+            />
+            <button type="submit">Email me a 6-digit code</button>
+          </form>
+        </div>
+
+        <div id="auth-step-code" class="hidden">
+          <p class="form-instruction">Enter the code sent to your email:</p>
+          <form id="otp-verify-form">
+            <input
+              id="otp-input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="6"
+              placeholder="123456"
+              required
+              class="loginEntry"
+              autocomplete="one-time-code"
+            />
+            <button type="submit">Verify & Sign In</button>
+            <button type="button" class="btn-link" onclick="renderLogin()">Back to email</button>
+          </form>
+        </div>
 
         <p id="auth-message" class="form-message" aria-live="polite"></p>
       </div>
     </div>
   `;
 
-  const form = document.getElementById("magic-link-form");
+  const emailStep = document.getElementById("auth-step-email");
+  const codeStep = document.getElementById("auth-step-code");
   const message = document.getElementById("auth-message");
 
-  form.addEventListener("submit", async (event) => {
+  const requestForm = document.getElementById("otp-request-form");
+  const verifyForm = document.getElementById("otp-verify-form");
+
+  let userEmail = "";
+
+  // Step 1: Request the OTP
+  // Step 1: Request the OTP
+  requestForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    userEmail = normalizeEmail(document.getElementById("email-input").value);
+    if (!userEmail) return;
 
-    const email = document.getElementById("email-input").value.trim();
-    if (!email) return;
+    const isKnownMember = appState.members.some(
+      (member) => normalizeEmail(member?.email) === userEmail,
+    );
 
-    message.textContent = "Sending sign-in link...";
-    message.classList.remove("error");
-
-    const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: redirectTo,
-      },
-    });
-
-    if (error) {
-      console.error("Magic link error:", error);
-      message.textContent = error.message;
+    if (!isKnownMember) {
+      message.textContent =
+        "That email is not authorized for this app. Please use your member email.";
       message.classList.add("error");
       return;
     }
 
-    message.textContent = "Check your email for the sign-in link.";
+    message.textContent = "Sending code...";
+    message.classList.remove("error");
+
+    // CRITICAL: Remove 'options' and 'emailRedirectTo'
+    // Using the bare minimum forces Supabase into OTP mode
+    const { error } = await supabase.auth.signInWithOtp({
+      email: userEmail,
+      options: {
+        shouldCreateUser: false,
+      },
+    });
+
+    if (error) {
+      console.error("OTP Error:", error);
+      message.textContent = formatOtpRequestError(error);
+      message.classList.add("error");
+      return;
+    }
+
+    // Success: Hide email form, show code form
+    emailStep.classList.add("hidden");
+    codeStep.classList.remove("hidden");
+    message.textContent = "Check your email for the 6-digit code.";
+  });
+
+  // Step 2: Verify the OTP
+  verifyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const token = document.getElementById("otp-input").value.trim();
+
+    message.textContent = "Verifying...";
+    message.classList.remove("error");
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: userEmail,
+      token,
+      type: "email",
+    });
+
+    if (error) {
+      message.textContent = "Invalid or expired code. Please try again.";
+      message.classList.add("error");
+      return;
+    }
+
+    // Success! Supabase will trigger onAuthStateChange
+    // or you can manually call startApp() to refresh the UI
+    message.textContent = "Success! Loading...";
+    startApp();
   });
 
   syncFabVisibility();

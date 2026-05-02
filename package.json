@@ -1,12 +1,14 @@
 {
-  "name": "stake-callings",
+  "name": "the-record",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "provision:member": "node scripts/provision-member.mjs",
+    "inspect:auth-user": "node scripts/inspect-auth-user.mjs"
   },
   "devDependencies": {
     "supabase": "^2.93.0",

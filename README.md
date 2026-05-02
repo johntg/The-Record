@@ -1,4 +1,4 @@
-# Stake Callings
+# The Record
 
 A Vite-powered interface for tracking Church callings and releases.
 
@@ -123,6 +123,18 @@ If archiving still isn't working after adding the policy, check:
 - The policy is on the correct table (`archive`)
 - Your authentication role matches the policy condition
 - You have SELECT access to the `archive` table (to see archived rows)
+
+## Closed-group auth provisioning
+
+This app uses a closed-group login model: an email address must exist in both `public.members` and Supabase `auth.users` before an OTP code should be sent.
+
+See [SUPABASE_AUTH_PROVISIONING.md](./SUPABASE_AUTH_PROVISIONING.md) for the recommended admin workflow and long-term provisioning approach.
+
+For local admin provisioning, the repo now includes:
+
+- `npm run provision:member -- --email person@example.com --name "Person Name" --role stake`
+
+This command uses the Supabase Admin API, so it requires a local `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
 
 ## Apps Script notes
 

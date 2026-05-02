@@ -287,6 +287,10 @@ body.modal-open {
   overflow: hidden;
 }
 
+.hidden {
+  display: none !important;
+}
+
 #loader.hidden,
 #data-list.hidden,
 .reports-page.hidden {
