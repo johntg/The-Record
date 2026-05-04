@@ -79,6 +79,7 @@ const appState = {
   expandedHcDetailsIds: new Set(),
   showAllCallingsForStake: false,
   activeInlineEdit: null,
+  isRefreshing: false,
 };
 
 function getCurrentRole() {
@@ -415,6 +416,58 @@ async function fetchCallings() {
   }
 }
 
+function updateDerivedMemberLists() {
+  appState.highCouncilNames = [
+    ...new Set(
+      appState.members
+        .filter(
+          (member) =>
+            String(member.role || "")
+              .toLowerCase()
+              .trim() === "stake",
+        )
+        .map((member) => String(member.name ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  appState.assignableNames = [
+    ...new Set(
+      appState.members
+        .filter((member) => canAssignMember(member))
+        .map((member) => String(member.name ?? "").trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+async function fetchReferenceData() {
+  const [membersResult, statusesResult] = await Promise.all([
+    supabase.from("members").select("*"),
+    supabase.from("status_options").select("*"),
+  ]);
+
+  const { data: members, error: membersError } = membersResult;
+  const { data: statusRows, error: statusError } = statusesResult;
+
+  if (membersError) {
+    throw new Error(
+      `The app could not fetch members from Supabase. ${membersError.message}`,
+    );
+  }
+
+  appState.members = members || [];
+
+  if (statusError) {
+    console.error("Could not load status options:", statusError);
+    appState.statusOptions = normalizeStatusOptions([]);
+  } else {
+    appState.statusOptions = normalizeStatusOptions(statusRows);
+  }
+
+  updateDerivedMemberLists();
+}
+
 function getSortedVisibleCallings() {
   const rows = [...getVisibleCallings()];
 
@@ -646,19 +699,49 @@ const callingsActions = createCallingsActions({
 });
 
 window.showToast = (message) => {
+  const app = document.getElementById("app");
+  const header = app?.querySelector(".main-header");
   let toast = document.getElementById("app-toast");
+
   if (!toast) {
     toast = document.createElement("div");
     toast.id = "app-toast";
-    toast.className = "toast";
-    document.body.appendChild(toast);
+    toast.className = "app-toast hidden success";
+
+    if (app) {
+      if (header?.nextSibling) {
+        app.insertBefore(toast, header.nextSibling);
+      } else {
+        app.appendChild(toast);
+      }
+    } else {
+      document.body.appendChild(toast);
+    }
+  } else if (app && header && toast.parentElement !== app) {
+    if (header.nextSibling) {
+      app.insertBefore(toast, header.nextSibling);
+    } else {
+      app.appendChild(toast);
+    }
+  }
+
+  if (app && header) {
+    const toastTop = header.offsetTop + header.offsetHeight + 8;
+    toast.style.top = `${toastTop}px`;
+  } else {
+    toast.style.top = "10px";
   }
 
   toast.textContent = message;
-  toast.classList.add("visible");
+  toast.classList.remove("hidden");
 
-  setTimeout(() => {
-    toast.classList.remove("visible");
+  if (window.__toastHideTimer) {
+    clearTimeout(window.__toastHideTimer);
+  }
+
+  window.__toastHideTimer = window.setTimeout(() => {
+    toast.classList.add("hidden");
+    window.__toastHideTimer = null;
   }, 2500);
 };
 
@@ -726,6 +809,90 @@ window.generateCurrentReport = () => {
     },
   );
   renderReportsPage();
+};
+
+function spinRefreshIcon() {
+  const icon = document.getElementById("refreshicon");
+  if (!icon) return;
+
+  icon.classList.remove("is-spinning");
+  // Force reflow so repeated clicks can replay the animation.
+  void icon.offsetWidth;
+  icon.classList.add("is-spinning");
+
+  window.setTimeout(() => {
+    icon.classList.remove("is-spinning");
+  }, 1500);
+}
+
+window.refreshData = async () => {
+  spinRefreshIcon();
+
+  if (!supabase || appState.isRefreshing) {
+    return;
+  }
+
+  appState.isRefreshing = true;
+
+  try {
+    await fetchReferenceData();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError && userError.name !== "AuthSessionMissingError") {
+      throw new Error(userError.message || "Failed to refresh auth user.");
+    }
+
+    if (!user) {
+      renderLogin();
+      return;
+    }
+
+    const matchedMember =
+      appState.members.find(
+        (member) =>
+          String(member.email || "")
+            .trim()
+            .toLowerCase() ===
+          String(user.email || "")
+            .trim()
+            .toLowerCase(),
+      ) || null;
+
+    appState.currentUser = user;
+    appState.currentMember = matchedMember;
+    appState.currentRole = String(matchedMember?.role || "")
+      .toLowerCase()
+      .trim();
+
+    await fetchCallings();
+
+    if (appState.currentPage === "reports" && appState.currentReportType) {
+      appState.reportOutput = generateReport(
+        appState.currentReportType,
+        getVisibleCallings(),
+        {
+          getHighCouncilVoteSummary,
+          hcVotingTableAvailable: appState.hcVotingTableAvailable,
+        },
+      );
+    }
+
+    renderHeader();
+    renderCurrentPage();
+
+    if (typeof window.showToast === "function") {
+      window.showToast("Data refreshed");
+    }
+  } catch (error) {
+    console.error("Failed to refresh data:", error);
+    alert(`Failed to refresh data: ${error?.message || "Unknown error"}`);
+  } finally {
+    appState.isRefreshing = false;
+  }
 };
 
 window.copyReportToClipboard = async () => {
@@ -853,7 +1020,9 @@ function renderLogin() {
       .toLowerCase();
 
   const formatOtpRequestError = (error) => {
-    const errorCode = String(error?.code || "").trim().toLowerCase();
+    const errorCode = String(error?.code || "")
+      .trim()
+      .toLowerCase();
     const errorStatus = Number(error?.status || 0);
 
     if (errorCode === "email_not_confirmed") {
@@ -1144,33 +1313,17 @@ async function startApp() {
     return;
   }
 
-  const [membersResult, statusesResult] = await Promise.all([
-    supabase.from("members").select("*"),
-    supabase.from("status_options").select("*"),
-  ]);
-
-  const { data: members, error: membersError } = membersResult;
-  const { data: statusRows, error: statusError } = statusesResult;
-
-  if (membersError) {
-    console.error("Error fetching members:", membersError);
+  try {
+    await fetchReferenceData();
+  } catch (error) {
+    console.error("Error fetching members:", error);
     showFatalError(
       "Could not load app data",
-      `The app could not fetch members from Supabase. ${membersError.message}`,
+      error?.message || "The app could not fetch members from Supabase.",
     );
     return;
   }
 
-  appState.members = members || [];
-
-  if (statusError) {
-    console.error("Could not load status options:", statusError);
-    appState.statusOptions = normalizeStatusOptions([]);
-  } else {
-    // console.log("Loaded status options:", statusRows);
-    appState.statusOptions = normalizeStatusOptions(statusRows);
-    // console.log("appState.statusOptions:", appState.statusOptions);
-  }
   supabase.auth.onAuthStateChange((event) => {
     console.log("Auth state changed:", event);
   });
@@ -1221,29 +1374,6 @@ async function startApp() {
   appState.currentRole = String(matchedMember.role || "")
     .toLowerCase()
     .trim();
-
-  appState.highCouncilNames = [
-    ...new Set(
-      appState.members
-        .filter(
-          (member) =>
-            String(member.role || "")
-              .toLowerCase()
-              .trim() === "stake",
-        )
-        .map((member) => String(member.name ?? "").trim())
-        .filter(Boolean),
-    ),
-  ];
-
-  appState.assignableNames = [
-    ...new Set(
-      appState.members
-        .filter((member) => canAssignMember(member))
-        .map((member) => String(member.name ?? "").trim())
-        .filter(Boolean),
-    ),
-  ];
 
   await fetchCallings();
   renderHeader();
