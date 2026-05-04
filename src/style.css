@@ -149,6 +149,13 @@
   fill: var(--iconClr);
 }
 
+.releaseCard {
+  border: 2px solid var(--banner-release-bg);
+}
+.callingCard {
+  border: 2px solid var(--banner-call-bg);
+}
+
 body.dark-mode .card {
   background-color: #111827 !important;
   color: var(--text);

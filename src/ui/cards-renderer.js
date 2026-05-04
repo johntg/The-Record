@@ -239,6 +239,24 @@ export function createCardsRenderer({
       return;
     }
 
+    function hasMatchingRelease(calling, allCallings) {
+      if (!calling || !calling.name) return false;
+
+      const nameKey = normalizeComparableName(calling.name);
+
+      return allCallings.some((row) => {
+        if (!row) return false;
+
+        const rowNameKey = normalizeComparableName(row.name);
+
+        const isRelease = String(row.type || "")
+          .toLowerCase()
+          .includes("release");
+
+        return rowNameKey === nameKey && isRelease;
+      });
+    }
+
     list.innerHTML = rowsToRender
       .map((row) => {
         const canAssign = hasAdminPasswordAccess();
@@ -281,7 +299,7 @@ export function createCardsRenderer({
               (status) => status.toLowerCase().trim() !== "archived",
             );
         return `
-        <article class="card">
+        <article class="card ${isRelease ? "releaseCard" : "callingCard"}">
           <div style="background: ${isRelease ? "var(--banner-release-bg)" : "var(--banner-call-bg)"}; 
           padding: 10px; text-align: center; font-weight: 900; color: ${isRelease ? "var(--banner-release-text)" : "var(--banner-call-text)"};">
             ${isRelease ? "RELEASE" : "CALLING"}
@@ -520,14 +538,14 @@ export function createCardsRenderer({
                     <span>Interview completed</span>
                   </label>
 
-                  ${
-                    isRelease
-                      ? ""
-                      : `<label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.prev_release ? "var(--warning-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
-                    <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
-                    <span>Reminder: verify previous release</span>
-                  </label>`
-                  }
+                 ${
+                   isRelease || getRelatedReleaseChecks(row).length
+                     ? ""
+                     : `<label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.prev_release ? "var(--warning-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
+      <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
+      <span>Reminder: verify previous release</span>
+    </label>`
+                 }
                 </div>
 
                 ${
