@@ -898,6 +898,29 @@ window.refreshData = async () => {
   }
 };
 
+window.softRefreshApp = async () => {
+  try {
+    // unregister service workers
+    if ("serviceWorker" in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(
+        registrations.map((registration) => registration.unregister()),
+      );
+    }
+
+    // clear caches
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+  } catch (err) {
+    console.warn("Soft refresh encountered an issue:", err);
+  }
+
+  // IMPORTANT: do NOT clear localStorage or sign out
+  window.location.reload();
+};
+
 window.copyReportToClipboard = async () => {
   if (!appState.reportOutput) {
     alert("No report to copy.");
