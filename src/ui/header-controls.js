@@ -159,7 +159,7 @@ export function renderHeader({
     app.appendChild(reports);
   }
 
-  const refreshIcon = documentRef.getElementBy("refreshicon");
+  const refreshIcon = documentRef.getElementById("refreshicon");
 
   refreshIcon.addEventListener("click", () => {
     const confirmed = confirm("Refresh app to latest version?");
