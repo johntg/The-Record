@@ -58,7 +58,7 @@ const appState = {
   themeMode: "system",
   cardSortOrder: "newest",
   currentPage: "callings",
-  currentReportType: "awaiting-shc",
+  currentReportType: "sustain-setapart-release",
   reportOutput: "",
   currentUser: null,
   currentMember: null,
@@ -107,7 +107,10 @@ function getCurrentUserNameFromAuth() {
 window.openReportInReader = function () {
   const content = appState.reportOutput || "";
   const base = import.meta.env.BASE_URL || "/";
-  const url = `${base}report.html?content=${encodeURIComponent(content)}`;
+
+  sessionStorage.setItem("readingViewReport", content);
+
+  const url = `${base}report.html`;
   window.open(url, "_blank", "noopener,noreferrer");
 };
 

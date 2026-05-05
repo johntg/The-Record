@@ -257,10 +257,10 @@ function buildSustainSetApartReleaseReport(rows) {
   const totalItems = releases.length + toSustain.length;
 
   if (reportSections.length === 0) {
-    return `${formatReportHeader("Stake Business - in wards", 0)}\n\nNo members require sustaining, setting apart, or release at this time.`;
+    return `${formatReportHeader("Stake Business - in units", 0)}\n\nNo members require sustaining, setting apart, or release at this time.`;
   }
 
-  return `${formatReportHeader("Stake Business - in wards", totalItems)}\n\n${reportSections.join("\n\n")}`;
+  return `${formatReportHeader("Stake Business - in units", totalItems)}\n\n${reportSections.join("\n\n")}`;
 }
 
 export function generateReport(type, rows, reportContext = {}) {

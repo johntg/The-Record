@@ -203,7 +203,10 @@
         });
 
       const params = new URLSearchParams(window.location.search);
-      const content = params.get("content");
+      const content =
+        sessionStorage.getItem("readingViewReport") ||
+        new URLSearchParams(window.location.search).get("content") ||
+        "";
 
       function escapeHtml(value) {
         return String(value ?? "")
