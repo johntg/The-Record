@@ -162,7 +162,7 @@ export function renderHeader({
   const refreshIcon = documentRef.getElementById("refreshicon");
 
   refreshIcon.addEventListener("click", () => {
-    const confirmed = confirm("Refresh app to latest version?");
+    const confirmed = confirm("Refresh app to latest data?");
     if (!confirmed) return;
 
     softRefreshApp(); // or onRefreshApp if you renamed it
