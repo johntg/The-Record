@@ -222,12 +222,44 @@ function buildSustainSetApartReleaseReport(rows) {
         .trim() !== "archived",
   );
 
+  const hasBeenSustainedAnywhere = (row) =>
+    Array.isArray(row.units_sustained) &&
+    row.units_sustained
+      .map((unit) =>
+        String(unit || "")
+          .toLowerCase()
+          .trim(),
+      )
+      .some(Boolean);
+
   const toSustain = rows.filter(
     (row) =>
       String(row.type || "").toUpperCase() !== "RELEASE" &&
       String(row.status || "").trim() === "In Progress" &&
       isCompletedValue(row.interviewed) &&
-      (isCompletedValue(row.sp_approved) || isCompletedValue(row.hc_sustained)),
+      (isCompletedValue(row.sp_approved) ||
+        isCompletedValue(row.hc_sustained)) &&
+      !hasBeenSustainedAnywhere(row),
+  );
+
+  const hasBeenSustainedAnywhere = (row) =>
+    Array.isArray(row.units_sustained) &&
+    row.units_sustained
+      .map((unit) =>
+        String(unit || "")
+          .toLowerCase()
+          .trim(),
+      )
+      .some(Boolean);
+
+  const toSustain = rows.filter(
+    (row) =>
+      String(row.type || "").toUpperCase() !== "RELEASE" &&
+      String(row.status || "").trim() === "In Progress" &&
+      isCompletedValue(row.interviewed) &&
+      (isCompletedValue(row.sp_approved) ||
+        isCompletedValue(row.hc_sustained)) &&
+      !hasBeenSustainedAnywhere(row),
   );
 
   const reportSections = [];
