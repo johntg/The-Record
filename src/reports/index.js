@@ -317,7 +317,8 @@ function getArchiveSortDate(row) {
 }
 
 function buildArchiveItemsReport(archiveRows, reportContext = {}) {
-  const pageSize = Number(reportContext.pageSize) > 0 ? reportContext.pageSize : 25;
+  const pageSize =
+    Number(reportContext.pageSize) > 0 ? reportContext.pageSize : 25;
   const rows = Array.isArray(archiveRows) ? [...archiveRows] : [];
 
   rows.sort((a, b) => {
@@ -371,7 +372,8 @@ function buildArchiveItemsReport(archiveRows, reportContext = {}) {
         "setting_apart_date",
       ]);
       const setApartByField = resolveSettingApartByField(row);
-      const setApartBy = String(row?.[setApartByField] || "").trim() || "(Not recorded)";
+      const setApartBy =
+        String(row?.[setApartByField] || "").trim() || "(Not recorded)";
 
       lines.push(
         `${itemNumber}. ${name} — ${calling}\n   Set apart: ${formatArchiveDate(setApartDate)}\n   Set apart by: ${setApartBy}`,
