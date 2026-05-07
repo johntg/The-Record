@@ -1,6 +1,8 @@
 import {
   getAssignmentFieldCandidates,
   isCompletedValue,
+  resolveSettingApartByField,
+  resolveSettingApartDoneField,
 } from "../utils/app-utils.js";
 
 function formatReportHeader(title, count) {
@@ -274,7 +276,119 @@ function buildSustainSetApartReleaseReport(rows) {
   return `${formatReportHeader("Stake Business - in units", totalItems)}\n\n${reportSections.join("\n\n")}`;
 }
 
+function formatArchiveDate(value) {
+  if (!value) return "Unknown date";
+
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return "Unknown date";
+  }
+
+  return new Date(timestamp).toLocaleDateString();
+}
+
+function getRowDateValue(row, candidates) {
+  for (const key of candidates) {
+    const value = row?.[key];
+    if (!value) continue;
+
+    const timestamp = new Date(value).getTime();
+    if (Number.isFinite(timestamp) && timestamp > 0) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function getArchiveSortDate(row) {
+  return (
+    getRowDateValue(row, [
+      "archived_at",
+      "updated_at",
+      "created_at",
+      "release_date",
+      "released_at",
+      "date_released",
+      "released_on",
+      resolveSettingApartDoneField(row),
+    ]) || ""
+  );
+}
+
+function buildArchiveItemsReport(archiveRows, reportContext = {}) {
+  const pageSize = Number(reportContext.pageSize) > 0 ? reportContext.pageSize : 25;
+  const rows = Array.isArray(archiveRows) ? [...archiveRows] : [];
+
+  rows.sort((a, b) => {
+    const aTime = new Date(getArchiveSortDate(a) || 0).getTime();
+    const bTime = new Date(getArchiveSortDate(b) || 0).getTime();
+    return bTime - aTime;
+  });
+
+  if (!rows.length) {
+    return `${formatReportHeader("Archive Items", 0)}\n\nNo archived items found.`;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const pages = [];
+
+  for (let pageIndex = 0; pageIndex < totalPages; pageIndex += 1) {
+    const start = pageIndex * pageSize;
+    const pageRows = rows.slice(start, start + pageSize);
+    const lines = [];
+
+    lines.push(`Page ${pageIndex + 1} of ${totalPages}`);
+    lines.push("-".repeat(20));
+
+    pageRows.forEach((row, idx) => {
+      const itemNumber = start + idx + 1;
+      const isRelease = String(row.type || "").toUpperCase() === "RELEASE";
+      const name = row.name || "(No name)";
+      const calling = row.position || "(No calling)";
+
+      if (isRelease) {
+        const releaseDate =
+          getRowDateValue(row, [
+            "release_date",
+            "released_at",
+            "date_released",
+            "released_on",
+            "updated_at",
+            "archived_at",
+            "created_at",
+          ]) || "";
+
+        lines.push(
+          `${itemNumber}. ${name} — ${calling}\n   Release date: ${formatArchiveDate(releaseDate)}`,
+        );
+        return;
+      }
+
+      const setApartDate = getRowDateValue(row, [
+        resolveSettingApartDoneField(row),
+        "set_apart_date",
+        "setting_apart_date",
+      ]);
+      const setApartByField = resolveSettingApartByField(row);
+      const setApartBy = String(row?.[setApartByField] || "").trim() || "(Not recorded)";
+
+      lines.push(
+        `${itemNumber}. ${name} — ${calling}\n   Set apart: ${formatArchiveDate(setApartDate)}\n   Set apart by: ${setApartBy}`,
+      );
+    });
+
+    pages.push(lines.join("\n"));
+  }
+
+  return `${formatReportHeader("Archive Items", rows.length)}\n\n${pages.join("\n\n")}`;
+}
+
 export function generateReport(type, rows, reportContext = {}) {
+  if (type === "archive-items") {
+    return buildArchiveItemsReport(reportContext.archivedRows, reportContext);
+  }
+
   if (type === "sustain-setapart-release") {
     return buildSustainSetApartReleaseReport(rows);
   }

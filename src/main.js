@@ -42,16 +42,19 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
 const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
+const archiveTable = import.meta.env.VITE_ARCHIVE_TABLE || "archive";
 
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 const appState = {
   callings: [],
+  archivedItems: [],
   members: [],
   highCouncilNames: [],
   hcVotesByCalling: {},
   hcVotingTableAvailable: true,
+  archiveTableAvailable: true,
   hcBypassAvailable: true,
   assignableNames: [],
   statusOptions: [],
@@ -411,12 +414,38 @@ async function fetchCallings() {
       .select("*")
       .order("created_at", { ascending: false }),
     fetchHighCouncilVotes(),
+    fetchArchivedItems(),
   ]);
 
   if (!error) {
     appState.callings = data || [];
     applyHighCouncilSummaryToAllCallings();
   }
+}
+
+async function fetchArchivedItems() {
+  const { data, error } = await supabase
+    .from(archiveTable)
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    appState.archiveTableAvailable = false;
+    appState.archivedItems = [];
+
+    if (error.code === "42P01") {
+      console.warn(
+        `Archive table \"${archiveTable}\" not found. Set VITE_ARCHIVE_TABLE to your archive table name if needed.`,
+      );
+      return;
+    }
+
+    console.error("Failed to fetch archived items:", error);
+    return;
+  }
+
+  appState.archiveTableAvailable = true;
+  appState.archivedItems = data || [];
 }
 
 function updateDerivedMemberLists() {
@@ -535,6 +564,9 @@ function renderReportsPage() {
         <option value="status-summary" ${
           appState.currentReportType === "status-summary" ? "selected" : ""
         }>Status Summary</option>
+        <option value="archive-items" ${
+          appState.currentReportType === "archive-items" ? "selected" : ""
+        }>Archive Items</option>
       </select>
       <button type="button" class="btn btn-primary" onclick="window.generateCurrentReport()">Generate Report</button>
     </section>
@@ -809,6 +841,8 @@ window.generateCurrentReport = () => {
     {
       getHighCouncilVoteSummary,
       hcVotingTableAvailable: appState.hcVotingTableAvailable,
+      archivedRows: appState.archivedItems,
+      pageSize: 25,
     },
   );
   renderReportsPage();
@@ -880,6 +914,8 @@ window.refreshData = async () => {
         {
           getHighCouncilVoteSummary,
           hcVotingTableAvailable: appState.hcVotingTableAvailable,
+          archivedRows: appState.archivedItems,
+          pageSize: 25,
         },
       );
     }
