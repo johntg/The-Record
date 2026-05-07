@@ -84,6 +84,27 @@ npm run dev
 npm run build
 ```
 
+### Automatic versioning
+
+This project now supports two lightweight versioning helpers:
+
+1. **Auto build metadata** (runs automatically before `npm run build`)
+	 - Generates `public/build-version.json`
+	 - Includes:
+		 - semantic version from `package.json`
+		 - auto build number (CI run number if available, otherwise UTC timestamp)
+		 - short git commit hash
+
+2. **Semantic version bump shortcuts**
+
+```bash
+npm run version:patch
+npm run version:minor
+npm run version:major
+```
+
+These update `package.json` version without creating a git tag (`--no-git-tag-version`).
+
 ### Preview the production build
 
 ```bash

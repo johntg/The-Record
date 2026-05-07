@@ -1197,6 +1197,42 @@ select:focus-visible {
   margin-top: 18px;
 }
 
+.version-info-modal {
+  width: min(92%, 480px);
+}
+
+.version-info-header {
+  margin-bottom: 8px;
+}
+
+.version-info-body {
+  display: grid;
+  gap: 10px;
+}
+
+.version-info-short {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.version-info-full {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.86rem;
+}
+
+.version-info-actions {
+  margin-top: 14px;
+}
+
 body.dark-mode .notice-modal {
   border-color: rgba(235, 156, 255, 0.35);
 }
@@ -1648,6 +1684,15 @@ select {
   color: white;
   font-weight: 300;
   opacity: 0.5;
+}
+
+#app-version {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+#app-version:hover {
+  opacity: 1;
 }
 
 @media (max-width: 640px) {

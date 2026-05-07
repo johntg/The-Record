@@ -1,12 +1,17 @@
 {
   "name": "the-record",
-  "version": "0.0.0",
+  "version": "2.10.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "build:meta": "node scripts/write-build-version.mjs",
+    "prebuild": "npm run build:meta",
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version",
     "provision:member": "node scripts/provision-member.mjs",
     "inspect:auth-user": "node scripts/inspect-auth-user.mjs"
   },

@@ -107,6 +107,160 @@ function getCurrentUserNameFromAuth() {
   return appState.currentMember?.name || "";
 }
 
+const buildVersionState = {
+  short: "",
+  full: "",
+};
+
+function syncBodyModalOpenState() {
+  const hasVisibleModal = Boolean(
+    document.querySelector(".modal-overlay:not(.hidden)"),
+  );
+
+  if (hasVisibleModal) {
+    document.body.classList.add("modal-open");
+    return;
+  }
+
+  document.body.classList.remove("modal-open");
+}
+
+function ensureBuildVersionModal() {
+  let modal = document.getElementById("build-version-modal");
+  if (modal) {
+    return modal;
+  }
+
+  modal = document.createElement("div");
+  modal.id = "build-version-modal";
+  modal.className = "modal-overlay hidden";
+  modal.innerHTML = `
+    <section class="modal version-info-modal" role="dialog" aria-modal="true" aria-labelledby="build-version-title">
+      <div class="modal-header version-info-header">
+        <h2 id="build-version-title">App Version</h2>
+        <button type="button" class="icon-button" aria-label="Close version details" onclick="window.closeBuildVersionPopup()">×</button>
+      </div>
+      <div class="version-info-body">
+        <p id="build-version-short" class="version-info-short"></p>
+        <pre id="build-version-full" class="version-info-full"></pre>
+      </div>
+      <div class="btn-group version-info-actions">
+        <button type="button" class="btn btn-primary" onclick="window.closeBuildVersionPopup()">Close</button>
+      </div>
+    </section>
+  `;
+
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      window.closeBuildVersionPopup();
+    }
+  });
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function showBuildVersionPopup() {
+  const modal = ensureBuildVersionModal();
+  const shortNode = modal.querySelector("#build-version-short");
+  const fullNode = modal.querySelector("#build-version-full");
+
+  const shortText = buildVersionState.short || "Version unavailable";
+  const fullText = buildVersionState.full || shortText;
+
+  if (shortNode) {
+    shortNode.textContent = shortText;
+  }
+
+  if (fullNode) {
+    fullNode.textContent = fullText;
+  }
+
+  modal.classList.remove("hidden");
+  syncBodyModalOpenState();
+}
+
+window.closeBuildVersionPopup = () => {
+  const modal = document.getElementById("build-version-modal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  syncBodyModalOpenState();
+};
+
+async function applyBuildVersionToCreditLine() {
+  const versionNode = document.getElementById("app-version");
+  if (!versionNode) return;
+
+  const fallbackVersion = String(versionNode.textContent || "").trim();
+  buildVersionState.short = fallbackVersion;
+  buildVersionState.full = fallbackVersion;
+
+  if (versionNode.dataset.versionPopupBound !== "true") {
+    versionNode.dataset.versionPopupBound = "true";
+    versionNode.style.cursor = "pointer";
+    versionNode.setAttribute("role", "button");
+    versionNode.setAttribute("tabindex", "0");
+    versionNode.title = "Click for full version details";
+    versionNode.addEventListener("click", showBuildVersionPopup);
+    versionNode.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        showBuildVersionPopup();
+      }
+    });
+  }
+
+  try {
+    const base = import.meta.env.BASE_URL || "/";
+    const response = await fetch(`${base}build-version.json`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const metadata = await response.json();
+    const version = String(metadata?.version || "").trim();
+    const displayVersion = String(metadata?.displayVersion || "").trim();
+    const buildNumber = String(metadata?.buildNumber || "").trim();
+    const gitCommit = String(metadata?.gitCommit || "").trim();
+    const generatedAt = String(metadata?.generatedAt || "").trim();
+
+    if (version) {
+      versionNode.textContent = `v${version}`;
+    } else if (fallbackVersion) {
+      versionNode.textContent = fallbackVersion;
+    }
+
+    buildVersionState.short = String(versionNode.textContent || fallbackVersion).trim();
+
+    if (buildNumber || gitCommit) {
+      const buildParts = [];
+      if (buildNumber) {
+        buildParts.push(`build ${buildNumber}`);
+      }
+      if (gitCommit && gitCommit !== "unknown") {
+        buildParts.push(gitCommit);
+      }
+      versionNode.title = `${buildParts.join(" • ")} • click for details`;
+    }
+
+    const fullVersionParts = [
+      buildVersionState.short,
+      displayVersion ? `Full version: ${displayVersion}` : "",
+      buildNumber ? `Build: ${buildNumber}` : "",
+      gitCommit ? `Commit: ${gitCommit}` : "",
+      generatedAt ? `Generated: ${new Date(generatedAt).toLocaleString()}` : "",
+    ].filter(Boolean);
+
+    buildVersionState.full = fullVersionParts.join("\n");
+  } catch (error) {
+    console.warn("Build version metadata unavailable:", error);
+  }
+}
+
 window.openReportInReader = function () {
   const content = appState.reportOutput || "";
   const base = import.meta.env.BASE_URL || "/";
@@ -207,6 +361,15 @@ if (!import.meta.env.DEV && typeof window !== "undefined") {
 }
 
 if (typeof window !== "undefined") {
+  applyBuildVersionToCreditLine();
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      window.closeBuildVersionPopup();
+      window.closeConcernNoticeModal();
+    }
+  });
+
   setupSystemThemeChangeListener(appState, () => {
     applyThemeMode("system", appState);
     renderHeader();
@@ -1300,7 +1463,7 @@ window.logout = async () => {
 window.showConcernNoticeModal = () => {
   const modal = ensureConcernNoticeModal();
   modal.classList.remove("hidden");
-  document.body.classList.add("modal-open");
+  syncBodyModalOpenState();
 };
 
 window.closeConcernNoticeModal = () => {
@@ -1308,7 +1471,7 @@ window.closeConcernNoticeModal = () => {
   if (!modal) return;
 
   modal.classList.add("hidden");
-  document.body.classList.remove("modal-open");
+  syncBodyModalOpenState();
 };
 
 function syncFabVisibility() {
