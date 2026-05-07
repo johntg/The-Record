@@ -1117,7 +1117,7 @@ body.modal-open {
 
 .fab {
   position: fixed;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(40px + env(safe-area-inset-bottom, 0px));
   right: 25px;
   width: 60px;
   height: 60px;
