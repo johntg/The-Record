@@ -89,11 +89,11 @@ npm run build
 This project now supports two lightweight versioning helpers:
 
 1. **Auto build metadata** (runs automatically before `npm run build`)
-	 - Generates `public/build-version.json`
-	 - Includes:
-		 - semantic version from `package.json`
-		 - auto build number (CI run number if available, otherwise UTC timestamp)
-		 - short git commit hash
+   - Generates `public/build-version.json`
+   - Includes:
+     - semantic version from `package.json`
+     - auto build number (CI run number if available, otherwise UTC timestamp)
+     - short git commit hash
 
 2. **Semantic version bump shortcuts**
 

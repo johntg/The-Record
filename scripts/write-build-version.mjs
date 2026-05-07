@@ -66,7 +66,9 @@ async function main() {
 
   await writeFile(outputPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
 
-  console.log(`Wrote build metadata: ${metadata.displayVersion} (${metadata.gitCommit})`);
+  console.log(
+    `Wrote build metadata: ${metadata.displayVersion} (${metadata.gitCommit})`,
+  );
 }
 
 main().catch((error) => {

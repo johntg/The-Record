@@ -234,7 +234,9 @@ async function applyBuildVersionToCreditLine() {
       versionNode.textContent = fallbackVersion;
     }
 
-    buildVersionState.short = String(versionNode.textContent || fallbackVersion).trim();
+    buildVersionState.short = String(
+      versionNode.textContent || fallbackVersion,
+    ).trim();
 
     if (buildNumber || gitCommit) {
       const buildParts = [];
