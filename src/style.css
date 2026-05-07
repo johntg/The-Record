@@ -1679,14 +1679,14 @@ select {
 }
 
 .credit {
-  text-align: right;
+  text-align: left;
   font-size: 0.875rem;
   margin-top: auto;
-  margin-right: 20px;
+  margin-left: 20px;
   color: white;
   font-weight: 300;
-  opacity: 0.5;
-  padding-block: 1rem;
+  opacity: 0.6;
+  padding-block: 2rem;
 }
 
 #app-version {
