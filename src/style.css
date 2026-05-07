@@ -1686,6 +1686,7 @@ select {
   color: white;
   font-weight: 300;
   opacity: 0.5;
+  padding-block: 1rem;
 }
 
 #app-version {
