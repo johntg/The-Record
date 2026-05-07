@@ -203,9 +203,19 @@
         });
 
       const params = new URLSearchParams(window.location.search);
+      const reportId = String(params.get("rid") || "").trim();
+
+      let handoffContent = "";
+
+      if (reportId) {
+        handoffContent = localStorage.getItem(reportId) || "";
+        localStorage.removeItem(reportId);
+      }
+
       const content =
+        handoffContent ||
         sessionStorage.getItem("readingViewReport") ||
-        new URLSearchParams(window.location.search).get("content") ||
+        params.get("content") ||
         "";
 
       function escapeHtml(value) {
@@ -295,9 +305,8 @@
       }
 
       if (content) {
-        const decoded = decodeURIComponent(content);
         document.getElementById("report-content").innerHTML =
-          formatReport(decoded);
+          formatReport(content);
       } else {
         document.getElementById("report-content").textContent =
           "No report content.";

@@ -110,10 +110,12 @@ function getCurrentUserNameFromAuth() {
 window.openReportInReader = function () {
   const content = appState.reportOutput || "";
   const base = import.meta.env.BASE_URL || "/";
+  const reportId = `reading-report-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+  localStorage.setItem(reportId, content);
   sessionStorage.setItem("readingViewReport", content);
 
-  const url = `${base}report.html`;
+  const url = `${base}report.html?rid=${encodeURIComponent(reportId)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 };
 
