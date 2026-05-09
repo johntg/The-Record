@@ -790,7 +790,17 @@ async function archiveCallingRecord(id, options = {}) {
     return false;
   }
 
-  const isDeleteMistake = item.status === "Mistake: DELETE";
+  const normalizedStatus = String(item.status || "").trim();
+
+  if (normalizedStatus === "In Progress") {
+    alert(
+      "Item with a status of 'In Progress' cannot be archived. Please change the status.",
+    );
+    renderCurrentPage();
+    return false;
+  }
+
+  const isDeleteMistake = normalizedStatus === "Mistake: DELETE";
 
   if (confirm) {
     const message = isDeleteMistake
