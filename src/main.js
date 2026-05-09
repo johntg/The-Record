@@ -267,12 +267,26 @@ window.openReportInReader = function () {
   const content = appState.reportOutput || "";
   const base = import.meta.env.BASE_URL || "/";
   const reportId = `reading-report-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const returnTo = window.location.href;
+  const isStandalone =
+    window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    window.navigator.standalone === true;
 
   localStorage.setItem(reportId, content);
   sessionStorage.setItem("readingViewReport", content);
 
-  const url = `${base}report.html?rid=${encodeURIComponent(reportId)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
+  const url = `${base}report.html?rid=${encodeURIComponent(reportId)}&returnTo=${encodeURIComponent(returnTo)}`;
+
+  if (isStandalone) {
+    window.location.assign(url);
+    return;
+  }
+
+  const readerWindow = window.open(url, "_blank", "noopener,noreferrer");
+
+  if (!readerWindow) {
+    window.location.assign(url);
+  }
 };
 
 async function applyHiddenVisibilityForRow(callingRow) {
@@ -352,9 +366,15 @@ if (!import.meta.env.DEV && typeof window !== "undefined") {
       caches.keys().then((keys) => {
         keys
           .filter(
-            (key) =>
-              key.includes("stake-callings") ||
-              key.includes("DB-Stake-Callings"),
+            (key) => {
+              const normalizedKey = String(key || "").toLowerCase();
+
+              return (
+                normalizedKey.includes("stake-callings") ||
+                normalizedKey.includes("db-stake-callings") ||
+                normalizedKey.includes("the-record")
+              );
+            },
           )
           .forEach((key) => caches.delete(key));
       });

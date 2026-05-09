@@ -204,6 +204,7 @@
 
       const params = new URLSearchParams(window.location.search);
       const reportId = String(params.get("rid") || "").trim();
+      const returnToParam = String(params.get("returnTo") || "").trim();
 
       let handoffContent = "";
 
@@ -312,9 +313,28 @@
           "No report content.";
       }
 
+      function getSafeReturnUrl() {
+        if (returnToParam) {
+          try {
+            const returnUrl = new URL(returnToParam, window.location.href);
+            if (returnUrl.origin === window.location.origin) {
+              return returnUrl.href;
+            }
+          } catch {
+            // ignore invalid return URL and fall back below
+          }
+        }
+
+        return new URL("./", window.location.href).href;
+      }
+
       function goBackToApp() {
-        const basePath = "/The-Record/";
-        window.location.href = basePath;
+        if (window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+
+        window.location.assign(getSafeReturnUrl());
       }
     </script>
   </body>
