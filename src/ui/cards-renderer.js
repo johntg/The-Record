@@ -5,6 +5,7 @@ export function createCardsRenderer({
   isStakePasswordSession,
   getHighCouncilVoteSummary,
   resolveSustainingByField,
+  resolveReleaseAnnouncedUnitsField,
   resolveSettingApartByField,
   resolveSettingApartDoneField,
   resolveLcrRecordedField,
@@ -267,6 +268,13 @@ export function createCardsRenderer({
             .toUpperCase() === "RELEASE";
         const sustainingByField = resolveSustainingByField(row);
         const sustainingBy = row[sustainingByField] || "";
+        const releaseAnnouncedUnitsField = resolveReleaseAnnouncedUnitsField(row);
+        const releaseAnnouncedUnits = Array.isArray(
+          row[releaseAnnouncedUnitsField],
+        )
+          ? row[releaseAnnouncedUnitsField]
+          : [];
+        const releaseAnnouncementCount = releaseAnnouncedUnits.length;
         const settingApartByField = resolveSettingApartByField(row);
         const settingApartDoneField = resolveSettingApartDoneField(row);
         const lcrRecordedField = resolveLcrRecordedField(row);
@@ -547,6 +555,45 @@ export function createCardsRenderer({
     </label>`
                  }
                 </div>
+
+                ${
+                  isRelease
+                    ? `
+                  <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
+                    <button onclick="window.toggleReleaseAnnouncementUnits('${row.id}')" style="width: 100%; padding: 8px; background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 8px; font-weight: 600; color: var(--accent-text); cursor: pointer; font-size: 0.9rem;">
+                      ${appState.expandedReleaseAnnouncementIds.has(row.id) ? "▲ Hide" : "▼ Show"} Release Announced in Units (${releaseAnnouncementCount})
+                    </button>
+
+                    ${
+                      appState.expandedReleaseAnnouncementIds.has(row.id)
+                        ? `
+                      <div style="margin-top: 10px; padding: 10px; background: var(--surface-muted); border-radius: 8px;">
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">Units where release has been announced</p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                          ${appState.units
+                            .map((unit) => {
+                              const isSelected = releaseAnnouncedUnits.includes(
+                                unit,
+                              );
+                              return `
+                                <button
+                                  onclick="window.updateReleaseAnnouncedUnits('${row.id}', '${unit}')"
+                                  style="padding: 7px 10px; border-radius: 20px; border: 1px solid var(--border); background: ${isSelected ? "var(--chip-selected-bg)" : "var(--white)"}; color: ${isSelected ? "var(--chip-selected-text)" : "var(--text)"}; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                                >
+                                  ${unit}
+                                </button>
+                              `;
+                            })
+                            .join("")}
+                        </div>
+                      </div>
+                    `
+                        : ""
+                    }
+                  </div>
+                `
+                    : ""
+                }
 
                 ${
                   isRelease

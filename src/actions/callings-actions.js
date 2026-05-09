@@ -8,6 +8,7 @@ export function createCallingsActions({
   getHighCouncilVoteSummary,
   applyHighCouncilSummaryToCalling,
   getAssignmentFieldCandidates,
+  resolveReleaseAnnouncedUnitsField,
   renderCards,
   renderCurrentPage,
   archiveCallingRecord,
@@ -52,6 +53,15 @@ export function createCallingsActions({
     renderCards();
   }
 
+  async function toggleReleaseAnnouncementUnits(id) {
+    if (appState.expandedReleaseAnnouncementIds.has(id)) {
+      appState.expandedReleaseAnnouncementIds.delete(id);
+    } else {
+      appState.expandedReleaseAnnouncementIds.add(id);
+    }
+    renderCards();
+  }
+
   async function updateSustainedUnits(id, unitName) {
     const item = appState.callings.find((calling) => calling.id === id);
     if (!item) return;
@@ -78,6 +88,36 @@ export function createCallingsActions({
       alert(`Failed to update sustaining units: ${error.message}`);
     } else {
       console.log("Sustaining units updated:", sustaining);
+      renderCards();
+    }
+  }
+
+  async function updateReleaseAnnouncedUnits(id, unitName) {
+    const item = appState.callings.find((calling) => calling.id === id);
+    if (!item) return;
+
+    const field = resolveReleaseAnnouncedUnitsField(item);
+
+    let announcedUnits = Array.isArray(item[field]) ? [...item[field]] : [];
+
+    if (announcedUnits.includes(unitName)) {
+      announcedUnits = announcedUnits.filter((unit) => unit !== unitName);
+    } else {
+      announcedUnits.push(unitName);
+    }
+
+    item[field] = announcedUnits;
+
+    const { error } = await supabase
+      .from("callings")
+      .update({ [field]: announcedUnits })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error updating release announced units:", error);
+      alert(`Failed to update release announced units: ${error.message}`);
+    } else {
+      console.log("Release announced units updated:", announcedUnits);
       renderCards();
     }
   }
@@ -562,7 +602,9 @@ export function createCallingsActions({
     toggleDetails,
     toggleHighCouncilDetails,
     toggleSustainingUnits,
+    toggleReleaseAnnouncementUnits,
     updateSustainedUnits,
+    updateReleaseAnnouncedUnits,
     submitHighCouncilVote,
     clearHighCouncilVoteForVoter,
     setHighCouncilBypass,

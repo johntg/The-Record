@@ -32,6 +32,7 @@ import {
   normalizeComparableName,
   normalizeStatusOptions,
   resolveLcrRecordedField,
+  resolveReleaseAnnouncedUnitsField,
   resolveSettingApartByField,
   resolveSettingApartDoneField,
   resolveSustainingByField,
@@ -79,6 +80,7 @@ const appState = {
   ],
   expandedGridId: null,
   expandedSustainingIds: new Set(),
+  expandedReleaseAnnouncementIds: new Set(),
   expandedHcDetailsIds: new Set(),
   showAllCallingsForStake: false,
   activeInlineEdit: null,
@@ -902,6 +904,7 @@ const cardsRenderer = createCardsRenderer({
   resolveSettingApartByField,
   resolveSettingApartDoneField,
   resolveLcrRecordedField,
+  resolveReleaseAnnouncedUnitsField,
   isCompletedValue,
   escapeHtml,
 });
@@ -920,6 +923,7 @@ const callingsActions = createCallingsActions({
   getHighCouncilVoteSummary,
   applyHighCouncilSummaryToCalling,
   getAssignmentFieldCandidates,
+  resolveReleaseAnnouncedUnitsField,
   renderCards,
   renderCurrentPage,
   archiveCallingRecord,
@@ -978,10 +982,14 @@ window.showToast = (message) => {
 window.toggleDetails = (id) => callingsActions.toggleDetails(id);
 window.toggleSustainingUnits = (id) =>
   callingsActions.toggleSustainingUnits(id);
+window.toggleReleaseAnnouncementUnits = (id) =>
+  callingsActions.toggleReleaseAnnouncementUnits(id);
 window.toggleHighCouncilDetails = (id) =>
   callingsActions.toggleHighCouncilDetails(id);
 window.updateSustainedUnits = async (id, unitName) =>
   callingsActions.updateSustainedUnits(id, unitName);
+window.updateReleaseAnnouncedUnits = async (id, unitName) =>
+  callingsActions.updateReleaseAnnouncedUnits(id, unitName);
 window.clearHighCouncilVoteForVoter = async (id, voterName) =>
   callingsActions.clearHighCouncilVoteForVoter(id, voterName);
 window.submitHighCouncilVote = async (id, vote) =>

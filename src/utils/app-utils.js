@@ -40,6 +40,20 @@ export function resolveLcrRecordedField(row) {
   );
 }
 
+export function resolveReleaseAnnouncedUnitsField(row) {
+  return resolveFirstField(
+    row,
+    [
+      "units_release_announced",
+      "units_announced",
+      "units_released",
+      "release_announced_units",
+      "units_sustained",
+    ],
+    "units_release_announced",
+  );
+}
+
 export function isCompletedValue(value) {
   if (value == null) return false;
   if (typeof value === "boolean") return value;

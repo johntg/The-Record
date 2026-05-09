@@ -1,6 +1,7 @@
 import {
   getAssignmentFieldCandidates,
   isCompletedValue,
+  resolveReleaseAnnouncedUnitsField,
   resolveSettingApartByField,
   resolveSettingApartDoneField,
 } from "../utils/app-utils.js";
@@ -216,12 +217,28 @@ function buildSustainSetApartReleaseReport(rows) {
   const unitsSet = new Set(rows.map((row) => row.unit).filter(Boolean));
   const units = Array.from(unitsSet).sort();
 
+  const hasBeenAnnouncedInAnyUnit = (row) => {
+    const releaseAnnouncedUnitsField = resolveReleaseAnnouncedUnitsField(row);
+    const announcedUnits = Array.isArray(row[releaseAnnouncedUnitsField])
+      ? row[releaseAnnouncedUnitsField]
+      : [];
+
+    return announcedUnits
+      .map((unit) =>
+        String(unit || "")
+          .toLowerCase()
+          .trim(),
+      )
+      .some(Boolean);
+  };
+
   const releases = rows.filter(
     (row) =>
       String(row.type || "").toUpperCase() === "RELEASE" &&
       String(row.status || "")
         .toLowerCase()
-        .trim() !== "archived",
+        .trim() !== "archived" &&
+      !hasBeenAnnouncedInAnyUnit(row),
   );
 
   const hasBeenSustainedAnywhere = (row) =>
