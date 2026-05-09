@@ -50,7 +50,7 @@ Current app features include:
 Create a local `.env` file with values like these:
 
 ```env
-VITE_BASE_PATH=/DB-Stake-Callings/
+VITE_BASE_PATH=/The-Record/
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_publishable_anon_key
 VITE_ARCHIVE_TABLE=archive
