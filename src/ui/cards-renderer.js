@@ -268,7 +268,8 @@ export function createCardsRenderer({
             .toUpperCase() === "RELEASE";
         const sustainingByField = resolveSustainingByField(row);
         const sustainingBy = row[sustainingByField] || "";
-        const releaseAnnouncedUnitsField = resolveReleaseAnnouncedUnitsField(row);
+        const releaseAnnouncedUnitsField =
+          resolveReleaseAnnouncedUnitsField(row);
         const releaseAnnouncedUnits = Array.isArray(
           row[releaseAnnouncedUnitsField],
         )
@@ -572,9 +573,8 @@ export function createCardsRenderer({
                         <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                           ${appState.units
                             .map((unit) => {
-                              const isSelected = releaseAnnouncedUnits.includes(
-                                unit,
-                              );
+                              const isSelected =
+                                releaseAnnouncedUnits.includes(unit);
                               return `
                                 <button
                                   onclick="window.updateReleaseAnnouncedUnits('${row.id}', '${unit}')"
