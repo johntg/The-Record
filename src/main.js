@@ -365,17 +365,15 @@ if (!import.meta.env.DEV && typeof window !== "undefined") {
     if ("caches" in window) {
       caches.keys().then((keys) => {
         keys
-          .filter(
-            (key) => {
-              const normalizedKey = String(key || "").toLowerCase();
+          .filter((key) => {
+            const normalizedKey = String(key || "").toLowerCase();
 
-              return (
-                normalizedKey.includes("stake-callings") ||
-                normalizedKey.includes("db-stake-callings") ||
-                normalizedKey.includes("the-record")
-              );
-            },
-          )
+            return (
+              normalizedKey.includes("stake-callings") ||
+              normalizedKey.includes("db-stake-callings") ||
+              normalizedKey.includes("the-record")
+            );
+          })
           .forEach((key) => caches.delete(key));
       });
     }
