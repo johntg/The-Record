@@ -216,6 +216,8 @@ function buildUnitSection(unitTitle, releases, toSustain) {
 function buildSustainSetApartReleaseReport(rows) {
   const unitsSet = new Set(rows.map((row) => row.unit).filter(Boolean));
   const units = Array.from(unitsSet).sort();
+  const isInProgress = (row) =>
+    String(row.status || "").trim() === "In Progress";
 
   const hasBeenAnnouncedInAnyUnit = (row) => {
     const releaseAnnouncedUnitsField = resolveReleaseAnnouncedUnitsField(row);
@@ -235,9 +237,7 @@ function buildSustainSetApartReleaseReport(rows) {
   const releases = rows.filter(
     (row) =>
       String(row.type || "").toUpperCase() === "RELEASE" &&
-      String(row.status || "")
-        .toLowerCase()
-        .trim() !== "archived" &&
+      isInProgress(row) &&
       !hasBeenAnnouncedInAnyUnit(row),
   );
 
@@ -254,7 +254,7 @@ function buildSustainSetApartReleaseReport(rows) {
   const toSustain = rows.filter(
     (row) =>
       String(row.type || "").toUpperCase() !== "RELEASE" &&
-      String(row.status || "").trim() === "In Progress" &&
+      isInProgress(row) &&
       isCompletedValue(row.interviewed) &&
       (isCompletedValue(row.sp_approved) ||
         isCompletedValue(row.hc_sustained)) &&
