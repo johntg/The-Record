@@ -2,7 +2,6 @@ export function createCallingsActions({
   appState,
   supabase,
   hasAdminPasswordAccess,
-  isStakePasswordSession,
   getCurrentUserName,
   normalizeComparableName,
   getHighCouncilVoteSummary,
@@ -28,6 +27,14 @@ export function createCallingsActions({
 
   function isArchivedStatus(value) {
     return String(value).toLowerCase().trim() === "archived";
+  }
+
+  function isShcRoleSession() {
+    return (
+      String(appState.currentRole || "")
+        .toLowerCase()
+        .trim() === "shc"
+    );
   }
 
   async function toggleDetails(id) {
@@ -85,7 +92,9 @@ export function createCallingsActions({
 
     if (error) {
       console.error("Error updating sustaining units:", error);
-      alert(`Failed to update sustaining units: ${error.message}`);
+      await showModalAlert(
+        `Failed to update sustaining units: ${error.message}`,
+      );
     } else {
       console.log("Sustaining units updated:", sustaining);
       renderCards();
@@ -115,7 +124,9 @@ export function createCallingsActions({
 
     if (error) {
       console.error("Error updating release announced units:", error);
-      alert(`Failed to update release announced units: ${error.message}`);
+      await showModalAlert(
+        `Failed to update release announced units: ${error.message}`,
+      );
     } else {
       console.log("Release announced units updated:", announcedUnits);
       renderCards();
@@ -123,15 +134,15 @@ export function createCallingsActions({
   }
 
   async function submitHighCouncilVote(id, vote) {
-    if (!isStakePasswordSession()) {
-      alert(
-        "Only Stake-password users can submit High Council sustaining votes.",
+    if (!isShcRoleSession()) {
+      await showModalAlert(
+        "Only members with role SHC can submit High Council votes.",
       );
       return;
     }
 
     if (!appState.hcVotingTableAvailable) {
-      alert(
+      await showModalAlert(
         "High Council voting is not configured in the database yet. Please run the migration for calling_hc_votes.",
       );
       return;
@@ -139,13 +150,13 @@ export function createCallingsActions({
 
     const item = appState.callings.find((calling) => calling.id === id);
     if (!item) {
-      alert("Could not find this item to record the vote.");
+      await showModalAlert("Could not find this item to record the vote.");
       return;
     }
-
+rd
     const currentUser = String(getCurrentUserName() || "").trim();
     if (!currentUser) {
-      alert("Could not determine the signed-in member.");
+      await showModalAlert("Could not determine the signed-in member.");
       return;
     }
 
@@ -155,7 +166,7 @@ export function createCallingsActions({
     );
 
     if (!isEligibleHighCouncillor) {
-      alert("Only High Council members can record SHC sustaining votes.");
+      await showModalAlert("Only High Council members can record SHC sustaining votes.");
       return;
     }
 
@@ -165,7 +176,7 @@ export function createCallingsActions({
     const previousVote = getHighCouncilVoteSummary(id).currentUserVote;
 
     if (!["sustain", "concern", "clear"].includes(normalizedVote)) {
-      alert("Invalid vote type.");
+      await showModalAlert("Invalid vote type.");
       return;
     }
 
@@ -178,7 +189,7 @@ export function createCallingsActions({
 
       if (deleteError) {
         console.error("Failed to clear HC vote:", deleteError);
-        alert(`Failed to clear vote: ${deleteError.message}`);
+        await showModalAlert(`Failed to clear vote: ${deleteError.message}`);
         return;
       }
     } else {
@@ -196,7 +207,7 @@ export function createCallingsActions({
 
       if (upsertError) {
         console.error("Failed to save HC vote:", upsertError);
-        alert(`Failed to save vote: ${upsertError.message}`);
+        await showModalAlert(`Failed to save vote: ${upsertError.message}`);
         return;
       }
     }
@@ -208,7 +219,7 @@ export function createCallingsActions({
 
     if (fetchVotesError) {
       console.error("Failed to refresh HC votes:", fetchVotesError);
-      alert(
+      await showModalAlert(
         `Vote saved, but refreshing vote totals failed: ${fetchVotesError.message}`,
       );
       return;
@@ -244,7 +255,7 @@ export function createCallingsActions({
           "Failed to persist derived hc_sustained fields:",
           callingUpdateError,
         );
-        alert(
+        await showModalAlert(
           `Vote saved, but updating call status failed: ${callingUpdateError.message}`,
         );
         return;
@@ -264,7 +275,7 @@ export function createCallingsActions({
         const emailResult = await sendConcernEmail(item);
 
         if (!emailResult?.ok && !emailResult?.skipped) {
-          alert(
+          await showModalAlert(
             `Concern recorded, but the email notification failed: ${emailResult.error || "Unknown error"}`,
           );
         }
@@ -273,9 +284,9 @@ export function createCallingsActions({
       if (typeof showConcernNoticeModal === "function") {
         showConcernNoticeModal();
       } else {
-        alert(
-          "You have indicated a concern. Please contact a member of the Stake Presidency as soon as possible. An email indicating your concern will be sent to them.",
-        );
+         await showModalAlert(
+           "You have indicated a concern. Please contact a member of the Stake Presidency as soon as possible. An email indicating your concern will be sent to them.",
+         );
       }
     }
 
@@ -284,13 +295,13 @@ export function createCallingsActions({
 
   async function setHighCouncilBypass(id, enabled) {
     if (!hasAdminPasswordAccess()) {
-      alert("Admin password is required to use SHC bypass.");
+      await showModalAlert("Admin password is required to use SHC bypass.");
       return;
     }
 
     const item = appState.callings.find((calling) => calling.id === id);
     if (!item) {
-      alert("Could not find this item to update SHC bypass.");
+      await showModalAlert("Could not find this item to update SHC bypass.");
       return;
     }
 
@@ -311,13 +322,13 @@ export function createCallingsActions({
 
       if (error.code === "42703") {
         appState.hcBypassAvailable = false;
-        alert(
+        await showModalAlert(
           "SHC bypass columns are not in the database yet. Please run the migration for hc_sustained_bypass fields.",
         );
         return;
       }
 
-      alert(`Failed to update SHC bypass: ${error.message}`);
+      await showModalAlert(`Failed to update SHC bypass: ${error.message}`);
       return;
     }
 
@@ -328,7 +339,7 @@ export function createCallingsActions({
 
   async function updateAssignment(id, field, value) {
     if (!canUpdateAssignmentField(field)) {
-      alert("Assignments require signing in with the admin password.");
+      await showModalAlert("Assignments require signing in with the admin password.");
       return;
     }
 
@@ -344,7 +355,7 @@ export function createCallingsActions({
 
     if (error) {
       console.error("Assignment update error:", error);
-      alert(`Failed to update assignment: ${error.message}`);
+      await showModalAlert(`Failed to update assignment: ${error.message}`);
       return;
     }
 
@@ -362,13 +373,13 @@ export function createCallingsActions({
     }
 
     if (!hasAdminPasswordAccess()) {
-      alert("Editing records requires signing in with the admin password.");
+      await showModalAlert("Editing records requires signing in with the admin password.");
       return;
     }
 
     const item = appState.callings.find((calling) => calling.id === id);
     if (!item) {
-      alert("Could not find this record to edit.");
+      await showModalAlert("Could not find this record to edit.");
       return;
     }
 
@@ -439,7 +450,7 @@ export function createCallingsActions({
 
     if (error) {
       console.error(`Failed to update ${field}:`, error);
-      alert(`Failed to update ${label}: ${error.message}`);
+      await showModalAlert(`Failed to update ${label}: ${error.message}`);
       return;
     }
 
@@ -459,7 +470,7 @@ export function createCallingsActions({
 
   async function updateField(id, field, value) {
     if (field === "hc_sustained") {
-      alert(
+       await showModalAlert(
         "SHC Sustained is now calculated from individual High Council votes.",
       );
       return;
@@ -503,7 +514,7 @@ export function createCallingsActions({
 
     if (error) {
       console.error("Update error:", error);
-      alert(`Failed to update: ${error.message}`);
+      await showModalAlert(`Failed to update: ${error.message}`);
     } else {
       console.log("Update successful");
       const item = appState.callings.find((calling) => calling.id === id);
@@ -514,19 +525,19 @@ export function createCallingsActions({
 
   async function clearHighCouncilVoteForVoter(id, voterName) {
     if (!hasAdminPasswordAccess()) {
-      alert("Admin password is required to clear another member's vote.");
+      await showModalAlert("Admin password is required to clear another member's vote.");
       return;
     }
 
     const item = appState.callings.find((calling) => calling.id === id);
     if (!item) {
-      alert("Could not find this item to update.");
+      await showModalAlert("Could not find this item to update.");
       return;
     }
 
     const targetVoter = String(voterName || "").trim();
     if (!targetVoter) {
-      alert("No voter name was provided.");
+      await showModalAlert("No voter name was provided.");
       return;
     }
 
@@ -538,7 +549,7 @@ export function createCallingsActions({
 
     if (deleteError) {
       console.error("Failed to clear HC vote for voter:", deleteError);
-      alert(`Failed to clear vote: ${deleteError.message}`);
+      await showModalAlert(`Failed to clear vote: ${deleteError.message}`);
       return;
     }
 
@@ -549,7 +560,7 @@ export function createCallingsActions({
 
     if (fetchVotesError) {
       console.error("Failed to refresh HC votes:", fetchVotesError);
-      alert(
+      await showModalAlert(
         `Vote cleared, but refreshing vote totals failed: ${fetchVotesError.message}`,
       );
       return;
@@ -585,7 +596,7 @@ export function createCallingsActions({
           "Failed to persist derived hc_sustained fields:",
           callingUpdateError,
         );
-        alert(
+        await showModalAlert(
           `Vote cleared, but updating call status failed: ${callingUpdateError.message}`,
         );
         return;

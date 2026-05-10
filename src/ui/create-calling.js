@@ -89,13 +89,14 @@ export function ensureCreateCallingUi({
   syncFabVisibility();
 }
 
-export function openCreateCallingModal({
+export async function openCreateCallingModal({
   hasAdminPasswordAccess,
   documentRef = document,
-  alertFn = alert,
 }) {
   if (!hasAdminPasswordAccess()) {
-    alertFn("Creating entries requires signing in with the admin password.");
+    await showModalAlert(
+      "Creating entries requires signing in with the admin password.",
+    );
     return;
   }
 
@@ -144,7 +145,7 @@ export async function submitNewCalling({
   event.preventDefault();
 
   if (!hasAdminPasswordAccess()) {
-    alert("Creating entries requires signing in with the admin password.");
+    await showModalAlert("Creating entries requires signing in with the admin password.");
     return;
   }
 

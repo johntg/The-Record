@@ -93,12 +93,26 @@ function getCurrentRole() {
     .trim();
 }
 
+function normalizeRole(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim();
+}
+
+function hasRole(value, expectedRole) {
+  return normalizeRole(value) === normalizeRole(expectedRole);
+}
+
 function isAdminRole() {
-  return getCurrentRole() === "admin";
+  return hasRole(getCurrentRole(), "admin");
 }
 
 function isStakeRole() {
-  return getCurrentRole() === "stake";
+  return hasRole(getCurrentRole(), "stake");
+}
+
+function isShcRole() {
+  return hasRole(getCurrentRole(), "shc");
 }
 
 function isAuthenticatedMember() {
@@ -529,7 +543,7 @@ function getHighCouncilVoteSummary(callingId) {
         normalizeComparableName(getCurrentUserNameFromAuth()),
       )?.vote || "",
     canVote:
-      isStakeRole() &&
+      isShcRole() &&
       eligibleByKey.has(normalizeComparableName(getCurrentUserNameFromAuth())),
     isMajoritySustained: majorityCount > 0 && sustainCount >= majorityCount,
   };
@@ -639,12 +653,7 @@ function updateDerivedMemberLists() {
   appState.highCouncilNames = [
     ...new Set(
       appState.members
-        .filter(
-          (member) =>
-            String(member.role || "")
-              .toLowerCase()
-              .trim() === "stake",
-        )
+        .filter((member) => hasRole(member?.role, "shc"))
         .map((member) => String(member.name ?? "").trim())
         .filter(Boolean),
     ),
@@ -780,14 +789,14 @@ async function archiveCallingRecord(id, options = {}) {
   const { confirm = true } = options;
 
   if (!isAdminRole()) {
-    alert("Only admins can archive items.");
+    await showModalAlert("Only admins can archive items.");
     renderCurrentPage();
     return false;
   }
 
   const item = appState.callings.find((calling) => calling.id === id);
   if (!item) {
-    alert("Could not find this item to archive.");
+    await showModalAlert("Could not find this item to archive.");
     renderCurrentPage();
     return false;
   }
@@ -795,7 +804,7 @@ async function archiveCallingRecord(id, options = {}) {
   const normalizedStatus = String(item.status || "").trim();
 
   if (normalizedStatus === "In Progress") {
-    alert(
+    await showModalAlert(
       "Item with a status of 'In Progress' cannot be archived. Please change the status.",
     );
     renderCurrentPage();
@@ -811,8 +820,7 @@ async function archiveCallingRecord(id, options = {}) {
         }\n\nPress OK to permanently remove it from the database.\nThis cannot be undone.`
       : "Archive this item?";
 
-    const confirmed = window.confirm(message);
-
+    const confirmed = await showModalConfirm(message);
     if (!confirmed) {
       renderCurrentPage();
       return false;
@@ -829,7 +837,9 @@ async function archiveCallingRecord(id, options = {}) {
 
     if (error) {
       console.error("Permanent delete RPC error:", error);
-      alert(`Failed to permanently delete item: ${error.message}`);
+      await showModalAlert(
+        `Failed to permanently delete item: ${error.message}`,
+      );
       renderCurrentPage();
       return false;
     }
@@ -841,7 +851,7 @@ async function archiveCallingRecord(id, options = {}) {
 
     if (error) {
       console.error("Archive RPC error:", error);
-      alert(`Failed to archive item: ${error.message}`);
+      await showModalAlert(`Failed to archive item: ${error.message}`);
       renderCurrentPage();
       return false;
     }
@@ -917,7 +927,6 @@ const callingsActions = createCallingsActions({
   appState,
   supabase,
   hasAdminPasswordAccess: isAdminRole,
-  isStakePasswordSession: isStakeRole,
   getCurrentUserName: getCurrentUserNameFromAuth,
   normalizeComparableName,
   getHighCouncilVoteSummary,
@@ -1131,7 +1140,9 @@ window.refreshData = async () => {
     }
   } catch (error) {
     console.error("Failed to refresh data:", error);
-    alert(`Failed to refresh data: ${error?.message || "Unknown error"}`);
+    await showModalAlert(
+      `Failed to refresh data: ${error?.message || "Unknown error"}`,
+    );
   } finally {
     appState.isRefreshing = false;
   }
@@ -1162,22 +1173,24 @@ window.softRefreshApp = async () => {
 
 window.copyReportToClipboard = async () => {
   if (!appState.reportOutput) {
-    alert("No report to copy.");
+    await showModalAlert("No report to copy.");
     return;
   }
 
   try {
     await navigator.clipboard.writeText(appState.reportOutput);
-    alert("Report copied to clipboard!");
+    await showModalAlert("Report copied to clipboard!");
   } catch (err) {
     console.error("Failed to copy report:", err);
-    alert("Failed to copy report to clipboard. Please try again.");
+    await showModalAlert(
+      "Failed to copy report to clipboard. Please try again.",
+    );
   }
 };
 
-window.printReport = () => {
+window.printReport = async () => {
   if (!appState.reportOutput) {
-    alert("No report to print.");
+    await showModalAlert("No report to print.");
     return;
   }
 
@@ -1208,7 +1221,7 @@ window.printReport = () => {
 };
 
 window.resetCacheAndReload = async () => {
-  const confirmed = window.confirm(
+  const confirmed = await showModalConfirm(
     "Reset app cache and reload now? This will sign you out.",
   );
   if (!confirmed) return;
@@ -1272,7 +1285,7 @@ window.handleConcernClick = async (event, id) => {
       button.textContent = "Concern";
     }
 
-    alert("Failed to record concern.");
+    await showModalAlert("Failed to record concern.");
   }
 };
 

@@ -2,7 +2,6 @@ export function createCardsRenderer({
   appState,
   getSortedVisibleCallings,
   hasAdminPasswordAccess,
-  isStakePasswordSession,
   getHighCouncilVoteSummary,
   resolveSustainingByField,
   resolveReleaseAnnouncedUnitsField,
@@ -286,10 +285,7 @@ export function createCardsRenderer({
         const isHcBypassed = row.hc_sustained_bypass === true;
         const currentUserVote = voteSummary.currentUserVote;
         const showVotingControls =
-          !isRelease &&
-          appState.hcVotingTableAvailable &&
-          isStakePasswordSession() &&
-          voteSummary.canVote;
+          !isRelease && appState.hcVotingTableAvailable && voteSummary.canVote;
         const isHcDetailsExpanded = appState.expandedHcDetailsIds.has(row.id);
         const hasExtraHcDetails =
           !isRelease &&
