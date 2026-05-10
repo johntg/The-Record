@@ -1,3 +1,5 @@
+import { showModalAlert } from "../ui/modal-manager.js";
+
 export function createCallingsActions({
   appState,
   supabase,
@@ -153,7 +155,7 @@ export function createCallingsActions({
       await showModalAlert("Could not find this item to record the vote.");
       return;
     }
-rd
+
     const currentUser = String(getCurrentUserName() || "").trim();
     if (!currentUser) {
       await showModalAlert("Could not determine the signed-in member.");
@@ -166,7 +168,9 @@ rd
     );
 
     if (!isEligibleHighCouncillor) {
-      await showModalAlert("Only High Council members can record SHC sustaining votes.");
+      await showModalAlert(
+        "Only High Council members can record SHC sustaining votes.",
+      );
       return;
     }
 
@@ -284,9 +288,9 @@ rd
       if (typeof showConcernNoticeModal === "function") {
         showConcernNoticeModal();
       } else {
-         await showModalAlert(
-           "You have indicated a concern. Please contact a member of the Stake Presidency as soon as possible. An email indicating your concern will be sent to them.",
-         );
+        await showModalAlert(
+          "You have indicated a concern. Please contact a member of the Stake Presidency as soon as possible. An email indicating your concern will be sent to them.",
+        );
       }
     }
 
@@ -339,7 +343,9 @@ rd
 
   async function updateAssignment(id, field, value) {
     if (!canUpdateAssignmentField(field)) {
-      await showModalAlert("Assignments require signing in with the admin password.");
+      await showModalAlert(
+        "Assignments require signing in with the admin password.",
+      );
       return;
     }
 
@@ -367,13 +373,15 @@ rd
     renderCurrentPage();
   }
 
-  function startInlineEdit(id, field) {
+  async function startInlineEdit(id, field) {
     if (!["name", "position"].includes(field)) {
       return;
     }
 
     if (!hasAdminPasswordAccess()) {
-      await showModalAlert("Editing records requires signing in with the admin password.");
+      await showModalAlert(
+        "Editing records requires signing in with the admin password.",
+      );
       return;
     }
 
@@ -470,7 +478,7 @@ rd
 
   async function updateField(id, field, value) {
     if (field === "hc_sustained") {
-       await showModalAlert(
+      await showModalAlert(
         "SHC Sustained is now calculated from individual High Council votes.",
       );
       return;
@@ -525,7 +533,9 @@ rd
 
   async function clearHighCouncilVoteForVoter(id, voterName) {
     if (!hasAdminPasswordAccess()) {
-      await showModalAlert("Admin password is required to clear another member's vote.");
+      await showModalAlert(
+        "Admin password is required to clear another member's vote.",
+      );
       return;
     }
 

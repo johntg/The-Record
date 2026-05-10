@@ -12,6 +12,7 @@ import {
   getSavedThemeMode,
   setupSystemThemeChangeListener,
 } from "./ui/theme-controls.js";
+import { showModalAlert, showModalConfirm } from "./ui/modal-manager.js";
 import {
   renderHeader as renderHeaderUi,
   syncFabVisibility as syncFabVisibilityUi,

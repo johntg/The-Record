@@ -1,3 +1,5 @@
+import { showModalConfirm } from "./modal-manager.js";
+
 function updateFabDebugBadge(documentRef = document) {
   const badge = documentRef.getElementById("fab-debug-badge");
   if (badge) {
@@ -161,11 +163,11 @@ export function renderHeader({
 
   const refreshIcon = documentRef.getElementById("refreshicon");
 
-  refreshIcon.addEventListener("click", () => {
-    const confirmed = confirm("Refresh app to latest data?");
+  refreshIcon.addEventListener("click", async () => {
+    const confirmed = await showModalConfirm("Refresh app to latest data?");
     if (!confirmed) return;
 
-    softRefreshApp(); // or onRefreshApp if you renamed it
+    window.softRefreshApp?.();
   });
 
   ensureCreateCallingUi();

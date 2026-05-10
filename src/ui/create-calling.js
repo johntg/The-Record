@@ -1,3 +1,5 @@
+import { showModalAlert } from "./modal-manager.js";
+
 export function ensureCreateCallingUi({
   appState,
   escapeHtml,
@@ -145,7 +147,9 @@ export async function submitNewCalling({
   event.preventDefault();
 
   if (!hasAdminPasswordAccess()) {
-    await showModalAlert("Creating entries requires signing in with the admin password.");
+    await showModalAlert(
+      "Creating entries requires signing in with the admin password.",
+    );
     return;
   }
 
