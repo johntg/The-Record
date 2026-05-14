@@ -149,7 +149,7 @@ Keep this key local only. Never expose it in the frontend build.
 ### Basic usage
 
 ```bash
-npm run provision:member -- --email person@example.com --name "Person Name" --role stake
+npm run provision:member -- --email person@example.com --name "Person Name" --role SHC
 ```
 
 ### Optional flags
