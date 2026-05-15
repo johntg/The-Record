@@ -81,16 +81,16 @@ The admin panel allows super admins to:
 
 ⚠️ **Current Implementation:**
 
-- Member operations use the anon key (browser-based)
-- RLS policies provide some protection
-- Consider adding backend API endpoints for production
+- **Create member** uses a secure server-side provisioning endpoint (Auth + members)
+- **Update/Delete member** currently use direct browser `members` updates
+- RLS policies should still be enabled to restrict updates/deletes to super admins
 
 ✅ **Recommended for Production:**
 
-1. Create backend API routes (e.g., `/api/admin/members`)
-2. Use service role key server-side only
-3. Implement proper audit logging
-4. Add rate limiting to admin endpoints
+1. Keep service role key server-side only
+2. Add audit logging for all admin mutations
+3. Add rate limiting to admin endpoints
+4. Optionally move update/delete to secure server-side endpoint as well
 
 ## Admin Panel UI
 

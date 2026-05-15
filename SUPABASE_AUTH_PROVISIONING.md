@@ -255,3 +255,34 @@ If you want to remove this class of problem permanently, build a small admin pro
 - `public.members`
 
 in one action.
+
+---
+
+## Admin page integration (implemented)
+
+The in-app Admin page “Create member” flow is now wired to call a **secure provisioning endpoint** so creation happens in both places (`auth.users` + `public.members`) in one step.
+
+Required frontend env values:
+
+```env
+VITE_MEMBER_PROVISION_URL=https://your-secure-endpoint.example.com/provision-member
+VITE_MEMBER_PROVISION_TOKEN=replace_with_shared_secret
+```
+
+Required server-side secret value (for your endpoint runtime):
+
+```env
+MEMBER_PROVISION_TOKEN=replace_with_shared_secret
+```
+
+An example Supabase Edge Function template is included in this repo:
+
+- `supabase/functions/provision-member/index.ts`
+
+That function:
+
+1. validates the shared token
+2. creates (or confirms existing) auth user with Admin API
+3. upserts member row on `email`
+
+Important: keep using `SUPABASE_SERVICE_ROLE_KEY` **only** on the server-side function runtime, never in Vite browser code.

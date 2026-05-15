@@ -44,6 +44,8 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
 const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
+const memberProvisionUrl = import.meta.env.VITE_MEMBER_PROVISION_URL || "";
+const memberProvisionToken = import.meta.env.VITE_MEMBER_PROVISION_TOKEN || "";
 const archiveTable = import.meta.env.VITE_ARCHIVE_TABLE || "archive";
 
 const supabase =
@@ -1021,6 +1023,57 @@ async function sendConcernEmail(row) {
   }
 }
 
+async function provisionMemberWithServer(memberPayload) {
+  if (!memberProvisionUrl) {
+    return {
+      ok: false,
+      error:
+        "Missing VITE_MEMBER_PROVISION_URL. Configure a secure server-side provisioning endpoint.",
+    };
+  }
+
+  const payload = {
+    token: memberProvisionToken,
+    ...memberPayload,
+  };
+
+  try {
+    const response = await fetch(memberProvisionUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    let responseBody = null;
+    try {
+      responseBody = await response.json();
+    } catch {
+      responseBody = null;
+    }
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error:
+          responseBody?.error ||
+          `Provisioning request failed with status ${response.status}.`,
+      };
+    }
+
+    return {
+      ok: true,
+      data: responseBody,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error?.message || "Provisioning request failed.",
+    };
+  }
+}
+
 const cardsRenderer = createCardsRenderer({
   appState,
   getSortedVisibleCallings,
@@ -1751,7 +1804,10 @@ window.submitMemberForm = async (event) => {
 
   const email = document.getElementById("member-email").value.trim();
   const name = document.getElementById("member-name").value.trim();
-  const role = document.getElementById("member-role").value.trim();
+  const role = document
+    .getElementById("member-role")
+    .value.trim()
+    .toLowerCase();
   const canBeAssigned = document.getElementById("member-can-assign").checked;
   const superAdmin = document.getElementById("member-super").checked;
 
@@ -1762,23 +1818,23 @@ window.submitMemberForm = async (event) => {
 
   try {
     if (appState.adminFormData.action === "create") {
-      const { error } = await supabase.from("members").insert([
-        {
-          email,
-          name,
-          role,
-          can_be_assigned: canBeAssigned,
-          super: superAdmin,
-        },
-      ]);
+      const result = await provisionMemberWithServer({
+        email: String(email).trim().toLowerCase(),
+        name,
+        role,
+        canBeAssigned,
+        super: superAdmin,
+      });
 
-      if (error) {
-        console.error("Insert error:", error);
-        await showModalAlert(`Failed to add member: ${error.message}`);
+      if (!result.ok) {
+        console.error("Provisioning error:", result.error);
+        await showModalAlert(`Failed to provision member: ${result.error}`);
         return;
       }
 
-      await showModalAlert("Member added successfully!");
+      await showModalAlert(
+        "Member provisioned successfully in Auth and members table.",
+      );
     } else if (appState.adminFormData.action === "update") {
       const memberId = appState.adminFormData.selectedMemberId;
       const { error } = await supabase

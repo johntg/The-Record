@@ -56,6 +56,8 @@ VITE_SUPABASE_ANON_KEY=your_publishable_anon_key
 VITE_ARCHIVE_TABLE=archive
 VITE_STAKE_PW=stake2026
 VITE_ADMIN_PW=admin789
+VITE_MEMBER_PROVISION_URL=https://your-secure-endpoint.example.com/provision-member
+VITE_MEMBER_PROVISION_TOKEN=replace_with_shared_secret
 ```
 
 For purely local development, you can also use:
@@ -156,6 +158,24 @@ For local admin provisioning, the repo now includes:
 - `npm run provision:member -- --email person@example.com --name "Person Name" --role stake`
 
 This command uses the Supabase Admin API, so it requires a local `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
+
+### Admin page full provisioning
+
+The in-app Admin page now supports full provisioning for **new** members by calling a secure server-side endpoint.
+
+That endpoint must:
+
+1. create or confirm the user in `auth.users`
+2. upsert the matching row in `public.members`
+
+The frontend uses:
+
+- `VITE_MEMBER_PROVISION_URL`
+- `VITE_MEMBER_PROVISION_TOKEN`
+
+An example Supabase Edge Function template is included at:
+
+- `supabase/functions/provision-member/index.ts`
 
 ## Apps Script notes
 
