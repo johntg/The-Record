@@ -68,6 +68,10 @@ const appState = {
   currentUser: null,
   currentMember: null,
   currentRole: null,
+  adminFormData: {
+    action: "list",
+    selectedMemberId: null,
+  },
   units: [
     "Allenton Ward",
     "Ashburton Ward",
@@ -114,6 +118,10 @@ function isStakeRole() {
 
 function isShcRole() {
   return hasRole(getCurrentRole(), "shc");
+}
+
+function isSuperAdmin() {
+  return appState.currentMember?.super === true;
 }
 
 function isAuthenticatedMember() {
@@ -709,6 +717,109 @@ function getSortedVisibleCallings() {
   return rows;
 }
 
+function renderAdminPage() {
+  const list = document.getElementById("data-list");
+  const adminPage = document.getElementById("admin-page");
+  if (!adminPage) return;
+
+  if (list) {
+    list.classList.add("hidden");
+  }
+
+  adminPage.classList.remove("hidden");
+
+  const roles = ["admin", "stake", "shc"]
+    .map((r) => `<option value="${r}">${r}</option>`)
+    .join("");
+
+  adminPage.innerHTML = `
+    <section class="admin-header">
+      <h2>Admin Panel</h2>
+      <p>Manage members and roles</p>
+    </section>
+
+    <section class="admin-actions">
+      <button type="button" class="btn btn-primary" onclick="window.startNewMemberForm()">+ Add New Member</button>
+    </section>
+
+    <section class="admin-content">
+      <div id="admin-form" class="hidden">
+        <article class="card admin-form-card">
+          <h3 id="admin-form-title">Add New Member</h3>
+          <form id="admin-member-form" onsubmit="window.submitMemberForm(event)">
+            <div class="form-group">
+              <label for="member-email">Email</label>
+              <input type="email" id="member-email" required />
+            </div>
+            <div class="form-group">
+              <label for="member-name">Name</label>
+              <input type="text" id="member-name" required />
+            </div>
+            <div class="form-group">
+              <label for="member-role">Role</label>
+              <select id="member-role" required>
+                <option value="">Select a role</option>
+                ${roles}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="member-can-assign">
+                <input type="checkbox" id="member-can-assign" /> Can be assigned
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="member-super">
+                <input type="checkbox" id="member-super" /> Super Admin
+              </label>
+            </div>
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary">Save Member</button>
+              <button type="button" class="btn btn-secondary" onclick="window.cancelAdminForm()">Cancel</button>
+            </div>
+          </form>
+        </article>
+      </div>
+
+      <div id="admin-members-list">
+        <article class="card admin-members-card">
+          <h3>Members</h3>
+          <table class="members-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Can Assign</th>
+                <th>Super Admin</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.members
+                .map(
+                  (m) => `
+                <tr>
+                  <td>${escapeHtml(m.name)}</td>
+                  <td>${escapeHtml(m.email)}</td>
+                  <td>${escapeHtml(m.role || "")}</td>
+                  <td>${m.can_be_assigned ? "✓" : ""}</td>
+                  <td>${m.super ? "✓" : ""}</td>
+                  <td>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.editMember('${m.id}')">Edit</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="window.deleteMember('${m.id}')">Delete</button>
+                  </td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </article>
+      </div>
+    </section>
+  `;
+}
+
 function renderReportsPage() {
   const list = document.getElementById("data-list");
   const reportsPage = document.getElementById("reports-page");
@@ -777,6 +888,11 @@ function renderReportsPage() {
 
 function renderCurrentPage() {
   syncFabVisibility();
+
+  if (appState.currentPage === "admin") {
+    renderAdminPage();
+    return;
+  }
 
   if (appState.currentPage === "reports") {
     renderReportsPage();
@@ -1032,6 +1148,16 @@ window.toggleCallingScope = () => {
 window.togglePage = () => {
   appState.currentPage =
     appState.currentPage === "callings" ? "reports" : "callings";
+  renderHeader();
+  renderCurrentPage();
+};
+
+window.toggleAdminPage = () => {
+  if (!isSuperAdmin()) {
+    return;
+  }
+  appState.currentPage =
+    appState.currentPage === "admin" ? "callings" : "admin";
   renderHeader();
   renderCurrentPage();
 };
@@ -1574,11 +1700,190 @@ function renderHeader() {
   renderHeaderUi({
     appState,
     isStakePasswordSession: isStakeRole,
+    isSuperAdminUser: isSuperAdmin,
     ensureCreateCallingUi,
   });
 
   ensureConcernNoticeModal();
 }
+
+window.startNewMemberForm = () => {
+  if (!isSuperAdmin()) {
+    showModalAlert("Only super admins can add members.");
+    return;
+  }
+
+  const form = document.getElementById("admin-form");
+  const list = document.getElementById("admin-members-list");
+
+  if (form) {
+    form.classList.remove("hidden");
+  }
+  if (list) {
+    list.classList.add("hidden");
+  }
+
+  document.getElementById("admin-form-title").textContent = "Add New Member";
+  document.getElementById("admin-member-form").reset();
+  appState.adminFormData.action = "create";
+  appState.adminFormData.selectedMemberId = null;
+};
+
+window.cancelAdminForm = () => {
+  const form = document.getElementById("admin-form");
+  const list = document.getElementById("admin-members-list");
+
+  if (form) {
+    form.classList.add("hidden");
+  }
+  if (list) {
+    list.classList.remove("hidden");
+  }
+};
+
+window.submitMemberForm = async (event) => {
+  event.preventDefault();
+
+  if (!isSuperAdmin()) {
+    await showModalAlert("Only super admins can modify members.");
+    return;
+  }
+
+  const email = document.getElementById("member-email").value.trim();
+  const name = document.getElementById("member-name").value.trim();
+  const role = document.getElementById("member-role").value.trim();
+  const canBeAssigned = document.getElementById("member-can-assign").checked;
+  const superAdmin = document.getElementById("member-super").checked;
+
+  if (!email || !name || !role) {
+    await showModalAlert("Please fill in all required fields.");
+    return;
+  }
+
+  try {
+    if (appState.adminFormData.action === "create") {
+      const { error } = await supabase.from("members").insert([
+        {
+          email,
+          name,
+          role,
+          can_be_assigned: canBeAssigned,
+          super: superAdmin,
+        },
+      ]);
+
+      if (error) {
+        console.error("Insert error:", error);
+        await showModalAlert(`Failed to add member: ${error.message}`);
+        return;
+      }
+
+      await showModalAlert("Member added successfully!");
+    } else if (appState.adminFormData.action === "update") {
+      const memberId = appState.adminFormData.selectedMemberId;
+      const { error } = await supabase
+        .from("members")
+        .update({
+          email,
+          name,
+          role,
+          can_be_assigned: canBeAssigned,
+          super: superAdmin,
+        })
+        .eq("id", memberId);
+
+      if (error) {
+        console.error("Update error:", error);
+        await showModalAlert(`Failed to update member: ${error.message}`);
+        return;
+      }
+
+      await showModalAlert("Member updated successfully!");
+    }
+
+    await fetchReferenceData();
+    window.cancelAdminForm();
+    renderAdminPage();
+  } catch (error) {
+    console.error("Form submission error:", error);
+    await showModalAlert(`Error: ${error.message}`);
+  }
+};
+
+window.editMember = async (memberId) => {
+  if (!isSuperAdmin()) {
+    await showModalAlert("Only super admins can edit members.");
+    return;
+  }
+
+  const member = appState.members.find((m) => m.id === memberId);
+  if (!member) {
+    await showModalAlert("Member not found.");
+    return;
+  }
+
+  document.getElementById("member-email").value = member.email || "";
+  document.getElementById("member-name").value = member.name || "";
+  document.getElementById("member-role").value = member.role || "";
+  document.getElementById("member-can-assign").checked =
+    member.can_be_assigned || false;
+  document.getElementById("member-super").checked = member.super || false;
+
+  document.getElementById("admin-form-title").textContent =
+    `Edit: ${escapeHtml(member.name)}`;
+
+  appState.adminFormData.action = "update";
+  appState.adminFormData.selectedMemberId = memberId;
+
+  const form = document.getElementById("admin-form");
+  const list = document.getElementById("admin-members-list");
+
+  if (form) {
+    form.classList.remove("hidden");
+  }
+  if (list) {
+    list.classList.add("hidden");
+  }
+};
+
+window.deleteMember = async (memberId) => {
+  if (!isSuperAdmin()) {
+    await showModalAlert("Only super admins can delete members.");
+    return;
+  }
+
+  const member = appState.members.find((m) => m.id === memberId);
+  if (!member) {
+    await showModalAlert("Member not found.");
+    return;
+  }
+
+  const confirmed = await showModalConfirm(
+    `Delete member "${escapeHtml(member.name)}"? This cannot be undone.`,
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const { error } = await supabase
+      .from("members")
+      .delete()
+      .eq("id", memberId);
+
+    if (error) {
+      console.error("Delete error:", error);
+      await showModalAlert(`Failed to delete member: ${error.message}`);
+      return;
+    }
+
+    await showModalAlert("Member deleted successfully!");
+    await fetchReferenceData();
+    renderAdminPage();
+  } catch (error) {
+    console.error("Delete error:", error);
+    await showModalAlert(`Error: ${error.message}`);
+  }
+};
 
 async function startApp() {
   const savedThemeMode = getSavedThemeMode();

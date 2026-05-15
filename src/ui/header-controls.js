@@ -70,6 +70,7 @@ export function syncFabVisibility({
 export function renderHeader({
   appState,
   isStakePasswordSession,
+  isSuperAdminUser,
   ensureCreateCallingUi,
   documentRef = document,
 }) {
@@ -80,6 +81,7 @@ export function renderHeader({
   }
 
   const showScopeToggle = isStakePasswordSession();
+  const showAdminButton = isSuperAdminUser && isSuperAdminUser();
   const scopeLabel = appState.showAllCallingsForStake
     ? "Show My Assignments"
     : "Show All Callings";
@@ -116,6 +118,11 @@ export function renderHeader({
       ${
         showScopeToggle
           ? `<button onclick="window.toggleCallingScope()">${scopeLabel}</button>`
+          : ""
+      }
+      ${
+        showAdminButton
+          ? `<button onclick="window.toggleAdminPage()">Admin</button>`
           : ""
       }
      <button onclick="window.logout()">Logout</button>
@@ -159,6 +166,13 @@ export function renderHeader({
     reports.id = "reports-page";
     reports.className = "reports-page hidden";
     app.appendChild(reports);
+  }
+
+  if (!documentRef.getElementById("admin-page")) {
+    const admin = documentRef.createElement("div");
+    admin.id = "admin-page";
+    admin.className = "admin-page hidden";
+    app.appendChild(admin);
   }
 
   const refreshIcon = documentRef.getElementById("refreshicon");
