@@ -282,7 +282,22 @@ An example Supabase Edge Function template is included in this repo:
 That function:
 
 1. validates the shared token
-2. creates (or confirms existing) auth user with Admin API
-3. upserts member row on `email`
+2. supports `action: create | update | delete`
+3. creates (or confirms existing) auth user with Admin API on create
+4. updates member row (and auth metadata name when found) on update
+5. deletes member row and matching auth user on delete
 
 Important: keep using `SUPABASE_SERVICE_ROLE_KEY` **only** on the server-side function runtime, never in Vite browser code.
+
+### How to access member edit/delete in the app
+
+1. Sign in as a user with `members.super = true`
+2. Click **Admin** in the top header
+3. In the Members table, click either:
+   - the member **name** (now clickable), or
+   - the **Edit** button
+4. The edit form appears at the top with current values
+5. Click **Save Member** to update (through the secure endpoint)
+6. Click **Delete** on a row to remove both the member row and auth user (through the secure endpoint)
+
+Note: during edit, the email field is intentionally locked in the UI to avoid accidental auth/member mismatches.

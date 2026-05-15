@@ -1807,6 +1807,22 @@ select {
   color: var(--text);
 }
 
+.member-name-link {
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.member-name-link:hover {
+  color: var(--primary-dark);
+}
+
 .members-table .btn-sm {
   padding: 6px 10px;
   font-size: 0.8rem;

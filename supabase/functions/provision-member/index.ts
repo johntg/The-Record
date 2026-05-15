@@ -9,6 +9,8 @@ const corsHeaders = {
 
 type ProvisionRequest = {
   token?: string;
+  action?: "create" | "update" | "delete";
+  memberId?: string;
   email?: string;
   name?: string;
   role?: string;
@@ -20,6 +22,40 @@ function normalizeEmail(value: string | undefined | null): string {
   return String(value || "")
     .trim()
     .toLowerCase();
+}
+
+async function findAuthUserByEmail(
+  supabase: ReturnType<typeof createClient>,
+  email: string,
+) {
+  let page = 1;
+  const perPage = 200;
+
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) {
+      return { user: null, error };
+    }
+
+    const users = data?.users || [];
+    const matched = users.find(
+      (user) => normalizeEmail(user.email) === normalizeEmail(email),
+    );
+
+    if (matched) {
+      return { user: matched, error: null };
+    }
+
+    if (users.length < perPage) {
+      return { user: null, error: null };
+    }
+
+    page += 1;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -69,13 +105,15 @@ Deno.serve(async (req) => {
     );
   }
 
+  const action = body.action || "create";
+  const memberId = String(body.memberId || "").trim();
   const email = normalizeEmail(body.email);
   const name = String(body.name || "").trim();
   const role = String(body.role || "")
     .trim()
     .toLowerCase();
 
-  if (!email || !name || !role) {
+  if (action === "create" && (!email || !name || !role)) {
     return new Response(
       JSON.stringify({ error: "Missing required fields: email, name, role." }),
       {
@@ -103,57 +141,265 @@ Deno.serve(async (req) => {
     const code = createResult.error.code || "";
     const message = String(createResult.error.message || "").toLowerCase();
     const alreadyExists =
-      code === "email_exists" ||
-      createResult.error.status === 422 ||
-      message.includes("already");
 
-    if (!alreadyExists) {
+    if (action === "create") {
+      // 1) Create auth user if missing
+      const createResult = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: name ? { name } : undefined,
+      });
+
+      if (createResult.error) {
+        const code = createResult.error.code || "";
+        const message = String(createResult.error.message || "").toLowerCase();
+        const alreadyExists =
+          code === "email_exists" ||
+          createResult.error.status === 422 ||
+          message.includes("already");
+
+        if (!alreadyExists) {
+          return new Response(
+            JSON.stringify({
+              error: `Failed to create auth user: ${createResult.error.message}`,
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+      }
+
+      // 2) Upsert members row by email
+      const memberPayload = {
+        email,
+        name,
+        role,
+        can_be_assigned: body.canBeAssigned === true,
+        super: body.super === true,
+      };
+
+      const { data: memberRows, error: memberError } = await supabase
+        .from("members")
+        .upsert(memberPayload, { onConflict: "email" })
+        .select();
+
+      if (memberError) {
+        return new Response(
+          JSON.stringify({
+            error: `Failed to upsert members row: ${memberError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          error: `Failed to create auth user: ${createResult.error.message}`,
+          ok: true,
+          action,
+          member: memberRows?.[0] || null,
         }),
         {
-          status: 500,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
     }
-  }
 
-  // 2) Upsert members row by email
-  const memberPayload = {
-    email,
-    name,
-    role,
-    can_be_assigned: body.canBeAssigned === true,
-    super: body.super === true,
-  };
+    if (action === "update") {
+      if (!memberId || !email || !name || !role) {
+        return new Response(
+          JSON.stringify({
+            error: "Missing required fields for update: memberId, email, name, role.",
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
 
-  const { data: memberRows, error: memberError } = await supabase
-    .from("members")
-    .upsert(memberPayload, { onConflict: "email" })
-    .select();
+      const { data: memberRows, error: memberError } = await supabase
+        .from("members")
+        .update({
+          email,
+          name,
+          role,
+          can_be_assigned: body.canBeAssigned === true,
+          super: body.super === true,
+        })
+        .eq("id", memberId)
+        .select();
 
-  if (memberError) {
+      if (memberError) {
+        return new Response(
+          JSON.stringify({ error: `Failed to update member: ${memberError.message}` }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      const { user: authUser, error: authFindError } = await findAuthUserByEmail(
+        supabase,
+        email,
+      );
+
+      if (authFindError) {
+        return new Response(
+          JSON.stringify({
+            error: `Member updated, but auth lookup failed: ${authFindError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (authUser?.id) {
+        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+          authUser.id,
+          {
+            user_metadata: name ? { name } : undefined,
+          },
+        );
+
+        if (authUpdateError) {
+          return new Response(
+            JSON.stringify({
+              error: `Member updated, but auth metadata update failed: ${authUpdateError.message}`,
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          action,
+          member: memberRows?.[0] || null,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (action === "delete") {
+      if (!memberId) {
+        return new Response(
+          JSON.stringify({ error: "Missing required field for delete: memberId." }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      const { data: existingMember, error: existingError } = await supabase
+        .from("members")
+        .select("id,email,name")
+        .eq("id", memberId)
+        .maybeSingle();
+
+      if (existingError) {
+        return new Response(
+          JSON.stringify({ error: `Failed to load member before delete: ${existingError.message}` }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (!existingMember) {
+        return new Response(JSON.stringify({ error: "Member not found." }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const existingEmail = normalizeEmail(existingMember.email);
+
+      const { error: deleteMemberError } = await supabase
+        .from("members")
+        .delete()
+        .eq("id", memberId);
+
+      if (deleteMemberError) {
+        return new Response(
+          JSON.stringify({ error: `Failed to delete member row: ${deleteMemberError.message}` }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      const { user: authUser, error: authFindError } = await findAuthUserByEmail(
+        supabase,
+        existingEmail,
+      );
+
+      if (authFindError) {
+        return new Response(
+          JSON.stringify({
+            error: `Member deleted, but auth lookup failed: ${authFindError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (authUser?.id) {
+        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(
+          authUser.id,
+        );
+
+        if (authDeleteError) {
+          return new Response(
+            JSON.stringify({
+              error: `Member deleted, but auth user delete failed: ${authDeleteError.message}`,
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          action,
+          deletedMemberId: memberId,
+          deletedEmail: existingEmail,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     return new Response(
-      JSON.stringify({
-        error: `Failed to upsert members row: ${memberError.message}`,
-      }),
+      JSON.stringify({ error: `Unsupported action: ${String(action)}` }),
       {
-        status: 500,
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
-  }
-
-  return new Response(
-    JSON.stringify({
-      ok: true,
-      member: memberRows?.[0] || null,
-    }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    },
-  );
-});

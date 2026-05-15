@@ -801,7 +801,16 @@ function renderAdminPage() {
                 .map(
                   (m) => `
                 <tr>
-                  <td>${escapeHtml(m.name)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      class="member-name-link"
+                      onclick="window.editMember('${m.id}')"
+                      title="Edit ${escapeHtml(m.name)}"
+                    >
+                      ${escapeHtml(m.name)}
+                    </button>
+                  </td>
                   <td>${escapeHtml(m.email)}</td>
                   <td>${escapeHtml(m.role || "")}</td>
                   <td>${m.can_be_assigned ? "✓" : ""}</td>
@@ -1778,6 +1787,7 @@ window.startNewMemberForm = () => {
 
   document.getElementById("admin-form-title").textContent = "Add New Member";
   document.getElementById("admin-member-form").reset();
+  document.getElementById("member-email").disabled = false;
   appState.adminFormData.action = "create";
   appState.adminFormData.selectedMemberId = null;
 };
@@ -1819,6 +1829,7 @@ window.submitMemberForm = async (event) => {
   try {
     if (appState.adminFormData.action === "create") {
       const result = await provisionMemberWithServer({
+        action: "create",
         email: String(email).trim().toLowerCase(),
         name,
         role,
@@ -1837,24 +1848,23 @@ window.submitMemberForm = async (event) => {
       );
     } else if (appState.adminFormData.action === "update") {
       const memberId = appState.adminFormData.selectedMemberId;
-      const { error } = await supabase
-        .from("members")
-        .update({
-          email,
-          name,
-          role,
-          can_be_assigned: canBeAssigned,
-          super: superAdmin,
-        })
-        .eq("id", memberId);
+      const result = await provisionMemberWithServer({
+        action: "update",
+        memberId,
+        email: String(email).trim().toLowerCase(),
+        name,
+        role,
+        canBeAssigned,
+        super: superAdmin,
+      });
 
-      if (error) {
-        console.error("Update error:", error);
-        await showModalAlert(`Failed to update member: ${error.message}`);
+      if (!result.ok) {
+        console.error("Update error:", result.error);
+        await showModalAlert(`Failed to update member: ${result.error}`);
         return;
       }
 
-      await showModalAlert("Member updated successfully!");
+      await showModalAlert("Member updated successfully.");
     }
 
     await fetchReferenceData();
@@ -1884,6 +1894,7 @@ window.editMember = async (memberId) => {
   document.getElementById("member-can-assign").checked =
     member.can_be_assigned || false;
   document.getElementById("member-super").checked = member.super || false;
+  document.getElementById("member-email").disabled = true;
 
   document.getElementById("admin-form-title").textContent =
     `Edit: ${escapeHtml(member.name)}`;
@@ -1921,18 +1932,21 @@ window.deleteMember = async (memberId) => {
   if (!confirmed) return;
 
   try {
-    const { error } = await supabase
-      .from("members")
-      .delete()
-      .eq("id", memberId);
+    const result = await provisionMemberWithServer({
+      action: "delete",
+      memberId,
+      email: String(member.email || "")
+        .trim()
+        .toLowerCase(),
+    });
 
-    if (error) {
-      console.error("Delete error:", error);
-      await showModalAlert(`Failed to delete member: ${error.message}`);
+    if (!result.ok) {
+      console.error("Delete error:", result.error);
+      await showModalAlert(`Failed to delete member: ${result.error}`);
       return;
     }
 
-    await showModalAlert("Member deleted successfully!");
+    await showModalAlert("Member deleted successfully.");
     await fetchReferenceData();
     renderAdminPage();
   } catch (error) {
