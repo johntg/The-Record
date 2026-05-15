@@ -1708,7 +1708,7 @@ select {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
   .theme-switch {
     top: 8px;
     right: 8px;

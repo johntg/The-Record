@@ -139,6 +139,25 @@ const buildVersionState = {
   full: "",
 };
 
+function formatDateDdMmYy(value) {
+  if (!value) return "";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(parsed);
+}
+
 function syncBodyModalOpenState() {
   const hasVisibleModal = Boolean(
     document.querySelector(".modal-overlay:not(.hidden)"),
@@ -281,7 +300,7 @@ async function applyBuildVersionToCreditLine() {
       displayVersion ? `Full version: ${displayVersion}` : "",
       buildNumber ? `Build: ${buildNumber}` : "",
       gitCommit ? `Commit: ${gitCommit}` : "",
-      generatedAt ? `Generated: ${new Date(generatedAt).toLocaleString()}` : "",
+      generatedAt ? `Generated: ${formatDateDdMmYy(generatedAt)}` : "",
     ].filter(Boolean);
 
     buildVersionState.full = fullVersionParts.join("\n");
