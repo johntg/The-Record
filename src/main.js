@@ -1901,11 +1901,16 @@ window.editMember = async (memberEmail) => {
     return;
   }
 
-  const normalizedEmail = String(memberEmail || "").trim().toLowerCase();
+  const normalizedEmail = String(memberEmail || "")
+    .trim()
+    .toLowerCase();
   console.log("editMember called with email:", normalizedEmail);
 
   const member = appState.members.find(
-    (m) => String(m.email || "").trim().toLowerCase() === normalizedEmail
+    (m) =>
+      String(m.email || "")
+        .trim()
+        .toLowerCase() === normalizedEmail,
   );
   if (!member) {
     console.error(`Member not found with email: ${normalizedEmail}`);
@@ -1944,9 +1949,14 @@ window.deleteMember = async (memberEmail) => {
     return;
   }
 
-  const normalizedEmail = String(memberEmail || "").trim().toLowerCase();
+  const normalizedEmail = String(memberEmail || "")
+    .trim()
+    .toLowerCase();
   const member = appState.members.find(
-    (m) => String(m.email || "").trim().toLowerCase() === normalizedEmail
+    (m) =>
+      String(m.email || "")
+        .trim()
+        .toLowerCase() === normalizedEmail,
   );
   if (!member) {
     await showModalAlert("Member not found.");
