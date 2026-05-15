@@ -800,7 +800,7 @@ function renderAdminPage() {
               ${appState.members
                 .map(
                   (m) => `
-                <tr data-member-id="${escapeHtml(m.id)}">
+                <tr data-member-email="${escapeHtml(m.email)}">
                   <td>
                     <button
                       type="button"
@@ -837,16 +837,16 @@ function renderAdminPage() {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
 
-      const row = button.closest("tr[data-member-id]");
+      const row = button.closest("tr[data-member-email]");
       if (!row) return;
 
-      const memberId = row.getAttribute("data-member-id");
+      const memberEmail = row.getAttribute("data-member-email");
       const action = button.getAttribute("data-action");
 
       if (action === "edit") {
-        window.editMember(memberId);
+        window.editMember(memberEmail);
       } else if (action === "delete") {
-        window.deleteMember(memberId);
+        window.deleteMember(memberEmail);
       }
     });
   }
@@ -1810,7 +1810,7 @@ window.startNewMemberForm = () => {
   document.getElementById("admin-member-form").reset();
   document.getElementById("member-email").disabled = false;
   appState.adminFormData.action = "create";
-  appState.adminFormData.selectedMemberId = null;
+  appState.adminFormData.selectedMemberEmail = null;
 };
 
 window.cancelAdminForm = () => {
@@ -1868,10 +1868,8 @@ window.submitMemberForm = async (event) => {
         "Member provisioned successfully in Auth and members table.",
       );
     } else if (appState.adminFormData.action === "update") {
-      const memberId = appState.adminFormData.selectedMemberId;
       const result = await provisionMemberWithServer({
         action: "update",
-        memberId,
         email: String(email).trim().toLowerCase(),
         name,
         role,
@@ -1897,21 +1895,20 @@ window.submitMemberForm = async (event) => {
   }
 };
 
-window.editMember = async (memberId) => {
+window.editMember = async (memberEmail) => {
   if (!isSuperAdmin()) {
     await showModalAlert("Only super admins can edit members.");
     return;
   }
 
-  console.log("editMember called with ID:", memberId);
-  console.log(
-    "appState.members IDs:",
-    appState.members.map((m) => m.id),
-  );
+  const normalizedEmail = String(memberEmail || "").trim().toLowerCase();
+  console.log("editMember called with email:", normalizedEmail);
 
-  const member = appState.members.find((m) => m.id === memberId);
+  const member = appState.members.find(
+    (m) => String(m.email || "").trim().toLowerCase() === normalizedEmail
+  );
   if (!member) {
-    console.error(`Member not found with ID: ${memberId}`);
+    console.error(`Member not found with email: ${normalizedEmail}`);
     await showModalAlert("Member not found.");
     return;
   }
@@ -1928,7 +1925,7 @@ window.editMember = async (memberId) => {
     `Edit: ${escapeHtml(member.name)}`;
 
   appState.adminFormData.action = "update";
-  appState.adminFormData.selectedMemberId = memberId;
+  appState.adminFormData.selectedMemberEmail = member.email;
 
   const form = document.getElementById("admin-form");
   const list = document.getElementById("admin-members-list");
@@ -1941,13 +1938,16 @@ window.editMember = async (memberId) => {
   }
 };
 
-window.deleteMember = async (memberId) => {
+window.deleteMember = async (memberEmail) => {
   if (!isSuperAdmin()) {
     await showModalAlert("Only super admins can delete members.");
     return;
   }
 
-  const member = appState.members.find((m) => m.id === memberId);
+  const normalizedEmail = String(memberEmail || "").trim().toLowerCase();
+  const member = appState.members.find(
+    (m) => String(m.email || "").trim().toLowerCase() === normalizedEmail
+  );
   if (!member) {
     await showModalAlert("Member not found.");
     return;
@@ -1962,10 +1962,7 @@ window.deleteMember = async (memberId) => {
   try {
     const result = await provisionMemberWithServer({
       action: "delete",
-      memberId,
-      email: String(member.email || "")
-        .trim()
-        .toLowerCase(),
+      email: normalizedEmail,
     });
 
     if (!result.ok) {

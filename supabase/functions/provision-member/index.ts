@@ -211,13 +211,42 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
-      if (!memberId || !email || !name || !role) {
+      if (!email || !name || !role) {
         return new Response(
           JSON.stringify({
-            error: "Missing required fields for update: memberId, email, name, role.",
+            error: "Missing required fields for update: email, name, role.",
           }),
           {
             status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      // Look up the member by email to get their id
+      const { data: existingMembers, error: lookupError } = await supabase
+        .from("members")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (lookupError) {
+        return new Response(
+          JSON.stringify({
+            error: `Failed to look up member: ${lookupError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (!existingMembers) {
+        return new Response(
+          JSON.stringify({ error: "Member not found." }),
+          {
+            status: 404,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           },
         );
@@ -232,7 +261,7 @@ Deno.serve(async (req) => {
           can_be_assigned: body.canBeAssigned === true,
           super: body.super === true,
         })
-        .eq("id", memberId)
+        .eq("id", existingMembers.id)
         .select();
 
       if (memberError) {
@@ -297,9 +326,9 @@ Deno.serve(async (req) => {
     }
 
     if (action === "delete") {
-      if (!memberId) {
+      if (!email) {
         return new Response(
-          JSON.stringify({ error: "Missing required field for delete: memberId." }),
+          JSON.stringify({ error: "Missing required field for delete: email." }),
           {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -310,7 +339,7 @@ Deno.serve(async (req) => {
       const { data: existingMember, error: existingError } = await supabase
         .from("members")
         .select("id,email,name")
-        .eq("id", memberId)
+        .eq("email", email)
         .maybeSingle();
 
       if (existingError) {
