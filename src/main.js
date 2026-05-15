@@ -801,7 +801,7 @@ function renderAdminPage() {
                 .map(
                   (m) => `
                 <tr data-member-email="${escapeHtml(m.email)}">
-                  <td>
+                  <td data-label="Name">
                     <button
                       type="button"
                       class="member-name-link"
@@ -811,11 +811,11 @@ function renderAdminPage() {
                       ${escapeHtml(m.name)}
                     </button>
                   </td>
-                  <td>${escapeHtml(m.email)}</td>
-                  <td>${escapeHtml(m.role || "")}</td>
-                  <td>${m.can_be_assigned ? "✓" : ""}</td>
-                  <td>${m.super ? "✓" : ""}</td>
-                  <td>
+                  <td data-label="Email">${escapeHtml(m.email)}</td>
+                  <td data-label="Role">${escapeHtml(m.role || "")}</td>
+                  <td data-label="Can Assign">${m.can_be_assigned ? "✓" : ""}</td>
+                  <td data-label="Super Admin">${m.super ? "✓" : ""}</td>
+                  <td data-label="Actions">
                     <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
                     <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
                   </td>
@@ -1920,7 +1920,9 @@ window.editMember = async (memberEmail) => {
 
   document.getElementById("member-email").value = member.email || "";
   document.getElementById("member-name").value = member.name || "";
-  document.getElementById("member-role").value = member.role || "";
+  document.getElementById("member-role").value = String(
+    member.role || "",
+  ).toLowerCase();
   document.getElementById("member-can-assign").checked =
     member.can_be_assigned || false;
   document.getElementById("member-super").checked = member.super || false;

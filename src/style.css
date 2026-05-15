@@ -1829,6 +1829,87 @@ select {
   margin-right: 4px;
 }
 
+/* Mobile responsive table layout */
+@media (max-width: 768px) {
+  .admin-members-card {
+    overflow-x: auto;
+  }
+
+  .members-table {
+    font-size: 0.85rem;
+    min-width: 600px;
+  }
+
+  .members-table th,
+  .members-table td {
+    padding: 10px 8px;
+  }
+
+  .members-table .btn-sm {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    margin-right: 2px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .members-table {
+    font-size: 0.75rem;
+    min-width: 100%;
+  }
+
+  .members-table th,
+  .members-table td {
+    padding: 8px 4px;
+  }
+
+  .members-table tbody {
+    display: block;
+  }
+
+  .members-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .members-table thead {
+    display: none;
+  }
+
+  .members-table td {
+    display: flex;
+    align-items: center;
+    padding: 0;
+  }
+
+  .members-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    min-width: 80px;
+    color: var(--text-muted);
+  }
+
+  .members-table .btn-sm {
+    padding: 6px 8px;
+    font-size: 0.7rem;
+    margin-right: 0;
+    margin-top: 8px;
+  }
+
+  .members-table tbody tr td:nth-child(6) {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 4px;
+  }
+}
+
 .btn-danger {
   background: #d32f2f;
   color: white;
