@@ -284,7 +284,7 @@ That function:
 1. validates the shared token
 2. supports `action: create | update | delete`
 3. creates (or confirms existing) auth user with Admin API on create
-4. updates member row (and auth metadata name when found) on update
+4. updates member row and syncs auth user updates on update (name metadata and email when changed)
 5. deletes member row and matching auth user on delete
 
 Important: keep using `SUPABASE_SERVICE_ROLE_KEY` **only** on the server-side function runtime, never in Vite browser code.
@@ -300,4 +300,4 @@ Important: keep using `SUPABASE_SERVICE_ROLE_KEY` **only** on the server-side fu
 5. Click **Save Member** to update (through the secure endpoint)
 6. Click **Delete** on a row to remove both the member row and auth user (through the secure endpoint)
 
-Note: during edit, the email field is intentionally locked in the UI to avoid accidental auth/member mismatches.
+Note: during edit, changing email is supported and is applied to both `public.members.email` and `auth.users.email` together by the secure endpoint.

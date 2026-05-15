@@ -10,7 +10,7 @@ const corsHeaders = {
 type ProvisionRequest = {
   token?: string;
   action?: "create" | "update" | "delete";
-  memberId?: string;
+  oldEmail?: string;
   email?: string;
   name?: string;
   role?: string;
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
   }
 
   const action = body.action || "create";
-  const memberId = String(body.memberId || "").trim();
+  const oldEmail = normalizeEmail(body.oldEmail);
   const email = normalizeEmail(body.email);
   const name = String(body.name || "").trim();
   const role = String(body.role || "")
@@ -130,65 +130,25 @@ Deno.serve(async (req) => {
     },
   });
 
-  // 1) Create auth user if missing
-  const createResult = await supabase.auth.admin.createUser({
-    email,
-    email_confirm: true,
-    user_metadata: name ? { name } : undefined,
-  });
+  if (action === "create") {
+    const createResult = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: name ? { name } : undefined,
+    });
 
-  if (createResult.error) {
-    const code = createResult.error.code || "";
-    const message = String(createResult.error.message || "").toLowerCase();
-    const alreadyExists =
+    if (createResult.error) {
+      const code = createResult.error.code || "";
+      const message = String(createResult.error.message || "").toLowerCase();
+      const alreadyExists =
+        code === "email_exists" ||
+        createResult.error.status === 422 ||
+        message.includes("already");
 
-    if (action === "create") {
-      // 1) Create auth user if missing
-      const createResult = await supabase.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: name ? { name } : undefined,
-      });
-
-      if (createResult.error) {
-        const code = createResult.error.code || "";
-        const message = String(createResult.error.message || "").toLowerCase();
-        const alreadyExists =
-          code === "email_exists" ||
-          createResult.error.status === 422 ||
-          message.includes("already");
-
-        if (!alreadyExists) {
-          return new Response(
-            JSON.stringify({
-              error: `Failed to create auth user: ${createResult.error.message}`,
-            }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-      }
-
-      // 2) Upsert members row by email
-      const memberPayload = {
-        email,
-        name,
-        role,
-        can_be_assigned: body.canBeAssigned === true,
-        super: body.super === true,
-      };
-
-      const { data: memberRows, error: memberError } = await supabase
-        .from("members")
-        .upsert(memberPayload, { onConflict: "email" })
-        .select();
-
-      if (memberError) {
+      if (!alreadyExists) {
         return new Response(
           JSON.stringify({
-            error: `Failed to upsert members row: ${memberError.message}`,
+            error: `Failed to create auth user: ${createResult.error.message}`,
           }),
           {
             status: 500,
@@ -196,239 +156,354 @@ Deno.serve(async (req) => {
           },
         );
       }
-
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          action,
-          member: memberRows?.[0] || null,
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
     }
 
-    if (action === "update") {
-      if (!email || !name || !role) {
-        return new Response(
-          JSON.stringify({
-            error: "Missing required fields for update: email, name, role.",
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
+    const memberPayload = {
+      email,
+      name,
+      role,
+      can_be_assigned: body.canBeAssigned === true,
+      super: body.super === true,
+    };
 
-      // Look up the member by email to get their id
-      const { data: existingMembers, error: lookupError } = await supabase
-        .from("members")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle();
+    const { data: memberRows, error: memberError } = await supabase
+      .from("members")
+      .upsert(memberPayload, { onConflict: "email" })
+      .select();
 
-      if (lookupError) {
-        return new Response(
-          JSON.stringify({
-            error: `Failed to look up member: ${lookupError.message}`,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (!existingMembers) {
-        return new Response(
-          JSON.stringify({ error: "Member not found." }),
-          {
-            status: 404,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      const { data: memberRows, error: memberError } = await supabase
-        .from("members")
-        .update({
-          email,
-          name,
-          role,
-          can_be_assigned: body.canBeAssigned === true,
-          super: body.super === true,
-        })
-        .eq("id", existingMembers.id)
-        .select();
-
-      if (memberError) {
-        return new Response(
-          JSON.stringify({ error: `Failed to update member: ${memberError.message}` }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      const { user: authUser, error: authFindError } = await findAuthUserByEmail(
-        supabase,
-        email,
-      );
-
-      if (authFindError) {
-        return new Response(
-          JSON.stringify({
-            error: `Member updated, but auth lookup failed: ${authFindError.message}`,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (authUser?.id) {
-        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
-          authUser.id,
-          {
-            user_metadata: name ? { name } : undefined,
-          },
-        );
-
-        if (authUpdateError) {
-          return new Response(
-            JSON.stringify({
-              error: `Member updated, but auth metadata update failed: ${authUpdateError.message}`,
-            }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-      }
-
+    if (memberError) {
       return new Response(
         JSON.stringify({
-          ok: true,
-          action,
-          member: memberRows?.[0] || null,
+          error: `Failed to upsert members row: ${memberError.message}`,
         }),
         {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    if (action === "delete") {
-      if (!email) {
-        return new Response(
-          JSON.stringify({ error: "Missing required field for delete: email." }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      const { data: existingMember, error: existingError } = await supabase
-        .from("members")
-        .select("id,email,name")
-        .eq("email", email)
-        .maybeSingle();
-
-      if (existingError) {
-        return new Response(
-          JSON.stringify({ error: `Failed to load member before delete: ${existingError.message}` }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (!existingMember) {
-        return new Response(JSON.stringify({ error: "Member not found." }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const existingEmail = normalizeEmail(existingMember.email);
-
-      const { error: deleteMemberError } = await supabase
-        .from("members")
-        .delete()
-        .eq("id", memberId);
-
-      if (deleteMemberError) {
-        return new Response(
-          JSON.stringify({ error: `Failed to delete member row: ${deleteMemberError.message}` }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      const { user: authUser, error: authFindError } = await findAuthUserByEmail(
-        supabase,
-        existingEmail,
-      );
-
-      if (authFindError) {
-        return new Response(
-          JSON.stringify({
-            error: `Member deleted, but auth lookup failed: ${authFindError.message}`,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (authUser?.id) {
-        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(
-          authUser.id,
-        );
-
-        if (authDeleteError) {
-          return new Response(
-            JSON.stringify({
-              error: `Member deleted, but auth user delete failed: ${authDeleteError.message}`,
-            }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-      }
-
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          action,
-          deletedMemberId: memberId,
-          deletedEmail: existingEmail,
-        }),
-        {
-          status: 200,
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
     }
 
     return new Response(
-      JSON.stringify({ error: `Unsupported action: ${String(action)}` }),
+      JSON.stringify({
+        ok: true,
+        action,
+        member: memberRows?.[0] || null,
+      }),
       {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
+  }
+
+  if (action === "update") {
+    if (!oldEmail || !email || !name || !role) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Missing required fields for update: oldEmail, email, name, role.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const { data: existingMember, error: lookupError } = await supabase
+      .from("members")
+      .select("id,email,name,role,can_be_assigned,super")
+      .eq("email", oldEmail)
+      .maybeSingle();
+
+    if (lookupError) {
+      return new Response(
+        JSON.stringify({
+          error: `Failed to look up member: ${lookupError.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (!existingMember) {
+      return new Response(JSON.stringify({ error: "Member not found." }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (oldEmail !== email) {
+      const { data: duplicateMember, error: duplicateError } = await supabase
+        .from("members")
+        .select("id")
+        .eq("email", email)
+        .neq("id", existingMember.id)
+        .maybeSingle();
+
+      if (duplicateError) {
+        return new Response(
+          JSON.stringify({
+            error: `Failed to validate target email: ${duplicateError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (duplicateMember) {
+        return new Response(
+          JSON.stringify({
+            error: "Another member already uses that email address.",
+          }),
+          {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
+    const nextMemberData = {
+      email,
+      name,
+      role,
+      can_be_assigned: body.canBeAssigned === true,
+      super: body.super === true,
+    };
+
+    const { data: memberRows, error: memberError } = await supabase
+      .from("members")
+      .update(nextMemberData)
+      .eq("id", existingMember.id)
+      .select();
+
+    if (memberError) {
+      return new Response(
+        JSON.stringify({
+          error: `Failed to update member: ${memberError.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const rollbackMember = async () => {
+      const rollbackPayload = {
+        email: normalizeEmail(existingMember.email),
+        name: String(existingMember.name || "").trim(),
+        role: String(existingMember.role || "")
+          .trim()
+          .toLowerCase(),
+        can_be_assigned: existingMember.can_be_assigned === true,
+        super: existingMember.super === true,
+      };
+
+      const { error } = await supabase
+        .from("members")
+        .update(rollbackPayload)
+        .eq("id", existingMember.id);
+
+      return !error;
+    };
+
+    let authLookup = await findAuthUserByEmail(supabase, oldEmail);
+
+    if (!authLookup.user && !authLookup.error && oldEmail !== email) {
+      authLookup = await findAuthUserByEmail(supabase, email);
+    }
+
+    if (authLookup.error) {
+      const rolledBack = await rollbackMember();
+      return new Response(
+        JSON.stringify({
+          error: rolledBack
+            ? `Member update rolled back because auth lookup failed: ${authLookup.error.message}`
+            : `Auth lookup failed after member update, and rollback failed: ${authLookup.error.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (!authLookup.user?.id) {
+      const rolledBack = await rollbackMember();
+      return new Response(
+        JSON.stringify({
+          error: rolledBack
+            ? "Member update rolled back because matching auth user was not found."
+            : "Matching auth user was not found after member update, and rollback failed.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const authUpdatePayload: {
+      email?: string;
+      email_confirm?: boolean;
+      user_metadata?: { name?: string };
+    } = {
+      user_metadata: name ? { name } : undefined,
+    };
+
+    if (oldEmail !== email) {
+      authUpdatePayload.email = email;
+      authUpdatePayload.email_confirm = true;
+    }
+
+    const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
+      authLookup.user.id,
+      authUpdatePayload,
+    );
+
+    if (authUpdateError) {
+      const rolledBack = await rollbackMember();
+      return new Response(
+        JSON.stringify({
+          error: rolledBack
+            ? `Member update rolled back because auth update failed: ${authUpdateError.message}`
+            : `Auth update failed after member update, and rollback failed: ${authUpdateError.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        action,
+        member: memberRows?.[0] || null,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  if (action === "delete") {
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: "Missing required field for delete: email." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const { data: existingMember, error: existingError } = await supabase
+      .from("members")
+      .select("id,email,name")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingError) {
+      return new Response(
+        JSON.stringify({
+          error: `Failed to load member before delete: ${existingError.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (!existingMember) {
+      return new Response(JSON.stringify({ error: "Member not found." }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const existingEmail = normalizeEmail(existingMember.email);
+
+    const { error: deleteMemberError } = await supabase
+      .from("members")
+      .delete()
+      .eq("id", existingMember.id);
+
+    if (deleteMemberError) {
+      return new Response(
+        JSON.stringify({
+          error: `Failed to delete member row: ${deleteMemberError.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const { user: authUser, error: authFindError } = await findAuthUserByEmail(
+      supabase,
+      existingEmail,
+    );
+
+    if (authFindError) {
+      return new Response(
+        JSON.stringify({
+          error: `Member deleted, but auth lookup failed: ${authFindError.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (authUser?.id) {
+      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(
+        authUser.id,
+      );
+
+      if (authDeleteError) {
+        return new Response(
+          JSON.stringify({
+            error: `Member deleted, but auth user delete failed: ${authDeleteError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        action,
+        deletedMemberId: existingMember.id,
+        deletedEmail: existingEmail,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ error: `Unsupported action: ${String(action)}` }),
+    {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    },
+  );
+});

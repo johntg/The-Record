@@ -72,7 +72,7 @@ const appState = {
   currentRole: null,
   adminFormData: {
     action: "list",
-    selectedMemberId: null,
+    selectedMemberEmail: null,
   },
   units: [
     "Allenton Ward",
@@ -1868,8 +1868,20 @@ window.submitMemberForm = async (event) => {
         "Member provisioned successfully in Auth and members table.",
       );
     } else if (appState.adminFormData.action === "update") {
+      const oldEmail = String(appState.adminFormData.selectedMemberEmail || "")
+        .trim()
+        .toLowerCase();
+
+      if (!oldEmail) {
+        await showModalAlert(
+          "Missing original member email. Please cancel and open the member again.",
+        );
+        return;
+      }
+
       const result = await provisionMemberWithServer({
         action: "update",
+        oldEmail,
         email: String(email).trim().toLowerCase(),
         name,
         role,
@@ -1926,13 +1938,15 @@ window.editMember = async (memberEmail) => {
   document.getElementById("member-can-assign").checked =
     member.can_be_assigned || false;
   document.getElementById("member-super").checked = member.super || false;
-  document.getElementById("member-email").disabled = true;
+  document.getElementById("member-email").disabled = false;
 
   document.getElementById("admin-form-title").textContent =
     `Edit: ${escapeHtml(member.name)}`;
 
   appState.adminFormData.action = "update";
-  appState.adminFormData.selectedMemberEmail = member.email;
+  appState.adminFormData.selectedMemberEmail = String(member.email || "")
+    .trim()
+    .toLowerCase();
 
   const form = document.getElementById("admin-form");
   const list = document.getElementById("admin-members-list");
