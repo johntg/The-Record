@@ -800,12 +800,12 @@ function renderAdminPage() {
               ${appState.members
                 .map(
                   (m) => `
-                <tr>
+                <tr data-member-id="${escapeHtml(m.id)}">
                   <td>
                     <button
                       type="button"
                       class="member-name-link"
-                      onclick="window.editMember('${m.id}')"
+                      data-action="edit"
                       title="Edit ${escapeHtml(m.name)}"
                     >
                       ${escapeHtml(m.name)}
@@ -816,8 +816,8 @@ function renderAdminPage() {
                   <td>${m.can_be_assigned ? "✓" : ""}</td>
                   <td>${m.super ? "✓" : ""}</td>
                   <td>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.editMember('${m.id}')">Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="window.deleteMember('${m.id}')">Delete</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
+                    <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
                   </td>
                 </tr>
               `,
@@ -829,6 +829,27 @@ function renderAdminPage() {
       </div>
     </section>
   `;
+
+  // Attach event listeners to action buttons
+  const membersList = document.getElementById("admin-members-list");
+  if (membersList) {
+    membersList.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+
+      const row = button.closest("tr[data-member-id]");
+      if (!row) return;
+
+      const memberId = row.getAttribute("data-member-id");
+      const action = button.getAttribute("data-action");
+
+      if (action === "edit") {
+        window.editMember(memberId);
+      } else if (action === "delete") {
+        window.deleteMember(memberId);
+      }
+    });
+  }
 }
 
 function renderReportsPage() {
@@ -1882,8 +1903,15 @@ window.editMember = async (memberId) => {
     return;
   }
 
+  console.log("editMember called with ID:", memberId);
+  console.log(
+    "appState.members IDs:",
+    appState.members.map((m) => m.id),
+  );
+
   const member = appState.members.find((m) => m.id === memberId);
   if (!member) {
+    console.error(`Member not found with ID: ${memberId}`);
     await showModalAlert("Member not found.");
     return;
   }
