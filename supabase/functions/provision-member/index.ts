@@ -330,67 +330,38 @@ Deno.serve(async (req) => {
       authLookup = await findAuthUserByEmail(supabase, email);
     }
 
+    // Auth sync is optional - only warn if it fails, don't rollback
     if (authLookup.error) {
-      const rolledBack = await rollbackMember();
-      return new Response(
-        JSON.stringify({
-          error: rolledBack
-            ? `Member update rolled back because auth lookup failed: ${authLookup.error.message}`
-            : `Auth lookup failed after member update, and rollback failed: ${authLookup.error.message}`,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+      console.warn(
+        `Auth lookup failed for ${oldEmail}:`,
+        authLookup.error.message,
       );
-    }
+    } else if (authLookup.user?.id) {
+      const authUpdatePayload: {
+        email?: string;
+        email_confirm?: boolean;
+        user_metadata?: { name?: string };
+      } = {
+        user_metadata: name ? { name } : undefined,
+      };
 
-    if (!authLookup.user?.id) {
-      const rolledBack = await rollbackMember();
-      return new Response(
-        JSON.stringify({
-          error: rolledBack
-            ? "Member update rolled back because matching auth user was not found."
-            : "Matching auth user was not found after member update, and rollback failed.",
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
+      if (oldEmail !== email) {
+        authUpdatePayload.email = email;
+        authUpdatePayload.email_confirm = true;
+      }
 
-    const authUpdatePayload: {
-      email?: string;
-      email_confirm?: boolean;
-      user_metadata?: { name?: string };
-    } = {
-      user_metadata: name ? { name } : undefined,
-    };
+      const { error: authUpdateError } =
+        await supabase.auth.admin.updateUserById(
+          authLookup.user.id,
+          authUpdatePayload,
+        );
 
-    if (oldEmail !== email) {
-      authUpdatePayload.email = email;
-      authUpdatePayload.email_confirm = true;
-    }
-
-    const { error: authUpdateError } = await supabase.auth.admin.updateUserById(
-      authLookup.user.id,
-      authUpdatePayload,
-    );
-
-    if (authUpdateError) {
-      const rolledBack = await rollbackMember();
-      return new Response(
-        JSON.stringify({
-          error: rolledBack
-            ? `Member update rolled back because auth update failed: ${authUpdateError.message}`
-            : `Auth update failed after member update, and rollback failed: ${authUpdateError.message}`,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      if (authUpdateError) {
+        console.warn(
+          `Auth update failed for ${oldEmail}:`,
+          authUpdateError.message,
+        );
+      }
     }
 
     return new Response(
@@ -448,7 +419,6 @@ Deno.serve(async (req) => {
       .from("members")
       .delete()
       .eq("email", existingEmail);
-      .eq("id", existingMember.id);
 
     if (deleteMemberError) {
       return new Response(
