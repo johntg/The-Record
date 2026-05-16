@@ -804,46 +804,25 @@ function renderAdminPage() {
       <div id="admin-members-list">
         <article class="card admin-members-card">
           <h3>Members</h3>
-          <table class="members-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Can Assign</th>
-                <th>Super Admin</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${appState.members
-                .map(
-                  (m) => `
-                <tr data-member-email="${escapeHtml(m.email)}">
-                  <td data-label="Name">
-                    <button
-                      type="button"
-                      class="member-name-link"
-                      data-action="edit"
-                      title="Edit ${escapeHtml(m.name)}"
-                    >
-                      ${escapeHtml(m.name)}
-                    </button>
-                  </td>
-                  <td data-label="Email">${escapeHtml(m.email)}</td>
-                  <td data-label="Role">${escapeHtml(m.role || "")}</td>
-                  <td data-label="Can Assign">${m.can_be_assigned ? "✓" : ""}</td>
-                  <td data-label="Super Admin">${m.super ? "✓" : ""}</td>
-                  <td data-label="Actions">
-                    <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
-                  </td>
-                </tr>
-              `,
-                )
-                .join("")}
-            </tbody>
-          </table>
+          <div class="members-grid">
+            ${appState.members
+              .map(
+                (m) => `
+              <div class="member-card" data-member-email="${escapeHtml(m.email)}">
+                <div class="member-row"><span class="member-label">Name:</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
+                <div class="member-row"><span class="member-label">Email:</span> ${escapeHtml(m.email)}</div>
+                <div class="member-row"><span class="member-label">Role:</span> ${escapeHtml(m.role || "")}</div>
+                <div class="member-row"><span class="member-label">Assign:</span> ${m.can_be_assigned ? "✓" : ""}</div>
+                <div class="member-row"><span class="member-label">Super Admin:</span> ${m.super ? "✓" : ""}</div>
+                <div class="member-row member-actions">
+                  <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
+                  <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
+                </div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
         </article>
       </div>
     </section>
@@ -856,10 +835,10 @@ function renderAdminPage() {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
 
-      const row = button.closest("tr[data-member-email]");
-      if (!row) return;
+      const card = button.closest(".member-card[data-member-email]");
+      if (!card) return;
 
-      const memberEmail = row.getAttribute("data-member-email");
+      const memberEmail = card.getAttribute("data-member-email");
       const action = button.getAttribute("data-action");
 
       if (action === "edit") {
