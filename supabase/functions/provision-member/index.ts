@@ -73,6 +73,9 @@ Deno.serve(async (req) => {
   const body = (await req.json().catch(() => ({}))) as ProvisionRequest;
 
   const expectedToken = Deno.env.get("MEMBER_PROVISION_TOKEN") || "";
+  // console.log("Expected token:", expectedToken);
+  // console.log("Received token:", body.token);
+
   if (!expectedToken) {
     return new Response(
       JSON.stringify({ error: "MEMBER_PROVISION_TOKEN is not configured." }),
@@ -84,10 +87,19 @@ Deno.serve(async (req) => {
   }
 
   if (body.token !== expectedToken) {
-    return new Response(JSON.stringify({ error: "Unauthorized." }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Unauthorized.",
+        debug: {
+          receivedLength: body.token?.length || 0,
+          expectedLength: expectedToken.length,
+        },
+      }),
+      {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -212,7 +224,7 @@ Deno.serve(async (req) => {
 
     const { data: existingMember, error: lookupError } = await supabase
       .from("members")
-      .select("id,email,name,role,can_be_assigned,super")
+      .select("email,name,role,can_be_assigned,super")
       .eq("email", oldEmail)
       .maybeSingle();
 
@@ -238,9 +250,8 @@ Deno.serve(async (req) => {
     if (oldEmail !== email) {
       const { data: duplicateMember, error: duplicateError } = await supabase
         .from("members")
-        .select("id")
+        .select("email")
         .eq("email", email)
-        .neq("id", existingMember.id)
         .maybeSingle();
 
       if (duplicateError) {
@@ -279,7 +290,7 @@ Deno.serve(async (req) => {
     const { data: memberRows, error: memberError } = await supabase
       .from("members")
       .update(nextMemberData)
-      .eq("id", existingMember.id)
+      .eq("email", oldEmail)
       .select();
 
     if (memberError) {
@@ -308,7 +319,7 @@ Deno.serve(async (req) => {
       const { error } = await supabase
         .from("members")
         .update(rollbackPayload)
-        .eq("id", existingMember.id);
+        .eq("email", oldEmail);
 
       return !error;
     };
@@ -408,7 +419,7 @@ Deno.serve(async (req) => {
 
     const { data: existingMember, error: existingError } = await supabase
       .from("members")
-      .select("id,email,name")
+      .select("email,name")
       .eq("email", email)
       .maybeSingle();
 
@@ -436,6 +447,7 @@ Deno.serve(async (req) => {
     const { error: deleteMemberError } = await supabase
       .from("members")
       .delete()
+      .eq("email", existingEmail);
       .eq("id", existingMember.id);
 
     if (deleteMemberError) {
@@ -489,7 +501,6 @@ Deno.serve(async (req) => {
       JSON.stringify({
         ok: true,
         action,
-        deletedMemberId: existingMember.id,
         deletedEmail: existingEmail,
       }),
       {

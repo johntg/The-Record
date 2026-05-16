@@ -1071,6 +1071,8 @@ async function provisionMemberWithServer(memberPayload) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${supabaseKey}`,
+        apikey: supabaseKey,
       },
       body: JSON.stringify(payload),
     });
