@@ -41,6 +41,7 @@ export function syncFabVisibility({
   isLoggedInSession,
   onResetCache,
   documentRef = document,
+  hideFab = false,
 }) {
   const fab = documentRef.getElementById("add-calling-fab");
   const quickResetButton = ensureResetCacheQuickAction(
@@ -56,6 +57,13 @@ export function syncFabVisibility({
   quickResetButton.style.display = shouldShowReset ? "none" : "none";
 
   if (!fab) {
+    updateFabDebugBadge(documentRef);
+    return;
+  }
+
+  if (hideFab) {
+    fab.style.display = "none";
+    fab.style.visibility = "hidden";
     updateFabDebugBadge(documentRef);
     return;
   }

@@ -917,9 +917,10 @@ function renderReportsPage() {
 }
 
 function renderCurrentPage() {
-  syncFabVisibility();
+  const isAdmin = appState.currentPage === "admin";
+  syncFabVisibility(isAdmin);
 
-  if (appState.currentPage === "admin") {
+  if (isAdmin) {
     renderAdminPage();
     return;
   }
@@ -1733,11 +1734,12 @@ window.closeConcernNoticeModal = () => {
   syncBodyModalOpenState();
 };
 
-function syncFabVisibility() {
+function syncFabVisibility(hideFab = false) {
   syncFabVisibilityUi({
     hasAdminPasswordAccess: isAdminRole,
     isLoggedInSession: isAuthenticatedMember,
     onResetCache: () => window.resetCacheAndReload(),
+    hideFab,
   });
 }
 
