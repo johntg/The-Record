@@ -7,7 +7,7 @@
   --white: #ffffff;
   --text: #21313b;
   --text-muted: #555;
-  --text-subtle: #888;
+  --text-subtle: #ababab;
   --border: #ddd;
   --lightContrast: #eddaff;
   --midContrast: #24cb90;
@@ -279,7 +279,7 @@ body.dark-mode {
   --bg-overlay: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45));
   --text: #e6edf6;
   --text-muted: #b8c4d4;
-  --text-subtle: #9aa8bb;
+  --text-subtle: #465262;
   --border: #334155;
   --white: #111827;
   --unit-soft: #8ba3b5;
@@ -1999,12 +1999,27 @@ select {
   background: #e0e0e0;
 }
 
+.assign-off {
+  color: var(--text-subtle);
+}
+
+.assign-on {
+  color: var(--text);
+}
+
 .super-admin-label {
   color: var(--text-muted);
 }
 
 .not-super-admin .super-admin-label {
   color: var(--disabled-text);
+}
+.super-admin-off {
+  color: var(--text-subtle);
+}
+
+.super-admin-on {
+  color: var(--text);
 }
 
 /* Truncate long email addresses with ellipsis */

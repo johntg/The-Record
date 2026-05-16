@@ -812,8 +812,18 @@ function renderAdminPage() {
                 <div class="member-row"><span class="member-label">Name:</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
                 <div class="member-row"><span class="member-label">Email:</span> <span class="email" title="${escapeHtml(m.email)}">${escapeHtml(m.email)}</span></div>
                 <div class="member-row"><span class="member-label">Role:</span> ${escapeHtml(m.role || "")}</div>
-                <div class="member-row"><span class="member-label">Assign:</span> ${m.can_be_assigned ? "✓" : ""}</div>
-                <div class="member-row"><span class="member-label">Super Admin:</span> ${m.super ? "✓" : ""}</div>
+                <div class="member-row">
+                  <span class="member-label ${m.can_be_assigned ? "assign-on" : "assign-off"}">
+                    Assign:
+                  </span>
+                  ${m.can_be_assigned ? "✓" : ""}
+                </div>
+                <div class="member-row">
+                  <span class="member-label ${m.super ? "super-admin-on" : "super-admin-off"}">
+                    Super Admin:
+                  </span>
+                  ${m.super ? "✓" : ""}
+                </div>
                 <div class="member-row member-actions">
                   <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
                   <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
