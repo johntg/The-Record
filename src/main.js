@@ -810,7 +810,7 @@ function renderAdminPage() {
                 (m) => `
               <div class="member-card" data-member-email="${escapeHtml(m.email)}">
                 <div class="member-row"><span class="member-label">Name:</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
-                <div class="member-row"><span class="member-label">Email:</span> ${escapeHtml(m.email)}</div>
+                <div class="member-row"><span class="member-label">Email:</span> <span class="email" title="${escapeHtml(m.email)}">${escapeHtml(m.email)}</span></div>
                 <div class="member-row"><span class="member-label">Role:</span> ${escapeHtml(m.role || "")}</div>
                 <div class="member-row"><span class="member-label">Assign:</span> ${m.can_be_assigned ? "✓" : ""}</div>
                 <div class="member-row"><span class="member-label">Super Admin:</span> ${m.super ? "✓" : ""}</div>
