@@ -2047,7 +2047,7 @@ async function startApp() {
   if (!supabase) {
     showFatalError(
       "Missing configuration",
-      "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for this build.",
+      "VITE_SUPABASE_URL_PROD/TRAINING and VITE_SUPABASE_ANON_KEY_PROD/TRAINING must be set for this build.",
     );
     return;
   }
