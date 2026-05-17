@@ -41,6 +41,7 @@ jobs:
           VITE_SUPABASE_ANON_KEY_PROD: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SUPABASE_URL_TRAINING: ${{ secrets.VITE_SUPABASE_URL_TRAINING }}
           VITE_SUPABASE_ANON_KEY_TRAINING: ${{ secrets.VITE_SUPABASE_ANON_KEY_TRAINING }}
+          VITE_ARCHIVE_TABLE: archive
           VITE_STAKE_PW: ${{ secrets.VITE_STAKE_PW }}
           VITE_ADMIN_PW: ${{ secrets.VITE_ADMIN_PW }}
           VITE_CONCERN_EMAIL_URL: ${{ secrets.VITE_CONCERN_EMAIL_URL }}

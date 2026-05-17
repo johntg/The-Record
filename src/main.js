@@ -666,7 +666,7 @@ async function fetchCallings() {
 
 async function fetchArchivedItems() {
   // 👉 ADD THIS LINE TO DEFINE THE VARIABLE FROM VITE'S ENV
-  const archiveTable = import.meta.env.VITE_ARCHIVE_TABLE;
+  const archiveTable = import.meta.env.VITE_ARCHIVE_TABLE || "archive";
 
   const { data, error } = await supabase
     .from(archiveTable)
