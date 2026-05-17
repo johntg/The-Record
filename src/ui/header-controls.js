@@ -41,7 +41,6 @@ export function syncFabVisibility({
   isLoggedInSession,
   onResetCache,
   documentRef = document,
-  hideFab = false,
 }) {
   const fab = documentRef.getElementById("add-calling-fab");
   const quickResetButton = ensureResetCacheQuickAction(
@@ -57,13 +56,6 @@ export function syncFabVisibility({
   quickResetButton.style.display = shouldShowReset ? "none" : "none";
 
   if (!fab) {
-    updateFabDebugBadge(documentRef);
-    return;
-  }
-
-  if (hideFab) {
-    fab.style.display = "none";
-    fab.style.visibility = "hidden";
     updateFabDebugBadge(documentRef);
     return;
   }
@@ -96,6 +88,7 @@ export function renderHeader({
   const sortLabel = appState.cardSortOrder === "newest" ? "Newest" : "Oldest";
   const pageToggleLabel =
     appState.currentPage === "callings" ? "Reports" : "Callings";
+  const isTraining = appState.dbMode === "training";
   const header = documentRef.createElement("header");
   header.className = "main-header";
   const currentMode = appState.themeMode || "system";
@@ -109,14 +102,47 @@ export function renderHeader({
   }
 
   header.innerHTML = `
-  <!--
-  <div class="main-header-left">
-    <h1>Record<span>Christchurch Stake</span></h1>
-  </div>
-  -->
-  <div class='main-header-title'>
-    <h1><span>The</span>Record</h1>
-    <h3 class="main-header-subtitle">Christchurch Stake</h3>
+  ${
+    isTraining
+      ? `
+    <div style="background-color: #f59e0b; color: #000; text-align: center; font-weight: bold; padding: 6px; font-size: 14px;">
+      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE (SANDBOX DATABASE)
+    </div>
+  `
+      : ""
+  }
+  
+  <div style="display: flex; align-items: center; gap: 16px;">
+    ${
+      isSuperAdminUser()
+        ? `
+      <button 
+        onclick="window.toggleDatabaseMode()" 
+        style="
+          background: ${isTraining ? "#d97706" : "#4b5563"}; 
+          color: white; 
+          border: none; 
+          padding: 8px 16px; 
+          border-radius: 20px; 
+          cursor: pointer; 
+          font-weight: bold;
+          font-size: 13px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin-left: 12px;
+        "
+      >
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isTraining ? "#34d399" : "#9ca3af"};"></span>
+        DB: ${isTraining ? "TRAINING" : "PROD"}
+      </button>
+    `
+        : ""
+    }
+    <div class='main-header-title'>
+      <h1><span>The</span>Record</h1>
+      <h3 class="main-header-subtitle">Christchurch Stake</h3>
+    </div>
   </div>
 
   <div class="main-header-center">
@@ -133,7 +159,7 @@ export function renderHeader({
           ? `<button onclick="window.toggleAdminPage()">Admin</button>`
           : ""
       }
-     <button onclick="window.logout()">Logout</button>
+      <button onclick="window.logout()">Logout</button>
       
     </div>
   </div>

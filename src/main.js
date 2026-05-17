@@ -74,6 +74,7 @@ const appState = {
   themeMode: "system",
   cardSortOrder: "newest",
   currentPage: "callings",
+  dbMode: localStorage.getItem("dbMode") || "production",
   currentReportType: "sustain-setapart-release",
   reportOutput: "",
   currentUser: null,
@@ -718,6 +719,33 @@ async function fetchReferenceData() {
   updateDerivedMemberLists();
 }
 
+function updateDerivedMemberLists() {
+  // Update assignable names list
+  appState.assignableNames = appState.members
+    .filter((m) => m.can_be_assigned === true)
+    .map((m) => m.name)
+    .filter(Boolean);
+
+  // Update high council names list
+  appState.highCouncilNames = appState.members
+    .filter((m) => normalizeRole(m.role) === "shc")
+    .map((m) => m.name)
+    .filter(Boolean);
+}
+
+function toggleDatabaseMode() {
+  // 1. Flip the mode string
+  const currentMode = appState.dbMode || "production";
+  const newMode = currentMode === "production" ? "training" : "production";
+
+  // 2. Update state and localStorage
+  appState.dbMode = newMode;
+  localStorage.setItem("dbMode", newMode);
+
+  // 3. Reload the page to reinitialize with the new database connection
+  window.location.reload();
+}
+
 function getSortedVisibleCallings() {
   const rows = [...getVisibleCallings()];
 
@@ -1230,6 +1258,8 @@ window.toggleCallingScope = () => {
   renderHeader();
   renderCurrentPage();
 };
+
+window.toggleDatabaseMode = toggleDatabaseMode;
 
 window.togglePage = () => {
   appState.currentPage =
