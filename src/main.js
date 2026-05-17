@@ -742,7 +742,11 @@ function toggleDatabaseMode() {
   appState.dbMode = newMode;
   localStorage.setItem("dbMode", newMode);
 
-  // 3. Reload the page to reinitialize with the new database connection
+  // 3. Clear any in-progress OTP session (codes are specific to each database)
+  localStorage.removeItem("otp-email");
+  sessionStorage.clear();
+
+  // 4. Reload the page to reinitialize with the new database connection
   window.location.reload();
 }
 
@@ -1588,6 +1592,15 @@ function renderLogin() {
         <div class="login-splash">
           <h1><span>The</span> Record</h1>
           <h3>From inspiration to setting apart</h3>
+          ${
+            appState.dbMode === "training"
+              ? `
+            <div style="background-color: #f59e0b; color: #000; padding: 8px; margin-top: 12px; border-radius: 6px; font-size: 13px; font-weight: bold;">
+              ⚠️ TRAINING MODE - Sandbox Database
+            </div>
+          `
+              : ""
+          }
         </div>
 
         <div id="auth-step-email">
@@ -1634,9 +1647,13 @@ function renderLogin() {
   const requestForm = document.getElementById("otp-request-form");
   const verifyForm = document.getElementById("otp-verify-form");
 
-  let userEmail = "";
+  let userEmail = localStorage.getItem("otp-email") || "";
 
-  // Step 1: Request the OTP
+  // If there's a saved email from a previous attempt, pre-fill the form
+  if (userEmail) {
+    document.getElementById("email-input").value = userEmail;
+  }
+
   // Step 1: Request the OTP
   requestForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1657,6 +1674,9 @@ function renderLogin() {
     message.textContent = "Sending code...";
     message.classList.remove("error");
 
+    // Store email so it persists across page reloads (but will be cleared on database switch)
+    localStorage.setItem("otp-email", userEmail);
+
     // CRITICAL: Remove 'options' and 'emailRedirectTo'
     // Using the bare minimum forces Supabase into OTP mode
     const { error } = await supabase.auth.signInWithOtp({
@@ -1674,9 +1694,10 @@ function renderLogin() {
     }
 
     // Success: Hide email form, show code form
+    const dbModeLabel = (appState.dbMode || "production").toUpperCase();
     emailStep.classList.add("hidden");
     codeStep.classList.remove("hidden");
-    message.textContent = "Check your email for the 6-digit code.";
+    message.textContent = `Check your email for the 6-digit code (${dbModeLabel} database).`;
   });
 
   // Step 2: Verify the OTP
@@ -1694,7 +1715,8 @@ function renderLogin() {
     });
 
     if (error) {
-      message.textContent = "Invalid or expired code. Please try again.";
+      const dbModeLabel = (appState.dbMode || "production").toUpperCase();
+      message.textContent = `Invalid or expired code. Make sure you're using the latest code sent to your email for the ${dbModeLabel} database.`;
       message.classList.add("error");
       return;
     }
@@ -1702,6 +1724,10 @@ function renderLogin() {
     // Success! Supabase will trigger onAuthStateChange
     // or you can manually call startApp() to refresh the UI
     message.textContent = "Success! Loading...";
+
+    // Clear the stored email after successful login
+    localStorage.removeItem("otp-email");
+
     startApp();
   });
 
