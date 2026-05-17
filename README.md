@@ -39,11 +39,12 @@ The live app uses Supabase for data access, including these tables:
 
 Current app features include:
 
-- sign-in using configured shared passwords
+- sign-in using OTP (6-digit email codes) - requires custom SMTP configuration (see [SUPABASE_SMTP_SETUP.md](./SUPABASE_SMTP_SETUP.md))
 - create new callings and releases
 - update assignments and workflow steps
 - generate reports
 - archive items by moving them from `callings` into the configured archive table
+- database mode toggle (production/training) for super admins
 
 ## Environment variables
 
@@ -160,11 +161,14 @@ If archiving still isn't working after adding the policy, check:
 
 **Important**: Supabase's default email service has strict rate limits that will be triggered when multiple users log in simultaneously. To avoid this, configure custom SMTP using Gmail or Google Workspace.
 
-### Configure Custom SMTP in Supabase
+See [SUPABASE_SMTP_SETUP.md](./SUPABASE_SMTP_SETUP.md) for detailed configuration instructions.
+
+### Quick Setup Summary
 
 You need to set up custom SMTP in **both** production and training databases:
 
 **Production database:**
+
 1. Go to: https://supabase.com/dashboard/project/rcelzqrloxykyqnyosxc/settings/auth
 2. Scroll to **SMTP Settings**
 3. Enable **Enable Custom SMTP**
@@ -177,6 +181,7 @@ You need to set up custom SMTP in **both** production and training databases:
    - **SMTP Sender Name**: "The Record" (or your preferred sender name)
 
 **Training database:**
+
 1. Go to: https://supabase.com/dashboard/project/uyyptbytjuxavqddpecj/settings/auth
 2. Apply the same SMTP configuration as production
 
@@ -197,6 +202,7 @@ You need to set up custom SMTP in **both** production and training databases:
 ### Testing
 
 After configuring SMTP, test by:
+
 1. Requesting an OTP code in production mode
 2. Switch to training mode and request another OTP code
 3. Both should arrive quickly from your Gmail address
