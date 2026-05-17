@@ -51,8 +51,15 @@ Create a local `.env` file with values like these:
 
 ```env
 VITE_BASE_PATH=/The-Record/
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_publishable_anon_key
+
+# Production database
+VITE_SUPABASE_URL_PROD=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY_PROD=your_publishable_anon_key
+
+# Training database (optional, for database toggle feature)
+VITE_SUPABASE_URL_TRAINING=https://your-training-project.supabase.co
+VITE_SUPABASE_ANON_KEY_TRAINING=your_training_publishable_anon_key
+
 VITE_ARCHIVE_TABLE=archive
 VITE_STAKE_PW=stake2026
 VITE_ADMIN_PW=admin789
@@ -119,8 +126,10 @@ This repo can be hosted as a static site, including on GitHub Pages.
 
 If deploying through GitHub Actions or another CI system, make sure these environment variables are available at build time:
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_URL_PROD`
+- `VITE_SUPABASE_ANON_KEY_PROD`
+- `VITE_SUPABASE_URL_TRAINING` (optional, for database toggle feature)
+- `VITE_SUPABASE_ANON_KEY_TRAINING` (optional, for database toggle feature)
 - `VITE_ARCHIVE_TABLE` (optional if using `archive`)
 - `VITE_STAKE_PW`
 - `VITE_ADMIN_PW`
