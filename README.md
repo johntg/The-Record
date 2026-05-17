@@ -162,11 +162,28 @@ This app uses a closed-group login model: an email address must exist in both `p
 
 See [SUPABASE_AUTH_PROVISIONING.md](./SUPABASE_AUTH_PROVISIONING.md) for the recommended admin workflow and long-term provisioning approach.
 
-For local admin provisioning, the repo now includes:
+### Local admin provisioning scripts
 
-- `npm run provision:member -- --email person@example.com --name "Person Name" --role stake`
+For local admin provisioning, the repo now includes scripts for both production and training databases:
 
-This command uses the Supabase Admin API, so it requires a local `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
+**Production database:**
+
+```bash
+npm run provision:member -- --email person@example.com --name "Person Name" --role stake
+```
+
+**Training database:**
+
+```bash
+npm run provision:member:training -- --email person@example.com --name "Person Name" --role stake
+```
+
+These commands use the Supabase Admin API, so they require service role keys in `.env`:
+
+- `SUPABASE_SERVICE_ROLE_KEY` (for production)
+- `SUPABASE_SERVICE_ROLE_KEY_TRAINING` (for training)
+
+You can get these keys from your Supabase project settings → API → `service_role` (secret key).
 
 ### Admin page full provisioning
 

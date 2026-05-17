@@ -57,6 +57,10 @@ const dbMode = localStorage.getItem("dbMode") || "production";
 const supabaseUrl = SUPABASE_PROJECTS[dbMode]?.url;
 const supabaseKey = SUPABASE_PROJECTS[dbMode]?.key;
 
+console.log(`[App] Initializing in ${dbMode.toUpperCase()} mode`, {
+  url: supabaseUrl,
+});
+
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
@@ -733,20 +737,34 @@ function updateDerivedMemberLists() {
     .filter(Boolean);
 }
 
-function toggleDatabaseMode() {
-  // 1. Flip the mode string
+async function toggleDatabaseMode() {
+  // 1. Sign out of current database first to clear auth session
+  try {
+    await supabase.auth.signOut();
+  } catch (e) {
+    console.warn("Sign out error during database switch:", e);
+  }
+
+  // 2. Flip the mode string
   const currentMode = appState.dbMode || "production";
   const newMode = currentMode === "production" ? "training" : "production";
 
-  // 2. Update state and localStorage
+  // 3. Update state and localStorage
   appState.dbMode = newMode;
   localStorage.setItem("dbMode", newMode);
 
-  // 3. Clear any in-progress OTP session (codes are specific to each database)
+  // 4. Clear any in-progress OTP session (codes are specific to each database)
   localStorage.removeItem("otp-email");
   sessionStorage.clear();
 
-  // 4. Reload the page to reinitialize with the new database connection
+  // 5. Clear ALL Supabase auth tokens to prevent cross-contamination
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith("sb-") && key.includes("-auth-token")) {
+      localStorage.removeItem(key);
+    }
+  });
+
+  // 6. Reload the page to reinitialize with the new database connection
   window.location.reload();
 }
 
@@ -1665,8 +1683,8 @@ function renderLogin() {
     );
 
     if (!isKnownMember) {
-      message.textContent =
-        "That email is not authorized for this app. Please use your member email.";
+      const dbModeLabel = (appState.dbMode || "production").toUpperCase();
+      message.textContent = `That email is not authorized for the ${dbModeLabel} database. Please use your member email or check that your account exists in this database.`;
       message.classList.add("error");
       return;
     }
@@ -1676,6 +1694,11 @@ function renderLogin() {
 
     // Store email so it persists across page reloads (but will be cleared on database switch)
     localStorage.setItem("otp-email", userEmail);
+
+    const dbModeLabel = (appState.dbMode || "production").toUpperCase();
+    console.log(
+      `[OTP] Requesting code for ${userEmail} in ${dbModeLabel} mode`,
+    );
 
     // CRITICAL: Remove 'options' and 'emailRedirectTo'
     // Using the bare minimum forces Supabase into OTP mode
@@ -1705,11 +1728,26 @@ function renderLogin() {
     event.preventDefault();
     const token = document.getElementById("otp-input").value.trim();
 
+    // Get fresh email from localStorage in case of page reload
+    const verifyEmail = localStorage.getItem("otp-email") || userEmail;
+
+    if (!verifyEmail) {
+      message.textContent = "Session expired. Please start over.";
+      message.classList.add("error");
+      setTimeout(() => renderLogin(), 2000);
+      return;
+    }
+
     message.textContent = "Verifying...";
     message.classList.remove("error");
 
+    const dbModeLabel = (appState.dbMode || "production").toUpperCase();
+    console.log(
+      `[OTP] Verifying code for ${verifyEmail} in ${dbModeLabel} mode`,
+    );
+
     const { error } = await supabase.auth.verifyOtp({
-      email: userEmail,
+      email: verifyEmail,
       token,
       type: "email",
     });
