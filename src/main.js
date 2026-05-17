@@ -40,13 +40,22 @@ import {
 } from "./utils/app-utils.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
-const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
-const memberProvisionUrl = import.meta.env.VITE_MEMBER_PROVISION_URL || "";
-const memberProvisionToken = import.meta.env.VITE_MEMBER_PROVISION_TOKEN || "";
-const archiveTable = import.meta.env.VITE_ARCHIVE_TABLE || "archive";
+const SUPABASE_PROJECTS = {
+  production: {
+    url: import.meta.env.VITE_SUPABASE_URL_PROD,
+    key: import.meta.env.VITE_SUPABASE_ANON_KEY_PROD,
+  },
+
+  training: {
+    url: import.meta.env.VITE_SUPABASE_URL_TRAINING,
+    key: import.meta.env.VITE_SUPABASE_ANON_KEY_TRAINING,
+  },
+};
+
+const dbMode = localStorage.getItem("dbMode") || "production";
+
+const supabaseUrl = SUPABASE_PROJECTS[dbMode]?.url;
+const supabaseKey = SUPABASE_PROJECTS[dbMode]?.key;
 
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
@@ -655,6 +664,9 @@ async function fetchCallings() {
 }
 
 async function fetchArchivedItems() {
+  // 👉 ADD THIS LINE TO DEFINE THE VARIABLE FROM VITE'S ENV
+  const archiveTable = import.meta.env.VITE_ARCHIVE_TABLE;
+
   const { data, error } = await supabase
     .from(archiveTable)
     .select("*")
@@ -677,26 +689,6 @@ async function fetchArchivedItems() {
 
   appState.archiveTableAvailable = true;
   appState.archivedItems = data || [];
-}
-
-function updateDerivedMemberLists() {
-  appState.highCouncilNames = [
-    ...new Set(
-      appState.members
-        .filter((member) => hasRole(member?.role, "shc"))
-        .map((member) => String(member.name ?? "").trim())
-        .filter(Boolean),
-    ),
-  ];
-
-  appState.assignableNames = [
-    ...new Set(
-      appState.members
-        .filter((member) => canAssignMember(member))
-        .map((member) => String(member.name ?? "").trim())
-        .filter(Boolean),
-    ),
-  ];
 }
 
 async function fetchReferenceData() {
@@ -2096,6 +2088,11 @@ async function startApp() {
   renderHeader();
   renderCurrentPage();
 }
+
+window.setDatabaseMode = (mode) => {
+  localStorage.setItem("dbMode", mode);
+  location.reload();
+};
 
 startApp().catch((error) => {
   console.error("Failed to start app:", error);
