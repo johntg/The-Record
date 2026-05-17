@@ -16,6 +16,7 @@ export function createCallingsActions({
   applyHiddenVisibilityForRow = null,
   showConcernNoticeModal = null,
   sendConcernEmail = null,
+  getTableName = null,
 }) {
   function canUpdateAssignmentField(field) {
     const assignmentFields = new Set(getAssignmentFieldCandidates());
@@ -88,7 +89,7 @@ export function createCallingsActions({
     item.units_sustained = sustaining;
 
     const { error } = await supabase
-      .from("callings")
+      .from(getTableName("callings"))
       .update({ units_sustained: sustaining })
       .eq("id", id);
 
@@ -120,7 +121,7 @@ export function createCallingsActions({
     item[field] = announcedUnits;
 
     const { error } = await supabase
-      .from("callings")
+      .from(getTableName("callings"))
       .update({ [field]: announcedUnits })
       .eq("id", id);
 
@@ -186,7 +187,7 @@ export function createCallingsActions({
 
     if (normalizedVote === "clear") {
       const { error: deleteError } = await supabase
-        .from("calling_hc_votes")
+        .from(getTableName("calling_hc_votes"))
         .delete()
         .eq("calling_id", id)
         .eq("voter_name", currentUser);
@@ -198,7 +199,7 @@ export function createCallingsActions({
       }
     } else {
       const { error: upsertError } = await supabase
-        .from("calling_hc_votes")
+        .from(getTableName("calling_hc_votes"))
         .upsert(
           {
             calling_id: id,
@@ -250,7 +251,7 @@ export function createCallingsActions({
 
     if (shouldPersist) {
       const { error: callingUpdateError } = await supabase
-        .from("callings")
+        .from(getTableName("callings"))
         .update(updateData)
         .eq("id", id);
 
@@ -317,7 +318,7 @@ export function createCallingsActions({
     };
 
     const { error } = await supabase
-      .from("callings")
+      .from(getTableName("callings"))
       .update(updateData)
       .eq("id", id);
 
@@ -355,7 +356,7 @@ export function createCallingsActions({
     }
 
     const { error } = await supabase
-      .from("callings")
+      .from(getTableName("callings"))
       .update({ [field]: value || null })
       .eq("id", id);
 
@@ -450,7 +451,7 @@ export function createCallingsActions({
     }
 
     const { data, error } = await supabase
-      .from("callings")
+      .from(getTableName("callings"))
       .update({ [field]: cleaned })
       .eq("id", id)
       .select()
@@ -516,7 +517,7 @@ export function createCallingsActions({
     console.log("Updating:", id, "with data:", updateData);
 
     const { error } = await supabase
-      .from("callings")
+      .from(getTableName("callings"))
       .update(updateData)
       .eq("id", id);
 
@@ -552,7 +553,7 @@ export function createCallingsActions({
     }
 
     const { error: deleteError } = await supabase
-      .from("calling_hc_votes")
+      .from(getTableName("calling_hc_votes"))
       .delete()
       .eq("calling_id", id)
       .eq("voter_name", targetVoter);
@@ -564,7 +565,7 @@ export function createCallingsActions({
     }
 
     const { data: latestVotes, error: fetchVotesError } = await supabase
-      .from("calling_hc_votes")
+      .from(getTableName("calling_hc_votes"))
       .select("calling_id, voter_name, vote, voted_at")
       .eq("calling_id", id);
 
@@ -597,7 +598,7 @@ export function createCallingsActions({
 
     if (shouldPersist) {
       const { error: callingUpdateError } = await supabase
-        .from("callings")
+        .from(getTableName("callings"))
         .update(updateData)
         .eq("id", id);
 

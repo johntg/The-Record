@@ -40,29 +40,29 @@ import {
 } from "./utils/app-utils.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const SUPABASE_PROJECTS = {
-  production: {
-    url: import.meta.env.VITE_SUPABASE_URL_PROD,
-    key: import.meta.env.VITE_SUPABASE_ANON_KEY_PROD,
-  },
-
-  training: {
-    url: import.meta.env.VITE_SUPABASE_URL_TRAINING,
-    key: import.meta.env.VITE_SUPABASE_ANON_KEY_TRAINING,
-  },
-};
-
-const dbMode = localStorage.getItem("dbMode") || "production";
-
-const supabaseUrl = SUPABASE_PROJECTS[dbMode]?.url;
-const supabaseKey = SUPABASE_PROJECTS[dbMode]?.key;
-
-console.log(`[App] Initializing in ${dbMode.toUpperCase()} mode`, {
-  url: supabaseUrl,
-});
+// Single database with mode-based table prefixes
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL_PROD;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY_PROD;
 
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+// Helper function to get table name based on current mode
+// Members table is shared; all others use prod_ or train_ prefix
+function getTableName(baseTable) {
+  const dbMode = localStorage.getItem("dbMode") || "production";
+
+  // Shared tables (no prefix)
+  if (baseTable === "members") {
+    return "members";
+  }
+
+  // Prefixed tables based on mode
+  const prefix = dbMode === "production" ? "prod" : "train";
+  return `${prefix}_${baseTable}`;
+}
+
+console.log(`[App] Initializing in single database mode`);
 
 // Apps Script email configuration (shared across production and training)
 const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
@@ -371,7 +371,7 @@ async function applyHiddenVisibilityForRow(callingRow) {
   if (!member) return;
 
   const { error: hideError } = await supabase
-    .from("calling_hidden_for_members")
+    .from(getTableName("calling_hidden_for_members"))
     .upsert([{ calling_id: callingRow.id, member_name: member.name }], {
       onConflict: "calling_id,member_name",
     });
@@ -621,7 +621,7 @@ function applyHighCouncilSummaryToAllCallings() {
 
 async function fetchHighCouncilVotes() {
   const { data, error } = await supabase
-    .from("calling_hc_votes")
+    .from(getTableName("calling_hc_votes"))
     .select("calling_id, voter_name, vote, voted_at");
 
   if (error) {
@@ -659,7 +659,7 @@ async function fetchHighCouncilVotes() {
 async function fetchCallings() {
   const [{ data, error }] = await Promise.all([
     supabase
-      .from("callings")
+      .from(getTableName("callings"))
       .select("*")
       .order("created_at", { ascending: false }),
     fetchHighCouncilVotes(),
@@ -673,11 +673,8 @@ async function fetchCallings() {
 }
 
 async function fetchArchivedItems() {
-  // 👉 ADD THIS LINE TO DEFINE THE VARIABLE FROM VITE'S ENV
-  const archiveTable = import.meta.env.VITE_ARCHIVE_TABLE || "archive";
-
   const { data, error } = await supabase
-    .from(archiveTable)
+    .from(getTableName("archive"))
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -687,7 +684,7 @@ async function fetchArchivedItems() {
 
     if (error.code === "42P01") {
       console.warn(
-        `Archive table \"${archiveTable}\" not found. Set VITE_ARCHIVE_TABLE to your archive table name if needed.`,
+        `Archive table \"${getTableName("archive")}\" not found. Check that prefixed tables are created.`,
       );
       return;
     }
@@ -702,8 +699,8 @@ async function fetchArchivedItems() {
 
 async function fetchReferenceData() {
   const [membersResult, statusesResult] = await Promise.all([
-    supabase.from("members").select("*"),
-    supabase.from("status_options").select("*"),
+    supabase.from(getTableName("members")).select("*"),
+    supabase.from(getTableName("status_options")).select("*"),
   ]);
 
   const { data: members, error: membersError } = membersResult;
@@ -742,34 +739,31 @@ function updateDerivedMemberLists() {
 }
 
 async function toggleDatabaseMode() {
-  // 1. Sign out of current database first to clear auth session
-  try {
-    await supabase.auth.signOut();
-  } catch (e) {
-    console.warn("Sign out error during database switch:", e);
-  }
-
-  // 2. Flip the mode string
+  // Flip the mode string
   const currentMode = appState.dbMode || "production";
   const newMode = currentMode === "production" ? "training" : "production";
 
-  // 3. Update state and localStorage
+  // Update state and localStorage
   appState.dbMode = newMode;
   localStorage.setItem("dbMode", newMode);
 
-  // 4. Clear any in-progress OTP session (codes are specific to each database)
-  localStorage.removeItem("otp-email");
-  sessionStorage.clear();
+  console.log(
+    `[DB Switch] Switching from ${currentMode} to ${newMode} (single database, prefixed tables)`,
+  );
 
-  // 5. Clear ALL Supabase auth tokens to prevent cross-contamination
-  Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith("sb-") && key.includes("-auth-token")) {
-      localStorage.removeItem(key);
-    }
-  });
-
-  // 6. Reload the page to reinitialize with the new database connection
-  window.location.reload();
+  // Reload data with new table prefixes (no page reload needed!)
+  try {
+    await fetchReferenceData(); // Reload members and status options
+    await fetchCallings(); // Reload callings, votes, and archive
+    renderHeader(); // Update header with new mode indicator
+    renderCurrentPage(); // Re-render the current page
+  } catch (error) {
+    console.error("Error reloading data after mode switch:", error);
+    // If data reload fails, show an alert but keep the UI functional
+    await showModalAlert(
+      `Switched to ${newMode} mode, but some data may not have loaded. Try refreshing the page.`,
+    );
+  }
 }
 
 function getSortedVisibleCallings() {
@@ -1033,9 +1027,13 @@ async function archiveCallingRecord(id, options = {}) {
 
   let error;
 
+  // Get current mode prefix for RPC functions
+  const tablePrefix = appState.dbMode === "production" ? "prod" : "train";
+
   if (isDeleteMistake) {
-    const result = await supabase.rpc("delete_calling_permanently", {
+    const result = await supabase.rpc("delete_calling_permanently_v2", {
       row_id: id,
+      table_prefix: tablePrefix,
     });
     error = result.error;
 
@@ -1048,8 +1046,9 @@ async function archiveCallingRecord(id, options = {}) {
       return false;
     }
   } else {
-    const result = await supabase.rpc("move_calling_to_archive", {
+    const result = await supabase.rpc("move_calling_to_archive_v2", {
       row_id: id,
+      table_prefix: tablePrefix,
     });
     error = result.error;
 
@@ -1196,6 +1195,7 @@ const callingsActions = createCallingsActions({
   applyHiddenVisibilityForRow,
   showConcernNoticeModal: () => window.showConcernNoticeModal(),
   sendConcernEmail,
+  getTableName,
 });
 
 window.showToast = (message) => {
@@ -1872,6 +1872,7 @@ window.submitNewCalling = async (event) => {
     applyHiddenVisibilityForRow,
     closeCreateCallingModal: () => window.closeCreateCallingModal(),
     renderCurrentPage,
+    getTableName,
   });
 };
 
@@ -2186,10 +2187,10 @@ async function startApp() {
   renderCurrentPage();
 }
 
-window.setDatabaseMode = (mode) => {
-  localStorage.setItem("dbMode", mode);
-  location.reload();
-};
+// window.setDatabaseMode = (mode) => {
+//   localStorage.setItem("dbMode", mode);
+//   location.reload();
+// };
 
 startApp().catch((error) => {
   console.error("Failed to start app:", error);

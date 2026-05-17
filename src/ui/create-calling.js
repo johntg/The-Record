@@ -143,6 +143,7 @@ export async function submitNewCalling({
   applyHiddenVisibilityForRow,
   closeCreateCallingModal,
   renderCurrentPage,
+  getTableName,
 }) {
   event.preventDefault();
 
@@ -186,7 +187,7 @@ export async function submitNewCalling({
   }
 
   const { data, error } = await supabase
-    .from("callings")
+    .from(getTableName("callings"))
     .insert([payload])
     .select()
     .single();
