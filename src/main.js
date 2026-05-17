@@ -971,6 +971,13 @@ function renderCurrentPage() {
   syncFabVisibility(isAdmin);
 
   if (isAdmin) {
+    // Only super admins can view the admin page
+    if (!isSuperAdmin()) {
+      // Redirect non-super-admins back to callings
+      appState.currentPage = "callings";
+      renderCards();
+      return;
+    }
     renderAdminPage();
     return;
   }

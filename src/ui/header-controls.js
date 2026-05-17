@@ -81,7 +81,7 @@ export function renderHeader({
   }
 
   const showScopeToggle = isStakePasswordSession();
-  const showAdminButton = isSuperAdminUser && isSuperAdminUser();
+  const showAdminButton = isSuperAdminUser ? isSuperAdminUser() === true : false;
   const scopeLabel = appState.showAllCallingsForStake
     ? "Show My Assignments"
     : "Show All Callings";
