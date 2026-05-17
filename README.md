@@ -39,12 +39,11 @@ The live app uses Supabase for data access, including these tables:
 
 Current app features include:
 
-- sign-in using OTP (6-digit email codes) - requires custom SMTP configuration (see [SUPABASE_SMTP_SETUP.md](./SUPABASE_SMTP_SETUP.md))
+- sign-in using configured shared passwords
 - create new callings and releases
 - update assignments and workflow steps
 - generate reports
 - archive items by moving them from `callings` into the configured archive table
-- database mode toggle (production/training) for super admins
 
 ## Environment variables
 
@@ -52,20 +51,11 @@ Create a local `.env` file with values like these:
 
 ```env
 VITE_BASE_PATH=/The-Record/
-
-# Production database
-VITE_SUPABASE_URL_PROD=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY_PROD=your_publishable_anon_key
-
-# Training database (optional, for database toggle feature)
-VITE_SUPABASE_URL_TRAINING=https://your-training-project.supabase.co
-VITE_SUPABASE_ANON_KEY_TRAINING=your_training_publishable_anon_key
-
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_publishable_anon_key
 VITE_ARCHIVE_TABLE=archive
 VITE_STAKE_PW=stake2026
 VITE_ADMIN_PW=admin789
-VITE_MEMBER_PROVISION_URL=https://your-secure-endpoint.example.com/provision-member
-VITE_MEMBER_PROVISION_TOKEN=replace_with_shared_secret
 ```
 
 For purely local development, you can also use:
@@ -127,10 +117,8 @@ This repo can be hosted as a static site, including on GitHub Pages.
 
 If deploying through GitHub Actions or another CI system, make sure these environment variables are available at build time:
 
-- `VITE_SUPABASE_URL_PROD`
-- `VITE_SUPABASE_ANON_KEY_PROD`
-- `VITE_SUPABASE_URL_TRAINING` (optional, for database toggle feature)
-- `VITE_SUPABASE_ANON_KEY_TRAINING` (optional, for database toggle feature)
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 - `VITE_ARCHIVE_TABLE` (optional if using `archive`)
 - `VITE_STAKE_PW`
 - `VITE_ADMIN_PW`
@@ -157,102 +145,17 @@ If archiving still isn't working after adding the policy, check:
 - Your authentication role matches the policy condition
 - You have SELECT access to the `archive` table (to see archived rows)
 
-## Email configuration for OTP authentication
-
-**Important**: Supabase's default email service has strict rate limits that will be triggered when multiple users log in simultaneously. To avoid this, configure custom SMTP using Gmail or Google Workspace.
-
-See [SUPABASE_SMTP_SETUP.md](./SUPABASE_SMTP_SETUP.md) for detailed configuration instructions.
-
-### Quick Setup Summary
-
-You need to set up custom SMTP in **both** production and training databases:
-
-**Production database:**
-
-1. Go to: https://supabase.com/dashboard/project/rcelzqrloxykyqnyosxc/settings/auth
-2. Scroll to **SMTP Settings**
-3. Enable **Enable Custom SMTP**
-4. Configure:
-   - **SMTP Host**: `smtp.gmail.com`
-   - **SMTP Port**: `587`
-   - **SMTP User**: Your Gmail address (e.g., `your-email@gmail.com`)
-   - **SMTP Pass**: Gmail app-specific password (see below)
-   - **SMTP Sender Email**: Same as SMTP User
-   - **SMTP Sender Name**: "The Record" (or your preferred sender name)
-
-**Training database:**
-
-1. Go to: https://supabase.com/dashboard/project/uyyptbytjuxavqddpecj/settings/auth
-2. Apply the same SMTP configuration as production
-
-### Getting Gmail App Password
-
-1. Go to: https://myaccount.google.com/apppasswords
-2. Create a new app password named "Supabase" or "The Record"
-3. Copy the 16-character password
-4. Use this password in the **SMTP Pass** field (not your regular Gmail password)
-
-### Benefits
-
-- **No rate limits**: Gmail's sending limits are much higher than Supabase's default
-- **Consistent delivery**: All OTP codes come from your trusted Gmail account
-- **Professional appearance**: Emails appear to come from your organization
-- **Works for both databases**: Both production and training use the same reliable SMTP
-
-### Testing
-
-After configuring SMTP, test by:
-
-1. Requesting an OTP code in production mode
-2. Switch to training mode and request another OTP code
-3. Both should arrive quickly from your Gmail address
-
 ## Closed-group auth provisioning
 
 This app uses a closed-group login model: an email address must exist in both `public.members` and Supabase `auth.users` before an OTP code should be sent.
 
 See [SUPABASE_AUTH_PROVISIONING.md](./SUPABASE_AUTH_PROVISIONING.md) for the recommended admin workflow and long-term provisioning approach.
 
-### Local admin provisioning scripts
+For local admin provisioning, the repo now includes:
 
-For local admin provisioning, the repo now includes scripts for both production and training databases:
+- `npm run provision:member -- --email person@example.com --name "Person Name" --role stake`
 
-**Production database:**
-
-```bash
-npm run provision:member -- --email person@example.com --name "Person Name" --role stake
-```
-
-**Training database:**
-
-```bash
-npm run provision:member:training -- --email person@example.com --name "Person Name" --role stake
-```
-
-These commands use the Supabase Admin API, so they require service role keys in `.env`:
-
-- `SUPABASE_SERVICE_ROLE_KEY` (for production)
-- `SUPABASE_SERVICE_ROLE_KEY_TRAINING` (for training)
-
-You can get these keys from your Supabase project settings → API → `service_role` (secret key).
-
-### Admin page full provisioning
-
-The in-app Admin page now supports full provisioning for **new** members by calling a secure server-side endpoint.
-
-That endpoint must:
-
-1. create or confirm the user in `auth.users`
-2. upsert the matching row in `public.members`
-
-The frontend uses:
-
-- `VITE_MEMBER_PROVISION_URL`
-- `VITE_MEMBER_PROVISION_TOKEN`
-
-An example Supabase Edge Function template is included at:
-
-- `supabase/functions/provision-member/index.ts`
+This command uses the Supabase Admin API, so it requires a local `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
 
 ## Apps Script notes
 
