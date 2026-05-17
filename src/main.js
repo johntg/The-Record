@@ -1717,7 +1717,6 @@ function renderLogin() {
     }
 
     // Success: Hide email form, show code form
-    const dbModeLabel = (appState.dbMode || "production").toUpperCase();
     emailStep.classList.add("hidden");
     codeStep.classList.remove("hidden");
     message.textContent = `Check your email for the 6-digit code (${dbModeLabel} database).`;
