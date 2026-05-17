@@ -156,6 +156,51 @@ If archiving still isn't working after adding the policy, check:
 - Your authentication role matches the policy condition
 - You have SELECT access to the `archive` table (to see archived rows)
 
+## Email configuration for OTP authentication
+
+**Important**: Supabase's default email service has strict rate limits that will be triggered when multiple users log in simultaneously. To avoid this, configure custom SMTP using Gmail or Google Workspace.
+
+### Configure Custom SMTP in Supabase
+
+You need to set up custom SMTP in **both** production and training databases:
+
+**Production database:**
+1. Go to: https://supabase.com/dashboard/project/rcelzqrloxykyqnyosxc/settings/auth
+2. Scroll to **SMTP Settings**
+3. Enable **Enable Custom SMTP**
+4. Configure:
+   - **SMTP Host**: `smtp.gmail.com`
+   - **SMTP Port**: `587`
+   - **SMTP User**: Your Gmail address (e.g., `your-email@gmail.com`)
+   - **SMTP Pass**: Gmail app-specific password (see below)
+   - **SMTP Sender Email**: Same as SMTP User
+   - **SMTP Sender Name**: "The Record" (or your preferred sender name)
+
+**Training database:**
+1. Go to: https://supabase.com/dashboard/project/uyyptbytjuxavqddpecj/settings/auth
+2. Apply the same SMTP configuration as production
+
+### Getting Gmail App Password
+
+1. Go to: https://myaccount.google.com/apppasswords
+2. Create a new app password named "Supabase" or "The Record"
+3. Copy the 16-character password
+4. Use this password in the **SMTP Pass** field (not your regular Gmail password)
+
+### Benefits
+
+- **No rate limits**: Gmail's sending limits are much higher than Supabase's default
+- **Consistent delivery**: All OTP codes come from your trusted Gmail account
+- **Professional appearance**: Emails appear to come from your organization
+- **Works for both databases**: Both production and training use the same reliable SMTP
+
+### Testing
+
+After configuring SMTP, test by:
+1. Requesting an OTP code in production mode
+2. Switch to training mode and request another OTP code
+3. Both should arrive quickly from your Gmail address
+
 ## Closed-group auth provisioning
 
 This app uses a closed-group login model: an email address must exist in both `public.members` and Supabase `auth.users` before an OTP code should be sent.

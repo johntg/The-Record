@@ -64,6 +64,10 @@ console.log(`[App] Initializing in ${dbMode.toUpperCase()} mode`, {
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
+// Apps Script email configuration (shared across production and training)
+const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
+const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
+
 const appState = {
   callings: [],
   archivedItems: [],
