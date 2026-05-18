@@ -61,6 +61,10 @@ console.log(`[App] Initializing in single database mode`);
 const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";
 const concernEmailToken = import.meta.env.VITE_CONCERN_EMAIL_TOKEN || "";
 
+// Member provision configuration
+const memberProvisionUrl = import.meta.env.VITE_MEMBER_PROVISION_URL || "";
+const memberProvisionToken = import.meta.env.VITE_MEMBER_PROVISION_TOKEN || "";
+
 const appState = {
   callings: [],
   archivedItems: [],
