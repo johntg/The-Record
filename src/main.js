@@ -780,11 +780,16 @@ function getSortedVisibleCallings() {
 
 function renderAdminPage() {
   const list = document.getElementById("data-list");
+  const reportsPage = document.getElementById("reports-page");
   const adminPage = document.getElementById("admin-page");
   if (!adminPage) return;
 
   if (list) {
     list.classList.add("hidden");
+  }
+
+  if (reportsPage) {
+    reportsPage.classList.add("hidden");
   }
 
   adminPage.classList.remove("hidden");
@@ -907,6 +912,11 @@ function renderReportsPage() {
 
   if (list) {
     list.classList.add("hidden");
+  }
+
+  const adminPage = document.getElementById("admin-page");
+  if (adminPage) {
+    adminPage.classList.add("hidden");
   }
 
   reportsPage.classList.remove("hidden");

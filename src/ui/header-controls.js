@@ -81,7 +81,9 @@ export function renderHeader({
   }
 
   const showScopeToggle = isStakePasswordSession();
-  const showAdminButton = isSuperAdminUser ? isSuperAdminUser() === true : false;
+  const showAdminButton = isSuperAdminUser
+    ? isSuperAdminUser() === true
+    : false;
   const scopeLabel = appState.showAllCallingsForStake
     ? "Show My Assignments"
     : "Show All Callings";
@@ -105,8 +107,8 @@ export function renderHeader({
   ${
     isTraining
       ? `
-    <div style="background-color: #f59e0b; color: #000; text-align: center; font-weight: bold; padding: 6px; font-size: 14px;">
-      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE (SANDBOX DATABASE)
+    <div style="background-color: #f59e0b; color: #000; text-align: center; font-weight: bold; padding-block: 6px; padding-inline: 45px;font-size: 14px; border-radius: 4px;">
+      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE ⚠️ 
     </div>
   `
       : ""
