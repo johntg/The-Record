@@ -738,6 +738,13 @@ function updateDerivedMemberLists() {
     .filter(Boolean);
 }
 
+function syncDatabaseModeClass() {
+  document.body.classList.toggle(
+    "training-mode",
+    appState.dbMode === "training",
+  );
+}
+
 async function toggleDatabaseMode() {
   // Flip the mode string
   const currentMode = appState.dbMode || "production";
@@ -746,6 +753,8 @@ async function toggleDatabaseMode() {
   // Update state and localStorage
   appState.dbMode = newMode;
   localStorage.setItem("dbMode", newMode);
+
+  syncDatabaseModeClass();
 
   console.log(
     `[DB Switch] Switching from ${currentMode} to ${newMode} (single database, prefixed tables)`,
