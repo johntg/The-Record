@@ -398,8 +398,8 @@ body.training-mode::before {
   background-position: center;
 }
 body.training-mode .card {
-  border: 2px solid #ff7b7b
-
+  border: 2px solid #ff7b7b;
+}
 body.dark-mode {
   --bg-muted: #314155;
   --bg-overlay: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45));
