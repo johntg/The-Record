@@ -103,42 +103,30 @@ export function renderHeader({
     activeClr = "#f75ced";
   }
 
+  const prodClr = "var(--productionClr)";
+  const trainingClr = "var(--alertbnrclr)";
+
   header.innerHTML = `
-  ${
-    isTraining
-      ? `
-    <div style="background-color: #f59e0b; color: #000; text-align: center; font-weight: bold; padding-block: 6px; padding-inline: 45px;font-size: 14px; border-radius: 4px;">
-      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE ⚠️ 
-    </div>
-  `
-      : ""
-  }
-  
+ 
   <div style="display: flex; align-items: center; gap: 16px;">
     ${
       isSuperAdminUser()
         ? `
-      <button 
-        onclick="window.toggleDatabaseMode()" 
-        style="
-          background: ${isTraining ? "#d97706" : "#4b5563"}; 
-          color: white; 
-          border: none; 
-          padding: 8px 16px; 
-          border-radius: 20px; 
-          cursor: pointer; 
-          font-weight: bold;
-          font-size: 13px;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          margin-left: 12px;
-        "
-      >
-        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isTraining ? "#34d399" : "#9ca3af"};"></span>
-        DB: ${isTraining ? "TRAINING" : "PROD"}
-      </button>
-    `
+      <div class="dbSwitch">
+        <label class="switcher" title="Toggle between Production and Training modes">
+          <input 
+            type="checkbox" 
+            id="db-toggle-switch" 
+            onclick="window.toggleDatabaseMode()" 
+            ${isTraining ? "checked" : ""}
+          >
+          <span class="slider round"></span>
+        </label>
+        <span style="font-size: 12px; font-weight: bold; color: ${isTraining ? trainingClr : prodClr};">
+          ${isTraining ? "TRAINING" : "PROD"}
+        </span>
+      </div>
+      `
         : ""
     }
     <div class='main-header-title'>
@@ -188,6 +176,15 @@ export function renderHeader({
     <svg id="refreshicon" xmlns="http://www.w3.org/2000/svg" fill="${activeClr}" viewBox="0 0 236.51 260.28"><defs><style>.rsh-1{fill:none;stroke:${activeClr};stroke-linecap:round;stroke-linejoin:round;stroke-width:30px;}.rsh-2{fill:${activeClr};}</style></defs><g id="refresh"><path id="tail" class="rsh-1" d="M221.51,142.02c0,57.03-46.23,103.26-103.26,103.26S15,199.05,15,142.02,61.23,38.76,118.26,38.76c6.25,0,12.36.55,18.3,1.62"/><g id="head"><path class="rsh-2" d="M197.62,56.37l-83.48,17.87c-5.03,1.08-8.56-4.83-5.24-8.75l20.1-23.71c1.25-1.48,1.61-3.51.95-5.32l-10.63-29.2c-1.76-4.83,3.6-9.14,7.94-6.39l72.11,45.69c4.07,2.58,2.96,8.8-1.76,9.81Z"/></g></g></svg>
   </div>
 </div>
+ ${
+   isTraining
+     ? `
+    <div class="alertBnr" ">
+      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE ⚠️ 
+    </div>
+  `
+     : ""
+ }
 `;
   app.prepend(header);
 
