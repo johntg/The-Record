@@ -46,7 +46,7 @@
   --block-pending: #eef7fb; /* Keeping your soft blue blocks */
   --block-done: #d5e9f4; /* Keeping your "done" blue blocks */
   --stake-blue: #4e5ff2;
-  --alertbnrclr: #987ad9;
+  --alertbnrclr: var(--recordClr);
   --productionClr: #3d5f79;
 }
 
@@ -99,7 +99,7 @@
   display: inline-block;
   width: 60px;
   height: 34px;
-  top: 15px;
+  top: 20px;
   left: 20px;
   scale: 0.9;
 }
@@ -385,6 +385,8 @@ body.dark-mode {
   --releaseCheckClr: #d3eced;
   --btn2text: #333;
   --recordClr: #fff8be;
+  --alertbnrclr: #7284fa;
+  --productionClr: #5585aa;
   background: var(--bg-muted);
   color: var(--text);
 }
@@ -472,6 +474,11 @@ body.modal-open {
   .alertBnr {
     padding-inline: 20px;
     font-size: 12px;
+  }
+  .dbSwitch {
+    scale: 0.8;
+    left: 10px;
+    top: 15px;
   }
 }
 

@@ -98,9 +98,9 @@ export function renderHeader({
   let activeClr;
 
   if (currentMode === "dark") {
-    activeClr = "#5cb5f7";
+    activeClr = "#5585aa";
   } else {
-    activeClr = "#f75ced";
+    activeClr = "#e55000";
   }
 
   const prodClr = "var(--productionClr)";
