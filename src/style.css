@@ -10,7 +10,7 @@
   --text-subtle: #ababab;
   --border: #ddd;
   --lightContrast: #eddaff;
-  --midContrast: #24cb90;
+  --midContrast: #40c6b7;
   --darkContrast: #ad0058;
   --iconClr: #24cb90;
   --themeClr: #027da5;
@@ -386,7 +386,8 @@ body.dark-mode {
   --btn2text: #333;
   --recordClr: #fff8be;
   --alertbnrclr: #7284fa;
-  --productionClr: #5585aa;
+  --productionClr: hsl(206, 33%, 45%);
+
   background: var(--bg-muted);
   color: var(--text);
 }
@@ -1228,13 +1229,16 @@ body.modal-open {
   border-radius: 50%;
   background: var(--midContrast);
   color: var(--white);
-  font-size: 30px;
+  font-size: 2.4rem;
   line-height: 1;
   z-index: 1100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
-
+.fab::after {
+  content: "+";
+  transform: translateY(-2px);
+}
 .fab:hover {
   background: var(--darkContrast);
 }

@@ -18,7 +18,6 @@ export function ensureCreateCallingUi({
     fab.className = "fab";
     fab.type = "button";
     fab.setAttribute("aria-label", "Add new calling or release");
-    fab.textContent = "+";
     fab.onclick = () => onOpenCreateCallingModal();
   }
 

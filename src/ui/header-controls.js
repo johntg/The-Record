@@ -123,7 +123,7 @@ export function renderHeader({
           <span class="slider round"></span>
         </label>
         <span style="font-size: 12px; font-weight: bold; color: ${isTraining ? trainingClr : prodClr};">
-          ${isTraining ? "TRAINING" : "PROD"}
+          ${isTraining ? "TRAINING" : "LIVE"}
         </span>
       </div>
       `

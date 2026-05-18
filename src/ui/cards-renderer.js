@@ -224,11 +224,6 @@ export function createCardsRenderer({
       reportsPage.classList.add("hidden");
     }
 
-    const adminPage = documentRef.getElementById("admin-page");
-    if (adminPage) {
-      adminPage.classList.add("hidden");
-    }
-
     list.classList.remove("hidden");
 
     const rowsToRender = getSortedVisibleCallings();
