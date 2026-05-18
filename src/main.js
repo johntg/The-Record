@@ -692,7 +692,10 @@ async function fetchArchivedItems() {
 
 async function fetchReferenceData() {
   const [membersResult, statusesResult] = await Promise.all([
-    supabase.from(getTableName("members")).select("*"),
+    supabase
+      .from(getTableName("members"))
+      .select("*")
+      .order("name", { ascending: true }),
     supabase.from(getTableName("status_options")).select("*"),
   ]);
 
