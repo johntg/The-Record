@@ -1,12 +1,5 @@
 import "./style.css";
-// import {
-//   getCurrentUserName,
-//   getRequiredPasswordType,
-//   hasAdminPasswordAccess,
-//   isLoggedInSession,
-//   isStakePasswordSession,
-//   setSessionAfterLogin,
-// } from "./auth/session.js";
+
 import {
   applyThemeMode,
   getSavedThemeMode,
@@ -1193,6 +1186,22 @@ const cardsRenderer = createCardsRenderer({
 });
 
 function renderCards() {
+  const adminPage = document.getElementById("admin-page");
+  const reportsPage = document.getElementById("reports-page");
+  const list = document.getElementById("data-list");
+
+  if (adminPage) {
+    adminPage.classList.add("hidden");
+  }
+
+  if (reportsPage) {
+    reportsPage.classList.add("hidden");
+  }
+
+  if (list) {
+    list.classList.remove("hidden");
+  }
+
   cardsRenderer.renderCards();
 }
 
