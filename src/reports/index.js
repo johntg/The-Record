@@ -28,7 +28,7 @@ function buildAwaitingShcReport(rows, reportContext = {}) {
   );
 
   if (!awaiting.length) {
-    return `${formatReportHeader("Awaiting HC Sustaining", 0)}\n\nNo calls or releases are currently awaiting High Council sustaining.`;
+    return `${formatReportHeader("Awaiting HC Sustaining", 0)}\n\nNo calls are currently awaiting High Council sustaining.`;
   }
 
   const body = awaiting
