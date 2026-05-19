@@ -487,7 +487,18 @@ function getVisibleCallings() {
 
   return appState.callings.filter((row) => {
     const rowNameKey = normalizeComparableName(row?.name);
-    return !(currentUserKey && rowNameKey && currentUserKey === rowNameKey);
+
+    // Hide user's own calling/release
+    if (currentUserKey && rowNameKey && currentUserKey === rowNameKey) {
+      return false;
+    }
+
+    // For SHC role members, only show if sp_approved is TRUE
+    if (isShcRole() && !isCompletedValue(row?.sp_approved)) {
+      return false;
+    }
+
+    return true;
   });
 }
 
