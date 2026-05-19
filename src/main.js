@@ -43,7 +43,8 @@ const supabase =
 // Helper function to get table name based on current mode
 // Members table is shared; all others use prod_ or train_ prefix
 function getTableName(baseTable) {
-  const dbMode = localStorage.getItem("dbMode") || "production";
+  // Use appState.dbMode for consistency with delete/archive operations
+  const dbMode = appState?.dbMode || localStorage.getItem("dbMode") || "production";
 
   // Shared tables (no prefix)
   if (baseTable === "members") {
@@ -1066,32 +1067,77 @@ async function archiveCallingRecord(id, options = {}) {
 
   // Get current mode prefix for RPC functions
   const tablePrefix = appState.dbMode === "production" ? "prod" : "train";
+  const expectedTableName = `${tablePrefix}_callings`;
+
+  console.log(`[Delete] Current mode: ${appState.dbMode}, table: ${expectedTableName}, id: ${id}`);
 
   if (isDeleteMistake) {
-    const result = await supabase.rpc("delete_calling_permanently_v2", {
+    // Try to delete from current mode's table
+    let result = await supabase.rpc("delete_calling_permanently_v2", {
       row_id: id,
       table_prefix: tablePrefix,
     });
     error = result.error;
 
+    // If not found, try the other table (handles stale data after mode switches)
+    if (error && error.message?.includes("No calling found")) {
+      const otherPrefix = tablePrefix === "prod" ? "train" : "prod";
+      console.warn(`[Delete] Record not found in ${expectedTableName}, trying ${otherPrefix}_callings...`);
+      
+      result = await supabase.rpc("delete_calling_permanently_v2", {
+        row_id: id,
+        table_prefix: otherPrefix,
+      });
+      error = result.error;
+      
+      if (!error) {
+        console.log(`[Delete] Successfully deleted from ${otherPrefix}_callings`);
+        // Reload data to sync with correct table
+        await fetchCallings();
+      }
+    }
+
     if (error) {
       console.error("Permanent delete RPC error:", error);
+      console.error(`[Delete] Failed to delete from both prod_callings and train_callings`);
       await showModalAlert(
-        `Failed to permanently delete item: ${error.message}`,
+        `Failed to permanently delete item: ${error.message}\n\nThe record was not found in either database table. It may have already been deleted.`,
       );
       renderCurrentPage();
       return false;
     }
   } else {
-    const result = await supabase.rpc("move_calling_to_archive_v2", {
+    // Try to archive from current mode's table
+    let result = await supabase.rpc("move_calling_to_archive_v2", {
       row_id: id,
       table_prefix: tablePrefix,
     });
     error = result.error;
 
+    // If not found, try the other table (handles stale data after mode switches)
+    if (error && error.message?.includes("No calling found")) {
+      const otherPrefix = tablePrefix === "prod" ? "train" : "prod";
+      console.warn(`[Archive] Record not found in ${expectedTableName}, trying ${otherPrefix}_callings...`);
+      
+      result = await supabase.rpc("move_calling_to_archive_v2", {
+        row_id: id,
+        table_prefix: otherPrefix,
+      });
+      error = result.error;
+      
+      if (!error) {
+        console.log(`[Archive] Successfully archived from ${otherPrefix}_callings`);
+        // Reload data to sync with correct table
+        await fetchCallings();
+      }
+    }
+
     if (error) {
       console.error("Archive RPC error:", error);
-      await showModalAlert(`Failed to archive item: ${error.message}`);
+      console.error(`[Archive] Failed to archive from both prod_callings and train_callings`);
+      await showModalAlert(
+        `Failed to archive item: ${error.message}\n\nThe record was not found in either database table. It may have already been archived.`,
+      );
       renderCurrentPage();
       return false;
     }

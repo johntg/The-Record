@@ -255,6 +255,7 @@ SET search_path TO 'public'
 AS $$
 DECLARE
   table_name text;
+  deleted_count integer;
 BEGIN
   -- Validate prefix
   IF table_prefix NOT IN ('prod', 'train') THEN
@@ -265,7 +266,9 @@ BEGIN
   
   EXECUTE format('DELETE FROM public.%I WHERE id = $1', table_name) USING row_id;
   
-  IF NOT FOUND THEN
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
+  
+  IF deleted_count = 0 THEN
     RAISE EXCEPTION 'No calling found for id % in table %', row_id, table_name;
   END IF;
 END;

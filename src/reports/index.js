@@ -238,6 +238,7 @@ function buildSustainSetApartReleaseReport(rows) {
     (row) =>
       String(row.type || "").toUpperCase() === "RELEASE" &&
       isInProgress(row) &&
+      isCompletedValue(row.interviewed) &&
       !hasBeenAnnouncedInAnyUnit(row),
   );
 
