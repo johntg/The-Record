@@ -542,6 +542,12 @@ body.modal-open {
   gap: 14px;
 }
 
+.calling-form label span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: oblique;
+}
+
 .theme-switch {
   position: absolute;
   top: 10px;

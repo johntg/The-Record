@@ -62,7 +62,7 @@ export function ensureCreateCallingUi({
           <label class="field-label" for="create-position">Position</label>
           <input id="create-position" name="position" type="text" placeholder="Position" required />
 
-          <label class="field-label" for="create-unit">Unit</label>
+          <label class="field-label" for="create-unit">Unit <span>(where to be sustained)</span></label>
           <select id="create-unit" name="unit" required>
             <option value="" disabled selected>Select Unit...</option>
             ${appState.units.map((unit) => `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`).join("")}
