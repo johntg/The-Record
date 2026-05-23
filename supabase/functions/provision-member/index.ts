@@ -16,7 +16,13 @@ type ProvisionRequest = {
   role?: string;
   canBeAssigned?: boolean;
   super?: boolean;
+  receive_concern?: boolean;
+  receiveConcern?: boolean;
 };
+
+function resolveReceiveConcernFlag(body: ProvisionRequest): boolean {
+  return body.receive_concern === true || body.receiveConcern === true;
+}
 
 function normalizeEmail(value: string | undefined | null): string {
   return String(value || "")
@@ -176,6 +182,7 @@ Deno.serve(async (req) => {
       role,
       can_be_assigned: body.canBeAssigned === true,
       super: body.super === true,
+      receive_concern: resolveReceiveConcernFlag(body),
     };
 
     const { data: memberRows, error: memberError } = await supabase
@@ -224,7 +231,7 @@ Deno.serve(async (req) => {
 
     const { data: existingMember, error: lookupError } = await supabase
       .from("members")
-      .select("email,name,role,can_be_assigned,super")
+      .select("email,name,role,can_be_assigned,super,receive_concern")
       .eq("email", oldEmail)
       .maybeSingle();
 
@@ -285,6 +292,7 @@ Deno.serve(async (req) => {
       role,
       can_be_assigned: body.canBeAssigned === true,
       super: body.super === true,
+      receive_concern: resolveReceiveConcernFlag(body),
     };
 
     const { data: memberRows, error: memberError } = await supabase
@@ -314,6 +322,7 @@ Deno.serve(async (req) => {
           .toLowerCase(),
         can_be_assigned: existingMember.can_be_assigned === true,
         super: existingMember.super === true,
+        receive_concern: existingMember.receive_concern === true,
       };
 
       const { error } = await supabase

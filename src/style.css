@@ -2182,6 +2182,13 @@ select {
   color: var(--text);
 }
 
+.concern-recipient-off {
+  color: var(--text-subtle);
+}
+.concern-recipient-on {
+  color: var(--text);
+}
+
 /* Truncate long email addresses with ellipsis */
 .email {
   display: inline-block;

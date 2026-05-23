@@ -816,7 +816,7 @@ function renderAdminPage() {
 
   adminPage.classList.remove("hidden");
 
-  const roles = ["admin", "stake", "shc"]
+  const roles = ["admin", "stake", "SHC"]
     .map((r) => `<option value="${r}">${r}</option>`)
     .join("");
 
@@ -860,6 +860,11 @@ function renderAdminPage() {
                 <input type="checkbox" id="member-super" /> Super Admin
               </label>
             </div>
+            <div class="form-group">
+              <label for="member-receive-concern">
+                <input type="checkbox" id="member-receive-concern" /> Receive Concern Emails
+              </label>
+            </div>
             <div class="btn-group">
               <button type="submit" class="btn btn-primary">Save Member</button>
               <button type="button" class="btn btn-secondary" onclick="window.cancelAdminForm()">Cancel</button>
@@ -890,6 +895,12 @@ function renderAdminPage() {
                     Super Admin:
                   </span>
                   ${m.super ? "✓" : ""}
+                </div>
+                <div class="member-row">
+                  <span class="member-label ${m.receive_concern ? "concern-recipient-on" : "concern-recipient-off"}">
+                    Concern Recipient:
+                  </span>
+                  ${m.receive_concern ? "✓" : ""}
                 </div>
                 <div class="member-row member-actions">
                   <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
@@ -1173,8 +1184,14 @@ async function sendConcernEmail(row) {
     };
   }
 
+  const recipientEmails = appState.members
+    .filter((m) => m.receive_concern === true)
+    .map((m) => m.email)
+    .filter(Boolean);
+
   const payload = {
     token: concernEmailToken,
+    recipients: recipientEmails,
     callingId: row.id,
     personName: row.name || "",
     position: row.position || "",
@@ -2057,6 +2074,10 @@ window.submitMemberForm = async (event) => {
     .toLowerCase();
   const canBeAssigned = document.getElementById("member-can-assign").checked;
   const superAdmin = document.getElementById("member-super").checked;
+  // Capture new field form input value
+  const receiveConcern = document.getElementById(
+    "member-receive-concern",
+  ).checked;
 
   if (!email || !name || !role) {
     await showModalAlert("Please fill in all required fields.");
@@ -2072,6 +2093,8 @@ window.submitMemberForm = async (event) => {
         role,
         canBeAssigned,
         super: superAdmin,
+        receive_concern: receiveConcern,
+        receiveConcern,
       });
 
       if (!result.ok) {
@@ -2103,6 +2126,8 @@ window.submitMemberForm = async (event) => {
         role,
         canBeAssigned,
         super: superAdmin,
+        receive_concern: receiveConcern,
+        receiveConcern,
       });
 
       if (!result.ok) {
@@ -2154,6 +2179,8 @@ window.editMember = async (memberEmail) => {
   document.getElementById("member-can-assign").checked =
     member.can_be_assigned || false;
   document.getElementById("member-super").checked = member.super || false;
+  document.getElementById("member-receive-concern").checked =
+    member.receive_concern || false;
   document.getElementById("member-email").disabled = false;
 
   document.getElementById("admin-form-title").textContent =
