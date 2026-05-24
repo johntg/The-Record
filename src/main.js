@@ -1784,7 +1784,7 @@ function renderLogin() {
               autocomplete="one-time-code"
             />
             <button type="submit">Verify & Sign In</button>
-            <button type="button" class="btn-link" onclick="renderLogin()">Back to email</button>
+            ${/*<button type="button" class="btn-link" onclick="renderLogin()">Back to email</button>}*/ ""}
           </form>
         </div>
 
