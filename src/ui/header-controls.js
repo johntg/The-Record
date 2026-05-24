@@ -109,9 +109,7 @@ export function renderHeader({
   header.innerHTML = `
  
   <div style="display: flex; align-items: center; gap: 16px;">
-    ${
-      isSuperAdminUser()
-        ? `
+    
       <div class="dbSwitch">
         <label class="switcher" title="Toggle between Production and Training modes">
           <input 
@@ -126,9 +124,7 @@ export function renderHeader({
           ${isTraining ? "TRAINING" : "LIVE"}
         </span>
       </div>
-      `
-        : ""
-    }
+
     <div class='main-header-title'>
       <h1><span>The</span>Record</h1>
       <h3 class="main-header-subtitle">Christchurch Stake</h3>
