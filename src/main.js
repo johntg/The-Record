@@ -484,8 +484,13 @@ function isAssignedToCurrentUser(row) {
   });
 }
 
+function userHasAssignments() {
+  return appState.callings.some((row) => isAssignedToCurrentUser(row));
+}
+
 function getVisibleCallings() {
   const currentUserKey = normalizeComparableName(getCurrentUserNameFromAuth());
+  const hasAssignments = userHasAssignments();
 
   return appState.callings.filter((row) => {
     const rowNameKey = normalizeComparableName(row?.name);
@@ -498,6 +503,11 @@ function getVisibleCallings() {
     // For SHC role members, only show if sp_approved is TRUE
     if (isShcRole() && !isCompletedValue(row?.sp_approved)) {
       return false;
+    }
+
+    // If the user has assignments, default to showing only those assignments
+    if (hasAssignments && !appState.showAllCallingsForStake) {
+      return isAssignedToCurrentUser(row);
     }
 
     return true;
@@ -1279,7 +1289,6 @@ const cardsRenderer = createCardsRenderer({
   appState,
   getSortedVisibleCallings,
   hasAdminPasswordAccess: isAdminRole,
-  isStakePasswordSession: isStakeRole,
   getHighCouncilVoteSummary,
   resolveSustainingByField,
   resolveSettingApartByField,
@@ -1407,10 +1416,6 @@ window.updateField = async (id, field, value) =>
   callingsActions.updateField(id, field, value);
 
 window.toggleCallingScope = () => {
-  if (!isStakeRole()) {
-    return;
-  }
-
   appState.showAllCallingsForStake = !appState.showAllCallingsForStake;
   renderHeader();
   renderCurrentPage();
@@ -2015,7 +2020,6 @@ window.setThemeMode = (mode) => {
 function renderHeader() {
   renderHeaderUi({
     appState,
-    isStakePasswordSession: isStakeRole,
     isSuperAdminUser: isSuperAdmin,
     ensureCreateCallingUi,
   });
