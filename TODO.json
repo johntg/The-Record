@@ -1,24 +1,17 @@
 {
   "todo": [
     {
+      "id": 16590,
+      "text": "Create notifications",
+      "priority": 1,
+      "created": "2026-05-27T08:02:17.396Z"
+    },
+    {
       "id": 16738,
       "text": " Send email notifications of assignments",
       "priority": 1,
       "created": "2026-05-19T01:39:09.345Z"
     }
   ],
-  "completed": [
-    {
-      "id": 10332,
-      "text": "Hide cards from SHC until approved by SP",
-      "priority": 1,
-      "created": "2026-05-19T00:28:20.658Z"
-    },
-    {
-      "id": 11602,
-      "text": "check if mistakes get deleted or archived",
-      "priority": 1,
-      "created": "2026-05-19T00:42:34.927Z"
-    }
-  ]
+  "completed": []
 }
