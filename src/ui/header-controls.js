@@ -69,7 +69,6 @@ export function syncFabVisibility({
 
 export function renderHeader({
   appState,
-  isStakePasswordSession,
   isSuperAdminUser,
   ensureCreateCallingUi,
   documentRef = document,
@@ -80,13 +79,28 @@ export function renderHeader({
     existingHeader.remove();
   }
 
-  const showScopeToggle = isStakePasswordSession();
+  const showScopeToggle = appState.callings?.some((row) => {
+    const currentUser = String(appState.currentMember?.name || "")
+      .toLowerCase()
+      .trim();
+
+    if (!currentUser) return false;
+
+    return ["sus_assigned", "interview_by", "set_apart_by"].some((field) => {
+      return (
+        String(row?.[field] || "")
+          .toLowerCase()
+          .trim() === currentUser
+      );
+    });
+  });
+
   const showAdminButton = isSuperAdminUser
     ? isSuperAdminUser() === true
     : false;
   const scopeLabel = appState.showAllCallingsForStake
-    ? "Show My Assignments"
-    : "Show All Callings";
+    ? "My Assignments"
+    : "All Callings";
   const sortLabel = appState.cardSortOrder === "newest" ? "Newest" : "Oldest";
   const pageToggleLabel =
     appState.currentPage === "callings" ? "Reports" : "Callings";
@@ -109,9 +123,7 @@ export function renderHeader({
   header.innerHTML = `
  
   <div style="display: flex; align-items: center; gap: 16px;">
-    ${
-      isSuperAdminUser()
-        ? `
+    
       <div class="dbSwitch">
         <label class="switcher" title="Toggle between Production and Training modes">
           <input 
@@ -126,9 +138,7 @@ export function renderHeader({
           ${isTraining ? "TRAINING" : "LIVE"}
         </span>
       </div>
-      `
-        : ""
-    }
+
     <div class='main-header-title'>
       <h1><span>The</span>Record</h1>
       <h3 class="main-header-subtitle">Christchurch Stake</h3>

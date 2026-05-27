@@ -218,7 +218,7 @@ export function createCallingsActions({
     }
 
     const { data: latestVotes, error: fetchVotesError } = await supabase
-      .from("calling_hc_votes")
+      .from(getTableName("calling_hc_votes"))
       .select("calling_id, voter_name, vote, voted_at")
       .eq("calling_id", id);
 

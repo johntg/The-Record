@@ -367,9 +367,9 @@ export function createCardsRenderer({
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
                       <button
                         type="button"
-                        onclick="window.submitHighCouncilVote('${row.id}', 'sustain')"
+                        onclick="window.submitHighCouncilVote('${row.id}', ${currentUserVote === "sustain" ? "'clear'" : "'sustain'"})"
                         style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${currentUserVote === "sustain" ? "var(--chip-selected-bg)" : "var(--white)"}; color: ${currentUserVote === "sustain" ? "var(--chip-selected-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
-                      >Sustain</button>
+                      >${currentUserVote === "sustain" ? "Undo Sustain" : "Sustain"}</button>
                      
                       <button
                           type="button"
