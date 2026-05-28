@@ -79,10 +79,7 @@ export async function renderHeader({
     existingHeader.remove();
   }
 
-  const hasNotificationSubscription =
-    typeof window.userHasPushSubscription === "function"
-      ? await window.userHasPushSubscription()
-      : false;
+  const hasNotificationSubscription = appState.hasPushSubscription ?? false;
 
   const showScopeToggle = appState.callings?.some((row) => {
     const currentUser = String(appState.currentMember?.name || "")

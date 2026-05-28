@@ -91,6 +91,7 @@ const appState = {
   currentUser: null,
   currentMember: null,
   currentRole: null,
+  hasPushSubscription: false,
   adminFormData: {
     action: "list",
     selectedMemberEmail: null,
@@ -280,13 +281,13 @@ window.subscribeToNotifications = async () => {
       currentUser: appState.currentUser,
     });
 
+    appState.hasPushSubscription = true;
     await showModalAlert("Notifications enabled.");
-
-    renderHeader();
   } catch (error) {
     console.error("Notification subscription failed:", error);
-
     await showModalAlert(error?.message || "Could not enable notifications.");
+  } finally {
+    renderHeader();
   }
 };
 
@@ -1425,7 +1426,6 @@ window.showToast = (message) => {
   }, 2500);
 };
 
-window.userHasPushSubscription = userHasPushSubscription;
 window.toggleDetails = (id) => callingsActions.toggleDetails(id);
 window.toggleSustainingUnits = (id) =>
   callingsActions.toggleSustainingUnits(id);
@@ -2368,6 +2368,13 @@ async function startApp() {
     .toLowerCase()
     .trim();
 
+  const { data: pushSubData } = await supabase
+    .from("push_subscriptions")
+    .select("id")
+    .eq("user_id", user.id)
+    .limit(1);
+  appState.hasPushSubscription = !!(pushSubData && pushSubData.length > 0);
+
   await fetchCallings();
   renderHeader();
   renderCurrentPage();
@@ -2399,13 +2406,11 @@ async function subscribeToPush() {
   }
 
   const { error } = await supabase.from("push_subscriptions").insert([
-    {
-      user_id: user.id,
-      subscription: subscription,
-    },
+    { user_id: user.id, user_email: user.email, subscription: subscription },
   ]);
 
-  if (error) {
+  // Postgres error 23505 = unique constraint violation (already subscribed)
+  if (error && error.code !== "23505") {
     throw new Error(`Failed to save subscription: ${error.message}`);
   }
 
