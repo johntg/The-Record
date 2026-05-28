@@ -1628,37 +1628,86 @@ window.sendPushNotifications = async () => {
     return;
   }
 
-  if (statusEl) {
+  function setStatus(msg, style = "") {
+    if (!statusEl) return;
     statusEl.classList.remove("hidden");
-    statusEl.textContent = `Sending to ${selectedIndices.length} recipient(s)...`;
-    statusEl.className = "notif-status";
+    statusEl.textContent = msg;
+    statusEl.className = `notif-status${style ? ` ${style}` : ""}`;
   }
 
+  setStatus(`Sending to ${selectedIndices.length} recipient(s)…`);
+
+  // Get the session JWT; fall back to the anon key so the request always
+  // carries an Authorization header (function has verify_jwt = false but
+  // the header is still expected by the Supabase gateway).
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const authToken = session?.access_token ?? supabaseKey;
+
   let successCount = 0;
+  let staleCount = 0;
   let failCount = 0;
+  let lastError = "";
 
   for (const i of selectedIndices) {
     const sub = notifSubscribersCache[i];
     if (!sub) continue;
 
     try {
-      const { error } = await supabase.functions.invoke("send-notification", {
-        body: { subscription: sub.subscription, title, body },
-      });
-      if (error) {
-        failCount++;
-      } else {
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/send-notification`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+            apikey: supabaseKey,
+          },
+          body: JSON.stringify({
+            subscription: sub.subscription,
+            title,
+            body,
+          }),
+        },
+      );
+
+      const result = await res.json().catch(() => ({}));
+
+      if (res.ok) {
         successCount++;
+      } else if (result?.error?.includes("410")) {
+        // Subscription expired — remove it from the database silently
+        staleCount++;
+        supabase.from("push_subscriptions").delete().eq("id", sub.id).then();
+        console.warn("Removed stale subscription:", sub.user_email);
+      } else {
+        failCount++;
+        lastError = result?.error ?? `HTTP ${res.status}`;
+        console.error("send-notification error:", lastError, result);
       }
-    } catch {
+    } catch (err) {
       failCount++;
+      lastError = err.message;
+      console.error("send-notification fetch error:", err);
     }
   }
 
-  if (statusEl) {
-    statusEl.textContent = `Done — ${successCount} sent${failCount > 0 ? `, ${failCount} failed` : ""}.`;
-    statusEl.className = `notif-status ${failCount > 0 ? "notif-status-error" : "notif-status-success"}`;
-  }
+  const parts = [];
+  if (successCount) parts.push(`${successCount} sent`);
+  if (staleCount) parts.push(`${staleCount} expired (removed — recipient needs to re-subscribe)`);
+  if (failCount) parts.push(`${failCount} failed — ${lastError}`);
+
+  const style = failCount > 0
+    ? "notif-status-error"
+    : staleCount > 0
+      ? "notif-status-error"
+      : "notif-status-success";
+
+  setStatus(parts.join(", ") || "Nothing to send.", style);
+
+  // Reload the subscriber list to reflect any removed stale entries
+  if (staleCount > 0) loadNotificationSubscribers();
 };
 
 window.toggleAllNotifRecipients = () => {
@@ -2598,12 +2647,15 @@ async function subscribeToPush() {
     throw new Error("Could not determine the current user.");
   }
 
+  // Remove any existing subscription for this user before inserting the new one
+  // (no unique constraint exists, so upsert isn't available)
+  await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
+
   const { error } = await supabase.from("push_subscriptions").insert([
     { user_id: user.id, user_email: user.email, subscription: subscription },
   ]);
 
-  // Postgres error 23505 = unique constraint violation (already subscribed)
-  if (error && error.code !== "23505") {
+  if (error) {
     throw new Error(`Failed to save subscription: ${error.message}`);
   }
 
