@@ -32,9 +32,10 @@ import {
   resolveSustainingByField,
 } from "./utils/app-utils.js";
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-const PUBLIC_VAPID_KEY = import.meta.env.VITE_PUBLIC_VAPID_KEY || "";
+const PUBLIC_VAPID_KEY =
+  "BEic-4qILB0TTH_oPnkuEm9xgRcH2fvvX8pELjH7VgLxIU_gezvKZaEp_P95f7AF_wJ8VXvIM0_VwG8dpt60Vfg";
 
-import subscribeToPush from "./utils/notifications.js";
+import createPushSubscription from "./utils/notifications.js";
 
 // Single database with mode-based table prefixes
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL_PROD;
@@ -154,6 +155,23 @@ function getCurrentUserNameFromAuth() {
   return appState.currentMember?.name || "";
 }
 
+async function userHasPushSubscription() {
+  try {
+    if (!("serviceWorker" in navigator)) return false;
+
+    const registration = await navigator.serviceWorker.getRegistration();
+
+    if (!registration) return false;
+
+    const subscription = await registration.pushManager.getSubscription();
+
+    return !!subscription;
+  } catch (error) {
+    console.error("Failed to check push subscription:", error);
+    return false;
+  }
+}
+
 const buildVersionState = {
   short: "",
   full: "",
@@ -253,6 +271,25 @@ window.closeBuildVersionPopup = () => {
   modal.classList.add("hidden");
   syncBodyModalOpenState();
 };
+
+window.subscribeToNotifications = async () => {
+  try {
+    await subscribeToPush({
+      supabase,
+      vapidPublicKey: PUBLIC_VAPID_KEY,
+      currentUser: appState.currentUser,
+    });
+
+    await showModalAlert("Notifications enabled.");
+
+    renderHeader();
+  } catch (error) {
+    console.error("Notification subscription failed:", error);
+
+    await showModalAlert(error?.message || "Could not enable notifications.");
+  }
+};
+
 
 async function applyBuildVersionToCreditLine() {
   const versionNode = document.getElementById("app-version");
@@ -1388,6 +1425,7 @@ window.showToast = (message) => {
   }, 2500);
 };
 
+window.userHasPushSubscription = userHasPushSubscription;
 window.toggleDetails = (id) => callingsActions.toggleDetails(id);
 window.toggleSustainingUnits = (id) =>
   callingsActions.toggleSustainingUnits(id);
@@ -2335,90 +2373,44 @@ async function startApp() {
   renderCurrentPage();
 }
 
-// main.js
 async function subscribeToPush() {
-  // 1. Check if Service Workers and Push are supported
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-    console.log("Push notifications are not supported on this browser.");
-    return;
+    throw new Error("Push notifications are not supported on this browser.");
   }
 
-  // 2. Register the service worker file
   const registration = await navigator.serviceWorker.register("/sw.js");
 
-  // 3. Request permission
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
-    console.log("Permission denied.");
-    return;
+    throw new Error("Notification permission was denied.");
   }
 
-  // 4. Subscribe the user to the browser's push service
-  const YOUR_PUBLIC_VAPID_KEY = "YOUR_PUBLIC_KEY_HERE";
-
   const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true, // Required by browsers for security
-    applicationServerKey: YOUR_PUBLIC_VAPID_KEY,
+    userVisibleOnly: true,
+    applicationServerKey: PUBLIC_VAPID_KEY,
   });
 
-  // 5. Send this subscription object to your backend database
-  await fetch("/api/save-subscription", {
-    method: "POST",
-    body: JSON.stringify(subscription),
-    headers: { "Content-Type": "application/json" },
-  });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.id) {
+    throw new Error("Could not determine the current user.");
+  }
+
+  const { error } = await supabase.from("push_subscriptions").insert([
+    {
+      user_id: user.id,
+      subscription: subscription,
+    },
+  ]);
+
+  if (error) {
+    throw new Error(`Failed to save subscription: ${error.message}`);
+  }
 
   console.log("User successfully subscribed!");
 }
-
-// sw.js
-
-// Listen for the incoming push event
-self.addEventListener("push", (event) => {
-  let data = { title: "New Update", body: "Something happened!" };
-
-  if (event.data) {
-    // Assuming your backend sends a JSON payload
-    data = event.data.json();
-  }
-
-  const options = {
-    body: data.body,
-    icon: "/images/icon-192x192.png", // Path to your PWA icon
-    badge: "/images/badge-72x72.png", // Monochrome icon for Android status bar
-    vibrate: [100, 50, 100],
-    data: {
-      url: data.url || "/", // Pass a URL to open on click
-    },
-  };
-
-  // Keep the service worker alive until the notification is shown
-  event.waitUntil(self.registration.showNotification(data.title, options));
-});
-
-// Handle what happens when the user clicks the notification
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close(); // Close the notification banner
-
-  const targetUrl = event.notification.data.url;
-
-  event.waitUntil(
-    clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((windowClients) => {
-        // If a tab is already open, focus it
-        for (let client of windowClients) {
-          if (client.url === targetUrl && "focus" in client) {
-            return client.focus();
-          }
-        }
-        // Otherwise, open a new window/tab
-        if (clients.openWindow) {
-          return clients.openWindow(targetUrl);
-        }
-      }),
-  );
-});
 
 // window.setDatabaseMode = (mode) => {
 //   localStorage.setItem("dbMode", mode);
