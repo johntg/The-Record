@@ -2207,6 +2207,65 @@ select {
   }
 }
 
+/* Notification inbox */
+#inbox-page.hidden {
+  display: none !important;
+}
+
+.inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inbox-list.hidden {
+  display: none;
+}
+
+.inbox-item {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inbox-item-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.inbox-item-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.inbox-item-date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.inbox-item-body {
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.inbox-item-from {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
 /* Admin hub modal */
 .admin-hub-modal {
   width: min(92%, 340px);

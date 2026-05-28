@@ -859,9 +859,11 @@ function renderAdminPage() {
   const notificationsPage = document.getElementById("notifications-page");
   if (!adminPage) return;
 
+  const inboxPage = document.getElementById("inbox-page");
   if (list) list.classList.add("hidden");
   if (reportsPage) reportsPage.classList.add("hidden");
   if (notificationsPage) notificationsPage.classList.add("hidden");
+  if (inboxPage) inboxPage.classList.add("hidden");
 
   adminPage.classList.remove("hidden");
 
@@ -996,9 +998,11 @@ function renderNotificationsPage() {
   const notificationsPage = document.getElementById("notifications-page");
   if (!notificationsPage) return;
 
+  const inboxPage3 = document.getElementById("inbox-page");
   if (list) list.classList.add("hidden");
   if (reportsPage) reportsPage.classList.add("hidden");
   if (adminPage) adminPage.classList.add("hidden");
+  if (inboxPage3) inboxPage3.classList.add("hidden");
   notificationsPage.classList.remove("hidden");
 
   const isSubscribed = appState.hasPushSubscription ?? false;
@@ -1088,6 +1092,86 @@ async function loadNotificationSubscribers() {
   }
 }
 
+function renderInboxPage() {
+  const list = document.getElementById("data-list");
+  const reportsPage = document.getElementById("reports-page");
+  const adminPage = document.getElementById("admin-page");
+  const notificationsPage = document.getElementById("notifications-page");
+  const inboxPage = document.getElementById("inbox-page");
+  if (!inboxPage) return;
+
+  if (list) list.classList.add("hidden");
+  if (reportsPage) reportsPage.classList.add("hidden");
+  if (adminPage) adminPage.classList.add("hidden");
+  if (notificationsPage) notificationsPage.classList.add("hidden");
+  inboxPage.classList.remove("hidden");
+
+  inboxPage.innerHTML = `
+    <section class="admin-header">
+      <h2>Messages</h2>
+      <p>Notifications sent to this group</p>
+    </section>
+    <section class="admin-content">
+      <article class="card admin-form-card">
+        <div id="inbox-loading" style="color: var(--text-muted); font-size: 0.9rem;">Loading messages…</div>
+        <div id="inbox-list" class="inbox-list hidden"></div>
+        <div id="inbox-empty" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">No messages yet.</div>
+      </article>
+    </section>
+  `;
+
+  loadInboxMessages();
+}
+
+async function loadInboxMessages() {
+  const loadingEl = document.getElementById("inbox-loading");
+  const listEl = document.getElementById("inbox-list");
+  const emptyEl = document.getElementById("inbox-empty");
+  if (!loadingEl || !listEl || !emptyEl) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("app_notifications")
+      .select("id, title, body, sent_at, sent_by_email")
+      .order("sent_at", { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    loadingEl.classList.add("hidden");
+
+    if (!data || data.length === 0) {
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+
+    listEl.classList.remove("hidden");
+    listEl.innerHTML = data
+      .map((n) => {
+        const date = new Date(n.sent_at);
+        const dateStr = date.toLocaleDateString(undefined, {
+          weekday: "short", day: "numeric", month: "short", year: "numeric",
+        });
+        const timeStr = date.toLocaleTimeString(undefined, {
+          hour: "numeric", minute: "2-digit",
+        });
+        return `
+          <div class="inbox-item">
+            <div class="inbox-item-header">
+              <span class="inbox-item-title">${escapeHtml(n.title)}</span>
+              <span class="inbox-item-date">${dateStr}, ${timeStr}</span>
+            </div>
+            <div class="inbox-item-body">${escapeHtml(n.body)}</div>
+            ${n.sent_by_email ? `<div class="inbox-item-from">From: ${escapeHtml(n.sent_by_email)}</div>` : ""}
+          </div>
+        `;
+      })
+      .join("");
+  } catch (err) {
+    if (loadingEl) loadingEl.textContent = `Error loading messages: ${err.message}`;
+  }
+}
+
 function renderReportsPage() {
   const list = document.getElementById("data-list");
   const reportsPage = document.getElementById("reports-page");
@@ -1099,9 +1183,10 @@ function renderReportsPage() {
 
   const adminPage = document.getElementById("admin-page");
   if (adminPage) adminPage.classList.add("hidden");
-
   const notificationsPage = document.getElementById("notifications-page");
   if (notificationsPage) notificationsPage.classList.add("hidden");
+  const inboxPage2 = document.getElementById("inbox-page");
+  if (inboxPage2) inboxPage2.classList.add("hidden");
 
   reportsPage.classList.remove("hidden");
 
@@ -1163,7 +1248,8 @@ function renderReportsPage() {
 function renderCurrentPage() {
   const isAdmin = appState.currentPage === "admin";
   const isNotifications = appState.currentPage === "notifications";
-  syncFabVisibility(isAdmin || isNotifications);
+  const isInbox = appState.currentPage === "inbox";
+  syncFabVisibility(isAdmin || isNotifications || isInbox);
 
   if (isAdmin) {
     if (!isSuperAdmin()) {
@@ -1182,6 +1268,11 @@ function renderCurrentPage() {
       return;
     }
     renderNotificationsPage();
+    return;
+  }
+
+  if (isInbox) {
+    renderInboxPage();
     return;
   }
 
@@ -1455,9 +1546,11 @@ function renderCards() {
   const notificationsPage = document.getElementById("notifications-page");
   const list = document.getElementById("data-list");
 
+  const inboxPage4 = document.getElementById("inbox-page");
   if (adminPage) adminPage.classList.add("hidden");
   if (reportsPage) reportsPage.classList.add("hidden");
   if (notificationsPage) notificationsPage.classList.add("hidden");
+  if (inboxPage4) inboxPage4.classList.add("hidden");
   if (list) list.classList.remove("hidden");
 
   cardsRenderer.renderCards();
@@ -1603,6 +1696,12 @@ window.openNotificationsPage = () => {
   renderCurrentPage();
 };
 
+window.openInbox = () => {
+  appState.currentPage = "inbox";
+  renderHeader();
+  renderCurrentPage();
+};
+
 window.sendPushNotifications = async () => {
   const titleEl = document.getElementById("notif-title");
   const bodyEl = document.getElementById("notif-body");
@@ -1693,17 +1792,22 @@ window.sendPushNotifications = async () => {
     }
   }
 
+  // Save to app_notifications so all users can read the full message in the inbox
+  if (successCount > 0) {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("app_notifications").insert([{
+      title,
+      body,
+      sent_by_email: user?.email ?? null,
+    }]);
+  }
+
   const parts = [];
   if (successCount) parts.push(`${successCount} sent`);
   if (staleCount) parts.push(`${staleCount} expired (removed — recipient needs to re-subscribe)`);
   if (failCount) parts.push(`${failCount} failed — ${lastError}`);
 
-  const style = failCount > 0
-    ? "notif-status-error"
-    : staleCount > 0
-      ? "notif-status-error"
-      : "notif-status-success";
-
+  const style = failCount > 0 || staleCount > 0 ? "notif-status-error" : "notif-status-success";
   setStatus(parts.join(", ") || "Nothing to send.", style);
 
   // Reload the subscriber list to reflect any removed stale entries
@@ -2618,6 +2722,14 @@ async function startApp() {
   appState.hasPushSubscription = !!(pushSubData && pushSubData.length > 0);
 
   await fetchCallings();
+
+  // If the app was opened by tapping a push notification, go straight to inbox
+  if (new URLSearchParams(window.location.search).get("page") === "inbox") {
+    appState.currentPage = "inbox";
+    // Clean the URL without reloading
+    history.replaceState(null, "", window.location.pathname);
+  }
+
   renderHeader();
   renderCurrentPage();
 }

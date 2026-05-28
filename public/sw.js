@@ -14,7 +14,8 @@ self.addEventListener("push", (event) => {
     icon: "/record-192.png",
     vibrate: [100, 50, 100],
     data: {
-      url: data.url || self.registration.scope,
+      // Open the app and land on the Messages (inbox) page
+      url: data.url || (self.registration.scope + "?page=inbox"),
     },
   };
 

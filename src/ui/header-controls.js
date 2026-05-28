@@ -163,14 +163,10 @@ export async function renderHeader({
       }
       ${
         !hasNotificationSubscription
-          ? `
-      <button onclick="window.subscribeToNotifications()">
-        Notifications
-      </button>
-    `
+          ? `<button onclick="window.subscribeToNotifications()">Notifications</button>`
           : ""
       }
-      
+      <button onclick="window.openInbox()">Messages</button>
       <button onclick="window.logout()">Logout</button>
       
     </div>
@@ -235,6 +231,13 @@ export async function renderHeader({
     notifs.id = "notifications-page";
     notifs.className = "admin-page hidden";
     app.appendChild(notifs);
+  }
+
+  if (!documentRef.getElementById("inbox-page")) {
+    const inbox = documentRef.createElement("div");
+    inbox.id = "inbox-page";
+    inbox.className = "admin-page hidden";
+    app.appendChild(inbox);
   }
 
   const refreshIcon = documentRef.getElementById("refreshicon");
