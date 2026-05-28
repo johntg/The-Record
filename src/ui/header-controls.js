@@ -67,7 +67,7 @@ export function syncFabVisibility({
   updateFabDebugBadge(documentRef);
 }
 
-export function renderHeader({
+export async function renderHeader({
   appState,
   isSuperAdminUser,
   ensureCreateCallingUi,
@@ -78,6 +78,11 @@ export function renderHeader({
   if (existingHeader) {
     existingHeader.remove();
   }
+
+  const hasNotificationSubscription =
+    typeof window.userHasPushSubscription === "function"
+      ? await window.userHasPushSubscription()
+      : false;
 
   const showScopeToggle = appState.callings?.some((row) => {
     const currentUser = String(appState.currentMember?.name || "")
@@ -159,6 +164,16 @@ export function renderHeader({
           ? `<button onclick="window.toggleAdminPage()">Admin</button>`
           : ""
       }
+      ${
+        !hasNotificationSubscription
+          ? `
+      <button onclick="window.subscribeToNotifications()">
+        Notifications
+      </button>
+    `
+          : ""
+      }
+      
       <button onclick="window.logout()">Logout</button>
       
     </div>
