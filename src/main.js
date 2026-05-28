@@ -2627,7 +2627,11 @@ async function subscribeToPush() {
     throw new Error("Push notifications are not supported on this browser.");
   }
 
-  const registration = await navigator.serviceWorker.register("/sw.js");
+  // Use BASE_URL so the path is correct for subdirectory deployments
+  // e.g. GitHub Pages at /the-record/ → registers /the-record/sw.js not /sw.js
+  const registration = await navigator.serviceWorker.register(
+    `${import.meta.env.BASE_URL}sw.js`,
+  );
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
