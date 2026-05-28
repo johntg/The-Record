@@ -9,13 +9,15 @@ self.addEventListener("push", (event) => {
     data = event.data.json();
   }
 
+  const base = self.registration.scope;
   const options = {
     body: data.body,
-    icon: "/record-192.png",
+    icon: base + "notification-icon.png",
+    badge: base + "notification-badge.png",
     vibrate: [100, 50, 100],
     data: {
       // Open the app and land on the Messages (inbox) page
-      url: data.url || (self.registration.scope + "?page=inbox"),
+      url: data.url || self.registration.scope + "?page=inbox",
     },
   };
 
