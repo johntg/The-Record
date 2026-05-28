@@ -1748,6 +1748,7 @@ window.sendPushNotifications = async () => {
   let staleCount = 0;
   let failCount = 0;
   let lastError = "";
+  const deliveredTo = []; // track successfully delivered recipient emails
 
   for (const i of selectedIndices) {
     const sub = notifSubscribersCache[i];
@@ -1775,6 +1776,7 @@ window.sendPushNotifications = async () => {
 
       if (res.ok) {
         successCount++;
+        if (sub.user_email) deliveredTo.push(sub.user_email);
       } else if (result?.error?.includes("410")) {
         // Subscription expired — remove it from the database silently
         staleCount++;
@@ -1792,13 +1794,14 @@ window.sendPushNotifications = async () => {
     }
   }
 
-  // Save to app_notifications so all users can read the full message in the inbox
-  if (successCount > 0) {
+  // Save to app_notifications — only recipients in deliveredTo can see it in their inbox
+  if (deliveredTo.length > 0) {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from("app_notifications").insert([{
       title,
       body,
       sent_by_email: user?.email ?? null,
+      recipients: deliveredTo,
     }]);
   }
 
