@@ -1245,6 +1245,9 @@ function renderReportsPage() {
 }
 
 function renderCurrentPage() {
+  const isAdmin = appState.currentPage === "admin";
+  const isNotifications = appState.currentPage === "notifications";
+  const isInbox = appState.currentPage === "inbox";
   syncFabVisibility(appState.currentPage !== "callings");
 
   if (isAdmin) {
