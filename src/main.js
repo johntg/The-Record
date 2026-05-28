@@ -84,7 +84,6 @@ const appState = {
   assignableNames: [],
   statusOptions: [],
   themeMode: "system",
-  cardSortOrder: "newest",
   currentPage: "callings",
   dbMode: localStorage.getItem("dbMode") || "production",
   currentReportType: "sustain-setapart-release",
@@ -846,7 +845,7 @@ function getSortedVisibleCallings() {
   rows.sort((a, b) => {
     const aTime = new Date(a?.created_at || a?.timestamp || 0).getTime();
     const bTime = new Date(b?.created_at || b?.timestamp || 0).getTime();
-    return appState.cardSortOrder === "oldest" ? aTime - bTime : bTime - aTime;
+    return bTime - aTime; // newest first
   });
 
   return rows;
@@ -1830,12 +1829,6 @@ window.toggleAllNotifRecipients = () => {
   if (btn) btn.textContent = allChecked ? "Select All" : "Deselect All";
 };
 
-window.toggleCardSortOrder = () => {
-  appState.cardSortOrder =
-    appState.cardSortOrder === "newest" ? "oldest" : "newest";
-  renderHeader();
-  renderCurrentPage();
-};
 
 window.selectReportType = (value) => {
   appState.currentReportType = value;

@@ -103,7 +103,6 @@ export async function renderHeader({
   const scopeLabel = appState.showAllCallingsForStake
     ? "My Assignments"
     : "All Callings";
-  const sortLabel = appState.cardSortOrder === "newest" ? "Newest" : "Oldest";
   const pageToggleLabel =
     appState.currentPage === "callings" ? "Reports" : "Callings";
   const isTraining = appState.dbMode === "training";
@@ -150,7 +149,6 @@ export async function renderHeader({
   <div class="main-header-center">
     <div class="main-header-actions">
       <button onclick="window.togglePage()">${pageToggleLabel}</button>
-      <button onclick="window.toggleCardSortOrder()">${sortLabel}</button>
       ${
         showScopeToggle
           ? `<button onclick="window.toggleCallingScope()">${scopeLabel}</button>`
