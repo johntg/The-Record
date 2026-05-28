@@ -85,6 +85,7 @@ const appState = {
   themeMode: "system",
   cardSortOrder: "newest",
   currentPage: "callings",
+  currentAdminTab: "members",
   dbMode: localStorage.getItem("dbMode") || "production",
   currentReportType: "sustain-setapart-release",
   reportOutput: "",
@@ -95,6 +96,8 @@ const appState = {
     action: "list",
     selectedMemberEmail: null,
   },
+  pushSubscriptions: [],
+  currentNotificationFunction: "subscriptions",
   units: [
     "Allenton Ward",
     "Ashburton Ward",
@@ -157,15 +160,36 @@ function getCurrentUserNameFromAuth() {
 
 async function userHasPushSubscription() {
   try {
-    if (!("serviceWorker" in navigator)) return false;
+    // Check 1: Browser has an active service worker subscription
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          return true;
+        }
+      }
+    }
 
-    const registration = await navigator.serviceWorker.getRegistration();
+    // Check 2: User has a subscription in the database
+    if (supabase) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!registration) return false;
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from("push_subscriptions")
+          .select("id")
+          .eq("user_id", user.id);
 
-    const subscription = await registration.pushManager.getSubscription();
+        if (!error && data && data.length > 0) {
+          return true;
+        }
+      }
+    }
 
-    return !!subscription;
+    return false;
   } catch (error) {
     console.error("Failed to check push subscription:", error);
     return false;
@@ -282,7 +306,7 @@ window.subscribeToNotifications = async () => {
 
     await showModalAlert("Notifications enabled.");
 
-    renderHeader();
+    await renderHeader();
   } catch (error) {
     console.error("Notification subscription failed:", error);
 
@@ -827,7 +851,7 @@ async function toggleDatabaseMode() {
   try {
     await fetchReferenceData(); // Reload members and status options
     await fetchCallings(); // Reload callings, votes, and archive
-    renderHeader(); // Update header with new mode indicator
+    await renderHeader(); // Update header with new mode indicator
     renderCurrentPage(); // Re-render the current page
   } catch (error) {
     console.error("Error reloading data after mode switch:", error);
@@ -850,32 +874,12 @@ function getSortedVisibleCallings() {
   return rows;
 }
 
-function renderAdminPage() {
-  const list = document.getElementById("data-list");
-  const reportsPage = document.getElementById("reports-page");
-  const adminPage = document.getElementById("admin-page");
-  if (!adminPage) return;
-
-  if (list) {
-    list.classList.add("hidden");
-  }
-
-  if (reportsPage) {
-    reportsPage.classList.add("hidden");
-  }
-
-  adminPage.classList.remove("hidden");
-
+function renderAdminMembersTab() {
   const roles = ["admin", "stake", "SHC"]
     .map((r) => `<option value="${r}">${r}</option>`)
     .join("");
 
-  adminPage.innerHTML = `
-    <section class="admin-header">
-      <h2>Admin Panel</h2>
-      <p>Manage members and roles</p>
-    </section>
-
+  return `
     <section class="admin-actions">
       <button type="button" class="btn btn-primary" onclick="window.startNewMemberForm()">+ Add New Member</button>
     </section>
@@ -965,8 +969,302 @@ function renderAdminPage() {
       </div>
     </section>
   `;
+}
 
-  // Attach event listeners to action buttons
+function renderAdminNotificationsTab() {
+  const subscriptionCount = appState.pushSubscriptions?.length || 0;
+
+  return `
+    <section class="admin-actions">
+      <p style="margin: 0; font-size: 14px; color: #666;">
+        <strong>${subscriptionCount}</strong> user${subscriptionCount !== 1 ? "s" : ""} have enabled notifications
+      </p>
+    </section>
+
+    <section class="admin-content">
+      ${
+        subscriptionCount === 0
+          ? `
+        <article class="card">
+          <p style="text-align: center; color: #999; padding: 40px 20px;">
+            No users have subscribed to notifications yet.
+          </p>
+        </article>
+      `
+          : `
+        <article class="card">
+          <h3>Push Notification Subscriptions</h3>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid #ddd;">
+                  <th style="text-align: left; padding: 12px; font-weight: 600;">Member</th>
+                  <th style="text-align: left; padding: 12px; font-weight: 600;">Email</th>
+                  <th style="text-align: left; padding: 12px; font-weight: 600;">Subscribed</th>
+                  <th style="text-align: center; padding: 12px; font-weight: 600;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${appState.pushSubscriptions
+                  .map(
+                    (sub) => `
+                  <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;">${escapeHtml(sub.member_name || "(Unknown)")}</td>
+                    <td style="padding: 12px; word-break: break-all;">${escapeHtml(sub.user_email || "(Unknown)")}</td>
+                    <td style="padding: 12px; font-size: 13px; color: #666;">
+                      ${formatDateDdMmYy(sub.created_at)}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        onclick="window.deleteNotificationSubscription('${escapeHtml(sub.id)}')"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      `
+      }
+    </section>
+  `;
+}
+
+async function fetchPushSubscriptions() {
+  if (!supabase) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("push_subscriptions")
+      .select("id, user_id, user_email, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to fetch push subscriptions:", error);
+      appState.pushSubscriptions = [];
+      return;
+    }
+
+    // Enrich with member information by matching email
+    appState.pushSubscriptions = (data || []).map((sub) => {
+      const memberMatch = appState.members.find(
+        (m) =>
+          String(m.email || "")
+            .toLowerCase()
+            .trim() ===
+          String(sub.user_email || "")
+            .toLowerCase()
+            .trim(),
+      );
+
+      return {
+        ...sub,
+        member_name: memberMatch?.name || "(Unknown user)",
+      };
+    });
+
+    console.log(
+      `Fetched ${appState.pushSubscriptions.length} push subscriptions`
+    );
+  } catch (error) {
+    console.error("Error fetching push subscriptions:", error);
+    appState.pushSubscriptions = [];
+  }
+}
+
+function renderAdminPage() {
+  const list = document.getElementById("data-list");
+  const reportsPage = document.getElementById("reports-page");
+
+  if (list) {
+    list.classList.add("hidden");
+  }
+
+  if (reportsPage) {
+    reportsPage.classList.add("hidden");
+  }
+
+  const currentTab = appState.currentAdminTab || "members";
+  const rolesOptions = ["admin", "stake", "SHC"]
+    .map((r) => `<option value="${r}">${r}</option>`)
+    .join("");
+
+  const currentNotificationFunction = appState.currentNotificationFunction || "subscriptions";
+
+  let content = `
+    <div style="display: flex; flex-direction: column; height: 100%; gap: 0;">
+      <section style="padding: 16px 0; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 12px; flex-shrink: 0;">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="window.toggleAdminPage()"
+          style="padding: 8px 16px; font-size: 14px;"
+        >
+          ← Back to Admin Menu
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button
+            type="button"
+            class="btn"
+            onclick="window.switchAdminTab('members')"
+            style="padding: 8px 16px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 14px; ${currentTab === "members" ? "background: #0066cc; color: white; border-color: #0066cc;" : "background: transparent; color: #333;"}"
+          >
+            👥 Members
+          </button>
+          <button
+            type="button"
+            class="btn"
+            onclick="window.switchAdminTab('notifications')"
+            style="padding: 8px 16px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 14px; ${currentTab === "notifications" ? "background: #0066cc; color: white; border-color: #0066cc;" : "background: transparent; color: #333;"}"
+          >
+            🔔 Notifications
+          </button>
+        </div>
+      </section>
+
+      <div style="flex-grow: 1; display: flex; gap: 16px; min-height: 0;">
+        ${
+          currentTab === "members"
+            ? `
+        <section style="flex-grow: 1; display: flex; flex-direction: column; overflow: auto;">
+          <div style="margin-bottom: 20px; flex-shrink: 0;">
+            <button type="button" class="btn btn-primary" onclick="window.startNewMemberForm()">+ Add New Member</button>
+          </div>
+
+          <div id="admin-form" class="hidden" style="flex-shrink: 0; margin-bottom: 20px;">
+            <article class="card admin-form-card">
+              <h3 id="admin-form-title">Add New Member</h3>
+              <form id="admin-member-form" onsubmit="window.submitMemberForm(event)">
+                <div class="form-group">
+                  <label for="member-email">Email</label>
+                  <input type="email" id="member-email" required />
+                </div>
+                <div class="form-group">
+                  <label for="member-name">Name</label>
+                  <input type="text" id="member-name" required />
+                </div>
+                <div class="form-group">
+                  <label for="member-role">Role</label>
+                  <select id="member-role" required>
+                    <option value="">Select a role</option>
+                    ${rolesOptions}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="member-can-assign">
+                    <input type="checkbox" id="member-can-assign" /> Can be assigned
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label for="member-super">
+                    <input type="checkbox" id="member-super" /> Super Admin
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label for="member-receive-concern">
+                    <input type="checkbox" id="member-receive-concern" /> Receive Concern Emails
+                  </label>
+                </div>
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary">Save Member</button>
+                  <button type="button" class="btn btn-secondary" onclick="window.cancelAdminForm()">Cancel</button>
+                </div>
+              </form>
+            </article>
+          </div>
+
+          <div id="admin-members-list" style="flex-grow: 1; overflow: auto;">
+            <article class="card admin-members-card">
+              <h3>Members</h3>
+              <div class="members-grid">
+                ${appState.members
+                  .map(
+                    (m) => `
+                  <div class="member-card" data-member-email="${escapeHtml(m.email)}">
+                    <div class="member-row"><span class="member-label">Name:</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
+                    <div class="member-row"><span class="member-label">Email:</span> <span class="email" title="${escapeHtml(m.email)}">${escapeHtml(m.email)}</span></div>
+                    <div class="member-row"><span class="member-label">Role:</span> ${escapeHtml(m.role || "")}</div>
+                    <div class="member-row">
+                      <span class="member-label ${m.can_be_assigned ? "assign-on" : "assign-off"}">
+                        Assign:
+                      </span>
+                      ${m.can_be_assigned ? "✓" : ""}
+                    </div>
+                    <div class="member-row">
+                      <span class="member-label ${m.super ? "super-admin-on" : "super-admin-off"}">
+                        Super Admin:
+                      </span>
+                      ${m.super ? "✓" : ""}
+                    </div>
+                    <div class="member-row">
+                      <span class="member-label ${m.receive_concern ? "concern-recipient-on" : "concern-recipient-off"}">
+                        Concern Recipient:
+                      </span>
+                      ${m.receive_concern ? "✓" : ""}
+                    </div>
+                    <div class="member-row member-actions">
+                      <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
+                      <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
+                    </div>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </article>
+          </div>
+        </section>
+      `
+            : `
+        <aside style="width: 160px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 4px;">
+          <button
+            type="button"
+            class="btn"
+            onclick="window.switchNotificationFunction('subscriptions')"
+            style="padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 13px; text-align: left; ${currentNotificationFunction === "subscriptions" ? "background: #0066cc; color: white; border-color: #0066cc;" : "background: transparent; color: #333;"}"
+          >
+            📋 Subscriptions
+          </button>
+          <button
+            type="button"
+            class="btn"
+            onclick="window.switchNotificationFunction('send')"
+            style="padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 13px; text-align: left; ${currentNotificationFunction === "send" ? "background: #0066cc; color: white; border-color: #0066cc;" : "background: transparent; color: #333;"}"
+          >
+            ✉️ Send Message
+          </button>
+        </aside>
+
+        <section style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0; overflow: auto;">
+          <div id="notification-display" style="flex-grow: 1; overflow: auto;">
+            ${renderNotificationFunction(currentNotificationFunction)}
+          </div>
+        </section>
+      `
+        }
+      </div>
+    </div>
+  `;
+
+  const app = document.getElementById("app");
+  let adminPageDiv = document.getElementById("data-list");
+  if (!adminPageDiv) {
+    adminPageDiv = document.createElement("div");
+    adminPageDiv.id = "data-list";
+    app.appendChild(adminPageDiv);
+  }
+
+  adminPageDiv.innerHTML = content;
+  adminPageDiv.classList.remove("hidden");
+
+  // Attach event listeners to action buttons for members tab
   const membersList = document.getElementById("admin-members-list");
   if (membersList) {
     membersList.addEventListener("click", (event) => {
@@ -986,6 +1284,109 @@ function renderAdminPage() {
       }
     });
   }
+}
+
+function renderNotificationFunction(functionName) {
+  if (functionName === "subscriptions") {
+    const subscriptionCount = appState.pushSubscriptions?.length || 0;
+
+    if (subscriptionCount === 0) {
+      return `
+        <article class="card">
+          <p style="text-align: center; color: #999; padding: 40px 20px;">
+            No users have subscribed to notifications yet.
+          </p>
+        </article>
+      `;
+    }
+
+    return `
+      <p style="margin: 0 0 20px 0; font-size: 14px; color: #666;">
+        <strong>${subscriptionCount}</strong> user${subscriptionCount !== 1 ? "s" : ""} have enabled notifications
+      </p>
+
+      <article class="card">
+        <h3>Push Notification Subscriptions</h3>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid #ddd;">
+                <th style="text-align: left; padding: 12px; font-weight: 600;">Member</th>
+                <th style="text-align: left; padding: 12px; font-weight: 600;">Email</th>
+                <th style="text-align: left; padding: 12px; font-weight: 600;">Subscribed</th>
+                <th style="text-align: center; padding: 12px; font-weight: 600;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${appState.pushSubscriptions
+                .map(
+                  (sub) => `
+                <tr style="border-bottom: 1px solid #eee;">
+                  <td style="padding: 12px;">${escapeHtml(sub.member_name || "(Unknown)")}</td>
+                  <td style="padding: 12px; word-break: break-all;">${escapeHtml(sub.user_email || "(Unknown)")}</td>
+                  <td style="padding: 12px; font-size: 13px; color: #666;">
+                    ${formatDateDdMmYy(sub.created_at)}
+                  </td>
+                  <td style="padding: 12px; text-align: center;">
+                    <button
+                      type="button"
+                      class="btn btn-danger btn-sm"
+                      onclick="window.deleteNotificationSubscription('${escapeHtml(sub.id)}')"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      </article>
+    `;
+  } else if (functionName === "send") {
+    return `
+      <article class="card">
+        <h3>Send Notification</h3>
+        <p style="color: #666; margin-bottom: 20px;">Send a notification to subscribed users</p>
+        <form id="send-notification-form" onsubmit="window.submitNotificationForm(event)">
+          <div class="form-group">
+            <label for="notification-title">Title</label>
+            <input type="text" id="notification-title" placeholder="e.g., Important Update" required />
+          </div>
+          <div class="form-group">
+            <label for="notification-body">Message</label>
+            <textarea id="notification-body" placeholder="Enter notification message" rows="5" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="notification-recipients">Recipients</label>
+            <select id="notification-recipients" onchange="window.toggleRecipientSelect(this.value)" required>
+              <option value="all">All Subscribed Users</option>
+              <option value="specific">Specific User</option>
+            </select>
+          </div>
+          <div id="recipient-select" class="hidden" style="margin-bottom: 20px;">
+            <label for="recipient-email">Select User</label>
+            <select id="recipient-email">
+              <option value="">Select a user</option>
+              ${appState.pushSubscriptions
+                .map(
+                  (sub) => `<option value="${escapeHtml(sub.user_email)}">${escapeHtml(sub.member_name)} (${escapeHtml(sub.user_email)})</option>`,
+                )
+                .join("")}
+            </select>
+          </div>
+          <div class="btn-group">
+            <button type="submit" class="btn btn-primary">Send Notification</button>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('send-notification-form').reset()">Clear</button>
+          </div>
+        </form>
+      </article>
+    `;
+  }
+
+  return "";
 }
 
 function renderReportsPage() {
@@ -1060,17 +1461,9 @@ function renderReportsPage() {
 }
 
 function renderCurrentPage() {
-  const isAdmin = appState.currentPage === "admin";
-  syncFabVisibility(isAdmin);
+  syncFabVisibility(false);
 
-  if (isAdmin) {
-    // Only super admins can view the admin page
-    if (!isSuperAdmin()) {
-      // Redirect non-super-admins back to callings
-      appState.currentPage = "callings";
-      renderCards();
-      return;
-    }
+  if (appState.currentAdminTab) {
     renderAdminPage();
     return;
   }
@@ -1472,13 +1865,110 @@ window.togglePage = () => {
 };
 
 window.toggleAdminPage = () => {
+  window.openAdminModal();
+};
+
+window.switchAdminTab = async (tabName) => {
   if (!isSuperAdmin()) {
     return;
   }
-  appState.currentPage =
-    appState.currentPage === "admin" ? "callings" : "admin";
-  renderHeader();
-  renderCurrentPage();
+  appState.currentAdminTab = tabName;
+
+  if (tabName === "notifications") {
+    await fetchPushSubscriptions();
+  }
+
+  renderAdminPage();
+};
+
+window.deleteNotificationSubscription = async (subscriptionId) => {
+  if (!isSuperAdmin()) {
+    await showModalAlert("Only super admins can manage subscriptions.");
+    return;
+  }
+
+  const confirmed = await showModalConfirm(
+    "Remove this notification subscription? The user will no longer receive push notifications."
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const { error } = await supabase
+      .from("push_subscriptions")
+      .delete()
+      .eq("id", subscriptionId);
+
+    if (error) {
+      console.error("Failed to delete subscription:", error);
+      await showModalAlert(
+        `Failed to remove subscription: ${error.message}`
+      );
+      return;
+    }
+
+    await fetchPushSubscriptions();
+    await window.openAdminFunction("notifications");
+    await showModalAlert("Subscription removed.");
+  } catch (error) {
+    console.error("Delete error:", error);
+    await showModalAlert(`Error: ${error.message}`);
+  }
+};
+
+window.switchNotificationFunction = (functionName) => {
+  if (!isSuperAdmin()) {
+    return;
+  }
+  appState.currentNotificationFunction = functionName;
+  renderAdminPage();
+};
+
+window.toggleRecipientSelect = (value) => {
+  const recipientDiv = document.getElementById("recipient-select");
+  if (recipientDiv) {
+    recipientDiv.classList.toggle("hidden", value === "all");
+  }
+};
+
+window.submitNotificationForm = async (event) => {
+  event.preventDefault();
+
+  if (!isSuperAdmin()) {
+    await showModalAlert("Only super admins can send notifications.");
+    return;
+  }
+
+  const title = document.getElementById("notification-title")?.value || "";
+  const body = document.getElementById("notification-body")?.value || "";
+  const recipientType = document.getElementById("notification-recipients")?.value || "all";
+  const recipientEmail = document.getElementById("recipient-email")?.value || "";
+
+  if (!title || !body) {
+    await showModalAlert("Please fill in both title and message.");
+    return;
+  }
+
+  if (recipientType === "specific" && !recipientEmail) {
+    await showModalAlert("Please select a recipient.");
+    return;
+  }
+
+  try {
+    // TODO: Implement notification sending
+    // This is a placeholder for future notification sending functionality
+    await showModalAlert(
+      "Notification sending is not yet implemented.\n\nTitle: " +
+      title +
+      "\nMessage: " +
+      body +
+      "\nRecipient: " +
+      (recipientType === "all" ? "All subscribed users" : recipientEmail)
+    );
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    await showModalAlert(`Error: ${error.message}`);
+  }
 };
 
 window.toggleCardSortOrder = () => {
@@ -1578,7 +2068,7 @@ window.refreshData = async () => {
       );
     }
 
-    renderHeader();
+    await renderHeader();
     renderCurrentPage();
 
     if (typeof window.showToast === "function") {
@@ -2012,6 +2502,100 @@ window.closeConcernNoticeModal = () => {
   syncBodyModalOpenState();
 };
 
+function ensureAdminModal() {
+  let modal = document.getElementById("admin-modal");
+  if (modal) {
+    return modal;
+  }
+
+  modal = document.createElement("div");
+  modal.id = "admin-modal";
+  modal.className = "modal-overlay hidden";
+  modal.innerHTML = `
+    <section class="modal admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title" style="max-width: 600px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding: 16px;">
+        <h2 id="admin-modal-title" style="margin: 0;">Admin Panel</h2>
+        <button type="button" class="icon-button" aria-label="Close admin panel" onclick="window.closeAdminModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">×</button>
+      </div>
+      <div id="admin-modal-content" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+        <!-- Content will be rendered here -->
+      </div>
+    </section>
+  `;
+
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      window.closeAdminModal();
+    }
+  });
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function renderAdminMenu() {
+  return `
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h3 style="margin-top: 0; color: #333;">Select an admin function:</h3>
+      <button
+        type="button"
+        class="btn btn-primary"
+        onclick="window.openAdminFunction('members')"
+        style="padding: 12px 16px; font-size: 16px; text-align: left;"
+      >
+        👥 Member Management
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        onclick="window.openAdminFunction('notifications')"
+        style="padding: 12px 16px; font-size: 16px; text-align: left;"
+      >
+        🔔 Push Notifications
+      </button>
+    </div>
+  `;
+}
+
+window.openAdminModal = async () => {
+  if (!isSuperAdmin()) {
+    await showModalAlert("Only super admins can access the admin panel.");
+    return;
+  }
+
+  const modal = ensureAdminModal();
+  const content = document.getElementById("admin-modal-content");
+
+  content.innerHTML = renderAdminMenu();
+
+  modal.classList.remove("hidden");
+  syncBodyModalOpenState();
+};
+
+window.closeAdminModal = () => {
+  const modal = document.getElementById("admin-modal");
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  syncBodyModalOpenState();
+};
+
+window.openAdminFunction = async (functionName) => {
+  if (!isSuperAdmin()) {
+    return;
+  }
+
+  // Close the menu modal and switch to the admin page
+  window.closeAdminModal();
+  appState.currentAdminTab = functionName;
+  renderCurrentPage();
+};
+
+window.openAdminMenu = () => {
+  const content = document.getElementById("admin-modal-content");
+  content.innerHTML = renderAdminMenu();
+};
+
 function syncFabVisibility(hideFab = false) {
   syncFabVisibilityUi({
     hasAdminPasswordAccess: isAdminRole,
@@ -2058,8 +2642,8 @@ window.setThemeMode = (mode) => {
   renderHeader();
 };
 
-function renderHeader() {
-  renderHeaderUi({
+async function renderHeader() {
+  await renderHeaderUi({
     appState,
     isSuperAdminUser: isSuperAdmin,
     ensureCreateCallingUi,
@@ -2186,7 +2770,7 @@ window.submitMemberForm = async (event) => {
 
     await fetchReferenceData();
     window.cancelAdminForm();
-    renderAdminPage();
+    await window.openAdminFunction("members");
   } catch (error) {
     console.error("Form submission error:", error);
     await showModalAlert(`Error: ${error.message}`);
@@ -2287,7 +2871,7 @@ window.deleteMember = async (memberEmail) => {
 
     await showModalAlert("Member deleted successfully.");
     await fetchReferenceData();
-    renderAdminPage();
+    await window.openAdminFunction("members");
   } catch (error) {
     console.error("Delete error:", error);
     await showModalAlert(`Error: ${error.message}`);
@@ -2369,7 +2953,7 @@ async function startApp() {
     .trim();
 
   await fetchCallings();
-  renderHeader();
+  await renderHeader();
   renderCurrentPage();
 }
 
@@ -2401,6 +2985,7 @@ async function subscribeToPush() {
   const { error } = await supabase.from("push_subscriptions").insert([
     {
       user_id: user.id,
+      user_email: user.email,
       subscription: subscription,
     },
   ]);

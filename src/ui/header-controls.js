@@ -53,7 +53,7 @@ export function syncFabVisibility({
   const isLoggedIn = isLoggedInSession();
   const shouldShowReset = hasAuthenticatedShell || isLoggedIn;
 
-  quickResetButton.style.display = shouldShowReset ? "none" : "none";
+  quickResetButton.style.display = shouldShowReset ? "none" : "flex";
 
   if (!fab) {
     updateFabDebugBadge(documentRef);
@@ -204,8 +204,8 @@ export async function renderHeader({
  ${
    isTraining
      ? `
-    <div class="alertBnr" ">
-      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE ⚠️ 
+    <div class="alertBnr">
+      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE ⚠️
     </div>
   `
      : ""
