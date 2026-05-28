@@ -40,6 +40,7 @@ export function syncFabVisibility({
   hasAdminPasswordAccess,
   isLoggedInSession,
   onResetCache,
+  hideFab = false,
   documentRef = document,
 }) {
   const fab = documentRef.getElementById("add-calling-fab");
@@ -60,7 +61,7 @@ export function syncFabVisibility({
     return;
   }
 
-  const shouldShow = hasAuthenticatedShell && hasAdminPasswordAccess();
+  const shouldShow = !hideFab && hasAuthenticatedShell && hasAdminPasswordAccess();
   fab.style.display = shouldShow ? "flex" : "none";
   fab.style.visibility = shouldShow ? "visible" : "hidden";
 
