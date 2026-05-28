@@ -11,11 +11,10 @@ self.addEventListener("push", (event) => {
 
   const options = {
     body: data.body,
-    icon: "/images/icon-192x192.png", // Path to your PWA icon
-    badge: "/images/badge-72x72.png", // Monochrome icon for Android status bar
+    icon: "/record-192.png",
     vibrate: [100, 50, 100],
     data: {
-      url: data.url || "/", // Pass a URL to open on click
+      url: data.url || "/",
     },
   };
 

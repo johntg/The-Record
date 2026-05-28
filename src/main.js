@@ -2634,6 +2634,12 @@ async function subscribeToPush() {
     throw new Error("Notification permission was denied.");
   }
 
+  // Always unsubscribe from the browser side first so the push service
+  // issues a brand-new endpoint — reusing the old one returns a stale
+  // subscription that the push service still marks as 410 Gone.
+  const existing = await registration.pushManager.getSubscription();
+  if (existing) await existing.unsubscribe();
+
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: PUBLIC_VAPID_KEY,
