@@ -2722,12 +2722,65 @@ async function startApp() {
   // If the app was opened by tapping a push notification, go straight to inbox
   if (new URLSearchParams(window.location.search).get("page") === "inbox") {
     appState.currentPage = "inbox";
-    // Clean the URL without reloading
     history.replaceState(null, "", window.location.pathname);
   }
 
   renderHeader();
   renderCurrentPage();
+
+  // Silently repair the push subscription in the background.
+  // Runs after render so it never blocks the UI.
+  repairPushSubscriptionIfNeeded(user);
+}
+
+async function repairPushSubscriptionIfNeeded(user) {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  if (!user?.id) return;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration(
+      `${import.meta.env.BASE_URL}sw.js`,
+    );
+    if (!registration) return;
+
+    const browserSub = await registration.pushManager.getSubscription();
+
+    // Fetch what the database thinks this user's subscription is
+    const { data: dbRows } = await supabase
+      .from("push_subscriptions")
+      .select("subscription")
+      .eq("user_id", user.id)
+      .limit(1);
+
+    const dbEndpoint = dbRows?.[0]?.subscription?.endpoint ?? null;
+    const browserEndpoint = browserSub?.endpoint ?? null;
+
+    const inSync = dbEndpoint && browserEndpoint && dbEndpoint === browserEndpoint;
+
+    if (inSync) return; // all good
+
+    // Mismatch or missing — re-subscribe silently
+    console.log("[push] subscription out of sync, repairing…");
+
+    if (browserSub) await browserSub.unsubscribe();
+
+    const newSub = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: PUBLIC_VAPID_KEY,
+    });
+
+    await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
+    await supabase.from("push_subscriptions").insert([
+      { user_id: user.id, user_email: user.email, subscription: newSub },
+    ]);
+
+    appState.hasPushSubscription = true;
+    renderHeader();
+    console.log("[push] subscription repaired silently");
+  } catch (err) {
+    // Non-fatal — user can still subscribe manually
+    console.warn("[push] silent repair failed:", err.message);
+  }
 }
 
 async function subscribeToPush() {
