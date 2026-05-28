@@ -17,6 +17,7 @@ import {
   submitNewCalling as submitNewCallingUi,
 } from "./ui/create-calling.js";
 import { createCardsRenderer } from "./ui/cards-renderer.js";
+import { showAdminHubModal } from "./ui/admin-hub-modal.js";
 import { createCallingsActions } from "./actions/callings-actions.js";
 import { generateReport } from "./reports/index.js";
 import {
@@ -855,15 +856,12 @@ function renderAdminPage() {
   const list = document.getElementById("data-list");
   const reportsPage = document.getElementById("reports-page");
   const adminPage = document.getElementById("admin-page");
+  const notificationsPage = document.getElementById("notifications-page");
   if (!adminPage) return;
 
-  if (list) {
-    list.classList.add("hidden");
-  }
-
-  if (reportsPage) {
-    reportsPage.classList.add("hidden");
-  }
+  if (list) list.classList.add("hidden");
+  if (reportsPage) reportsPage.classList.add("hidden");
+  if (notificationsPage) notificationsPage.classList.add("hidden");
 
   adminPage.classList.remove("hidden");
 
@@ -989,6 +987,107 @@ function renderAdminPage() {
   }
 }
 
+let notifSubscribersCache = [];
+
+function renderNotificationsPage() {
+  const list = document.getElementById("data-list");
+  const reportsPage = document.getElementById("reports-page");
+  const adminPage = document.getElementById("admin-page");
+  const notificationsPage = document.getElementById("notifications-page");
+  if (!notificationsPage) return;
+
+  if (list) list.classList.add("hidden");
+  if (reportsPage) reportsPage.classList.add("hidden");
+  if (adminPage) adminPage.classList.add("hidden");
+  notificationsPage.classList.remove("hidden");
+
+  const isSubscribed = appState.hasPushSubscription ?? false;
+
+  notificationsPage.innerHTML = `
+    <section class="admin-header">
+      <h2>Notifications</h2>
+      <p>Manage and send push notifications</p>
+    </section>
+
+    <section class="admin-content">
+      <article class="card admin-form-card">
+        <h3>Your Subscription</h3>
+        <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 0.9rem;">
+          ${isSubscribed ? "You are subscribed to push notifications on this device." : "You are not subscribed to push notifications on this device."}
+        </p>
+        ${
+          !isSubscribed
+            ? `<button type="button" class="btn btn-primary" onclick="window.subscribeToNotifications()">Subscribe This Device</button>`
+            : ""
+        }
+      </article>
+
+      <article class="card admin-form-card">
+        <h3>Send Notification</h3>
+        <div class="form-group">
+          <label for="notif-title">Title</label>
+          <input type="text" id="notif-title" placeholder="Notification title" />
+        </div>
+        <div class="form-group">
+          <label for="notif-body">Message</label>
+          <textarea id="notif-body" rows="4" placeholder="Enter your message..." style="width: 100%; box-sizing: border-box; resize: vertical; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font: inherit; background: var(--white); color: var(--text);"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Recipients</label>
+          <div id="notif-recipients-loading" style="color: var(--text-muted); font-size: 0.9rem;">Loading subscribers...</div>
+          <div id="notif-recipients-list" class="notif-recipients-list hidden"></div>
+          <div id="notif-no-subscribers" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">No subscribers found.</div>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">Send</button>
+          <button type="button" class="btn btn-secondary" onclick="window.toggleAllNotifRecipients()">Select All</button>
+        </div>
+        <div id="notif-status" class="notif-status hidden"></div>
+      </article>
+    </section>
+  `;
+
+  loadNotificationSubscribers();
+}
+
+async function loadNotificationSubscribers() {
+  const loadingEl = document.getElementById("notif-recipients-loading");
+  const listEl = document.getElementById("notif-recipients-list");
+  const emptyEl = document.getElementById("notif-no-subscribers");
+  if (!loadingEl || !listEl || !emptyEl) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("push_subscriptions")
+      .select("id, user_email, subscription");
+
+    if (error) throw error;
+
+    loadingEl.classList.add("hidden");
+
+    if (!data || data.length === 0) {
+      emptyEl.classList.remove("hidden");
+      notifSubscribersCache = [];
+      return;
+    }
+
+    notifSubscribersCache = data;
+    listEl.classList.remove("hidden");
+    listEl.innerHTML = data
+      .map(
+        (sub, i) => `
+        <label class="notif-recipient-item">
+          <input type="checkbox" name="notif-recipient" value="${i}" checked />
+          <span>${escapeHtml(sub.user_email || `Subscriber ${i + 1}`)}</span>
+        </label>
+      `,
+      )
+      .join("");
+  } catch (err) {
+    if (loadingEl) loadingEl.textContent = `Error loading subscribers: ${err.message}`;
+  }
+}
+
 function renderReportsPage() {
   const list = document.getElementById("data-list");
   const reportsPage = document.getElementById("reports-page");
@@ -999,9 +1098,10 @@ function renderReportsPage() {
   }
 
   const adminPage = document.getElementById("admin-page");
-  if (adminPage) {
-    adminPage.classList.add("hidden");
-  }
+  if (adminPage) adminPage.classList.add("hidden");
+
+  const notificationsPage = document.getElementById("notifications-page");
+  if (notificationsPage) notificationsPage.classList.add("hidden");
 
   reportsPage.classList.remove("hidden");
 
@@ -1062,17 +1162,26 @@ function renderReportsPage() {
 
 function renderCurrentPage() {
   const isAdmin = appState.currentPage === "admin";
-  syncFabVisibility(isAdmin);
+  const isNotifications = appState.currentPage === "notifications";
+  syncFabVisibility(isAdmin || isNotifications);
 
   if (isAdmin) {
-    // Only super admins can view the admin page
     if (!isSuperAdmin()) {
-      // Redirect non-super-admins back to callings
       appState.currentPage = "callings";
       renderCards();
       return;
     }
     renderAdminPage();
+    return;
+  }
+
+  if (isNotifications) {
+    if (!isSuperAdmin()) {
+      appState.currentPage = "callings";
+      renderCards();
+      return;
+    }
+    renderNotificationsPage();
     return;
   }
 
@@ -1343,19 +1452,13 @@ const cardsRenderer = createCardsRenderer({
 function renderCards() {
   const adminPage = document.getElementById("admin-page");
   const reportsPage = document.getElementById("reports-page");
+  const notificationsPage = document.getElementById("notifications-page");
   const list = document.getElementById("data-list");
 
-  if (adminPage) {
-    adminPage.classList.add("hidden");
-  }
-
-  if (reportsPage) {
-    reportsPage.classList.add("hidden");
-  }
-
-  if (list) {
-    list.classList.remove("hidden");
-  }
+  if (adminPage) adminPage.classList.add("hidden");
+  if (reportsPage) reportsPage.classList.add("hidden");
+  if (notificationsPage) notificationsPage.classList.add("hidden");
+  if (list) list.classList.remove("hidden");
 
   cardsRenderer.renderCards();
 }
@@ -1479,6 +1582,96 @@ window.toggleAdminPage = () => {
     appState.currentPage === "admin" ? "callings" : "admin";
   renderHeader();
   renderCurrentPage();
+};
+
+window.showAdminModal = () => {
+  if (!isSuperAdmin()) return;
+  showAdminHubModal();
+};
+
+window.openMemberMaintenancePage = () => {
+  if (!isSuperAdmin()) return;
+  appState.currentPage = "admin";
+  renderHeader();
+  renderCurrentPage();
+};
+
+window.openNotificationsPage = () => {
+  if (!isSuperAdmin()) return;
+  appState.currentPage = "notifications";
+  renderHeader();
+  renderCurrentPage();
+};
+
+window.sendPushNotifications = async () => {
+  const titleEl = document.getElementById("notif-title");
+  const bodyEl = document.getElementById("notif-body");
+  const statusEl = document.getElementById("notif-status");
+
+  const title = titleEl?.value?.trim();
+  const body = bodyEl?.value?.trim();
+
+  if (!title || !body) {
+    await showModalAlert("Please enter both a title and a message.");
+    return;
+  }
+
+  const checkboxes = document.querySelectorAll(
+    "input[name='notif-recipient']:checked",
+  );
+  const selectedIndices = Array.from(checkboxes).map((cb) =>
+    parseInt(cb.value, 10),
+  );
+
+  if (selectedIndices.length === 0) {
+    await showModalAlert("Please select at least one recipient.");
+    return;
+  }
+
+  if (statusEl) {
+    statusEl.classList.remove("hidden");
+    statusEl.textContent = `Sending to ${selectedIndices.length} recipient(s)...`;
+    statusEl.className = "notif-status";
+  }
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (const i of selectedIndices) {
+    const sub = notifSubscribersCache[i];
+    if (!sub) continue;
+
+    try {
+      const { error } = await supabase.functions.invoke("send-notification", {
+        body: { subscription: sub.subscription, title, body },
+      });
+      if (error) {
+        failCount++;
+      } else {
+        successCount++;
+      }
+    } catch {
+      failCount++;
+    }
+  }
+
+  if (statusEl) {
+    statusEl.textContent = `Done — ${successCount} sent${failCount > 0 ? `, ${failCount} failed` : ""}.`;
+    statusEl.className = `notif-status ${failCount > 0 ? "notif-status-error" : "notif-status-success"}`;
+  }
+};
+
+window.toggleAllNotifRecipients = () => {
+  const checkboxes = document.querySelectorAll("input[name='notif-recipient']");
+  if (!checkboxes.length) return;
+  const allChecked = Array.from(checkboxes).every((cb) => cb.checked);
+  checkboxes.forEach((cb) => {
+    cb.checked = !allChecked;
+  });
+  const btn = document.querySelector(
+    ".btn-group button[onclick='window.toggleAllNotifRecipients()']",
+  );
+  if (btn) btn.textContent = allChecked ? "Select All" : "Deselect All";
 };
 
 window.toggleCardSortOrder = () => {

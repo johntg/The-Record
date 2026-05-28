@@ -158,7 +158,7 @@ export async function renderHeader({
       }
       ${
         showAdminButton
-          ? `<button onclick="window.toggleAdminPage()">Admin</button>`
+          ? `<button onclick="window.showAdminModal()">Admin</button>`
           : ""
       }
       ${
@@ -228,6 +228,13 @@ export async function renderHeader({
     admin.id = "admin-page";
     admin.className = "admin-page hidden";
     app.appendChild(admin);
+  }
+
+  if (!documentRef.getElementById("notifications-page")) {
+    const notifs = documentRef.createElement("div");
+    notifs.id = "notifications-page";
+    notifs.className = "admin-page hidden";
+    app.appendChild(notifs);
   }
 
   const refreshIcon = documentRef.getElementById("refreshicon");
