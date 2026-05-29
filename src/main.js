@@ -1155,10 +1155,13 @@ async function loadInboxMessages() {
           hour: "numeric", minute: "2-digit",
         });
         return `
-          <div class="inbox-item">
+          <div class="inbox-item" data-id="${escapeHtml(n.id)}">
             <div class="inbox-item-header">
               <span class="inbox-item-title">${escapeHtml(n.title)}</span>
-              <span class="inbox-item-date">${dateStr}, ${timeStr}</span>
+              <div class="inbox-item-meta">
+                <span class="inbox-item-date">${dateStr}, ${timeStr}</span>
+                <button class="inbox-item-delete" onclick="deleteInboxMessage('${escapeHtml(n.id)}')" title="Delete message" aria-label="Delete message">×</button>
+              </div>
             </div>
             <div class="inbox-item-body">${escapeHtml(n.body)}</div>
             ${n.sent_by_email ? `<div class="inbox-item-from">From: ${escapeHtml(n.sent_by_email)}</div>` : ""}
@@ -1170,6 +1173,41 @@ async function loadInboxMessages() {
     if (loadingEl) loadingEl.textContent = `Error loading messages: ${err.message}`;
   }
 }
+
+window.deleteInboxMessage = async function(id) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return;
+
+  const { data: msg, error: fetchErr } = await supabase
+    .from("app_notifications")
+    .select("recipients")
+    .eq("id", id)
+    .single();
+
+  if (fetchErr || !msg) return;
+
+  const newRecipients = (msg.recipients || []).filter(e => e !== user.email);
+
+  const { error: updateErr } = await supabase
+    .from("app_notifications")
+    .update({ recipients: newRecipients })
+    .eq("id", id);
+
+  if (updateErr) {
+    console.error("Failed to delete message:", updateErr);
+    return;
+  }
+
+  const itemEl = document.querySelector(`.inbox-item[data-id="${id}"]`);
+  if (itemEl) itemEl.remove();
+
+  const listEl = document.getElementById("inbox-list");
+  if (listEl && listEl.querySelectorAll(".inbox-item").length === 0) {
+    listEl.classList.add("hidden");
+    const emptyEl = document.getElementById("inbox-empty");
+    if (emptyEl) emptyEl.classList.remove("hidden");
+  }
+};
 
 function renderReportsPage() {
   const list = document.getElementById("data-list");

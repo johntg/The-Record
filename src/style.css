@@ -2266,6 +2266,30 @@ select {
   margin-top: 2px;
 }
 
+.inbox-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.inbox-item-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.inbox-item-delete:hover {
+  opacity: 1;
+  color: var(--danger, #e53e3e);
+}
+
 /* Admin hub modal */
 .admin-hub-modal {
   width: min(92%, 340px);
