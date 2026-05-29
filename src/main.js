@@ -2197,6 +2197,7 @@ function renderLogin() {
 
         <div id="auth-step-code" class="hidden">
           <p class="form-instruction">Enter the code sent to your email:</p>
+          <p id="auth-step-code-email" class="form-instruction" style="font-size: 0.85em; opacity: 0.7; margin-top: -8px;"></p>
           <form id="otp-verify-form">
             <input
               id="otp-input"
@@ -2210,7 +2211,7 @@ function renderLogin() {
               autocomplete="one-time-code"
             />
             <button type="submit">Verify & Sign In</button>
-            ${/*<button type="button" class="btn-link" onclick="renderLogin()">Back to email</button>}*/ ""}
+            <button type="button" class="btn-link" id="back-to-email-btn">Request a new code</button>
           </form>
         </div>
 
@@ -2228,9 +2229,35 @@ function renderLogin() {
 
   let userEmail = localStorage.getItem("otp-email") || "";
 
-  // If there's a saved email from a previous attempt, pre-fill the form
+  const showEmailStep = () => {
+    emailStep.classList.remove("hidden");
+    codeStep.classList.add("hidden");
+    message.textContent = "";
+    message.classList.remove("error");
+    const emailInput = document.getElementById("email-input");
+    if (emailInput) emailInput.focus();
+  };
+
+  const showCodeStep = (email) => {
+    emailStep.classList.add("hidden");
+    codeStep.classList.remove("hidden");
+    const emailHint = document.getElementById("auth-step-code-email");
+    if (emailHint && email) emailHint.textContent = email;
+    const otpInput = document.getElementById("otp-input");
+    if (otpInput) otpInput.focus();
+  };
+
+  document.getElementById("back-to-email-btn").addEventListener("click", () => {
+    localStorage.removeItem("otp-email");
+    userEmail = "";
+    showEmailStep();
+  });
+
+  // Pre-fill email and skip to code step if a prior request is in flight
   if (userEmail) {
     document.getElementById("email-input").value = userEmail;
+    showCodeStep(userEmail);
+    message.textContent = "Enter the code from your email, or request a new one.";
   }
 
   // Step 1: Request the OTP
@@ -2278,8 +2305,7 @@ function renderLogin() {
     }
 
     // Success: Hide email form, show code form
-    emailStep.classList.add("hidden");
-    codeStep.classList.remove("hidden");
+    showCodeStep(userEmail);
     message.textContent = `Check your email for the 6-digit code (${dbModeLabel} database).`;
   });
 

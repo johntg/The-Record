@@ -1806,6 +1806,33 @@ select {
   background-color: #ffe958;
 }
 
+.login-card .btn-link {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85em;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  margin-top: 4px;
+  width: auto;
+}
+.login-card .btn-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: none;
+}
+
+.form-message {
+  margin-top: 12px;
+  font-size: 0.9em;
+  text-align: center;
+}
+.form-instruction {
+  font-size: 0.95em;
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
 /* Larger mobile-friendly checkboxes throughout app cards */
 .card input[type="checkbox"] {
   width: 22px;
