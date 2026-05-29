@@ -291,7 +291,6 @@ window.subscribeToNotifications = async () => {
   }
 };
 
-
 async function applyBuildVersionToCreditLine() {
   const versionNode = document.getElementById("app-version");
   if (!versionNode) return;
@@ -1087,7 +1086,8 @@ async function loadNotificationSubscribers() {
       )
       .join("");
   } catch (err) {
-    if (loadingEl) loadingEl.textContent = `Error loading subscribers: ${err.message}`;
+    if (loadingEl)
+      loadingEl.textContent = `Error loading subscribers: ${err.message}`;
   }
 }
 
@@ -1149,10 +1149,14 @@ async function loadInboxMessages() {
       .map((n) => {
         const date = new Date(n.sent_at);
         const dateStr = date.toLocaleDateString(undefined, {
-          weekday: "short", day: "numeric", month: "short", year: "numeric",
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          year: "numeric",
         });
         const timeStr = date.toLocaleTimeString(undefined, {
-          hour: "numeric", minute: "2-digit",
+          hour: "numeric",
+          minute: "2-digit",
         });
         return `
           <div class="inbox-item" data-id="${escapeHtml(n.id)}">
@@ -1170,12 +1174,15 @@ async function loadInboxMessages() {
       })
       .join("");
   } catch (err) {
-    if (loadingEl) loadingEl.textContent = `Error loading messages: ${err.message}`;
+    if (loadingEl)
+      loadingEl.textContent = `Error loading messages: ${err.message}`;
   }
 }
 
-window.deleteInboxMessage = async function(id) {
-  const { data: { user } } = await supabase.auth.getUser();
+window.deleteInboxMessage = async function (id) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user?.email) return;
 
   const { data: msg, error: fetchErr } = await supabase
@@ -1186,7 +1193,7 @@ window.deleteInboxMessage = async function(id) {
 
   if (fetchErr || !msg) return;
 
-  const newRecipients = (msg.recipients || []).filter(e => e !== user.email);
+  const newRecipients = (msg.recipients || []).filter((e) => e !== user.email);
 
   const { error: updateErr } = await supabase
     .from("app_notifications")
@@ -1792,22 +1799,19 @@ window.sendPushNotifications = async () => {
     if (!sub) continue;
 
     try {
-      const res = await fetch(
-        `${supabaseUrl}/functions/v1/send-notification`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-            apikey: supabaseKey,
-          },
-          body: JSON.stringify({
-            subscription: sub.subscription,
-            title,
-            body,
-          }),
+      const res = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+          apikey: supabaseKey,
         },
-      );
+        body: JSON.stringify({
+          subscription: sub.subscription,
+          title,
+          body,
+        }),
+      });
 
       const result = await res.json().catch(() => ({}));
 
@@ -1833,21 +1837,31 @@ window.sendPushNotifications = async () => {
 
   // Save to app_notifications — only recipients in deliveredTo can see it in their inbox
   if (deliveredTo.length > 0) {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("app_notifications").insert([{
-      title,
-      body,
-      sent_by_email: user?.email ?? null,
-      recipients: deliveredTo,
-    }]);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from("app_notifications").insert([
+      {
+        title,
+        body,
+        sent_by_email: user?.email ?? null,
+        recipients: deliveredTo,
+      },
+    ]);
   }
 
   const parts = [];
   if (successCount) parts.push(`${successCount} sent`);
-  if (staleCount) parts.push(`${staleCount} expired (removed — recipient needs to re-subscribe)`);
+  if (staleCount)
+    parts.push(
+      `${staleCount} expired (removed — recipient needs to re-subscribe)`,
+    );
   if (failCount) parts.push(`${failCount} failed — ${lastError}`);
 
-  const style = failCount > 0 || staleCount > 0 ? "notif-status-error" : "notif-status-success";
+  const style =
+    failCount > 0 || staleCount > 0
+      ? "notif-status-error"
+      : "notif-status-success";
   setStatus(parts.join(", ") || "Nothing to send.", style);
 
   // Reload the subscriber list to reflect any removed stale entries
@@ -1866,7 +1880,6 @@ window.toggleAllNotifRecipients = () => {
   );
   if (btn) btn.textContent = allChecked ? "Select All" : "Deselect All";
 };
-
 
 window.selectReportType = (value) => {
   appState.currentReportType = value;
@@ -2257,7 +2270,8 @@ function renderLogin() {
   if (userEmail) {
     document.getElementById("email-input").value = userEmail;
     showCodeStep(userEmail);
-    message.textContent = "Enter the code from your email, or request a new one.";
+    message.textContent =
+      "Enter the code from your email, or request a new one.";
   }
 
   // Step 1: Request the OTP
@@ -2819,7 +2833,8 @@ async function repairPushSubscriptionIfNeeded(user) {
     const dbEndpoint = dbRows?.[0]?.subscription?.endpoint ?? null;
     const browserEndpoint = browserSub?.endpoint ?? null;
 
-    const inSync = dbEndpoint && browserEndpoint && dbEndpoint === browserEndpoint;
+    const inSync =
+      dbEndpoint && browserEndpoint && dbEndpoint === browserEndpoint;
 
     if (inSync) return; // all good
 
@@ -2834,9 +2849,11 @@ async function repairPushSubscriptionIfNeeded(user) {
     });
 
     await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
-    await supabase.from("push_subscriptions").insert([
-      { user_id: user.id, user_email: user.email, subscription: newSub },
-    ]);
+    await supabase
+      .from("push_subscriptions")
+      .insert([
+        { user_id: user.id, user_email: user.email, subscription: newSub },
+      ]);
 
     appState.hasPushSubscription = true;
     renderHeader();
@@ -2853,7 +2870,7 @@ async function sendWelcomeNotification(registration) {
     // This happens immediately, showing the user that notifications are working
     const title = "Notifications Enabled! 🎉";
     const options = {
-      body: "You'll now receive important updates from The Record.",
+      body: "Thankyou for moving to version 3 of The Record. You can now receive important information from The Record. ",
       icon: `${import.meta.env.BASE_URL}favicon.ico`,
       badge: `${import.meta.env.BASE_URL}favicon.ico`,
       tag: "welcome-notification",
@@ -2915,9 +2932,11 @@ async function subscribeToPush() {
   // (no unique constraint exists, so upsert isn't available)
   await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
 
-  const { error } = await supabase.from("push_subscriptions").insert([
-    { user_id: user.id, user_email: user.email, subscription: subscription },
-  ]);
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .insert([
+      { user_id: user.id, user_email: user.email, subscription: subscription },
+    ]);
 
   if (error) {
     throw new Error(`Failed to save subscription: ${error.message}`);
