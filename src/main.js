@@ -2847,6 +2847,35 @@ async function repairPushSubscriptionIfNeeded(user) {
   }
 }
 
+async function sendWelcomeNotification(registration) {
+  try {
+    // Send a welcome notification using the Notification API
+    // This happens immediately, showing the user that notifications are working
+    const title = "Notifications Enabled! 🎉";
+    const options = {
+      body: "You'll now receive important updates from The Record.",
+      icon: `${import.meta.env.BASE_URL}favicon.ico`,
+      badge: `${import.meta.env.BASE_URL}favicon.ico`,
+      tag: "welcome-notification",
+      requireInteraction: false,
+      silent: false,
+    };
+
+    // If service worker is active, use it to show the notification
+    if (registration.active) {
+      registration.showNotification(title, options);
+    } else {
+      // Fallback: use the Notification API directly
+      new Notification(title, options);
+    }
+
+    console.log("Welcome notification sent");
+  } catch (error) {
+    console.warn("Could not send welcome notification:", error);
+    // Non-fatal — user is still subscribed
+  }
+}
+
 async function subscribeToPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Push notifications are not supported on this browser.");
@@ -2893,6 +2922,9 @@ async function subscribeToPush() {
   if (error) {
     throw new Error(`Failed to save subscription: ${error.message}`);
   }
+
+  // Send welcome notification to confirm subscription worked
+  await sendWelcomeNotification(registration);
 
   console.log("User successfully subscribed!");
 }
