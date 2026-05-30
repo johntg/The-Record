@@ -1,0 +1,53 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build staging site
+        run: npm run build:staging
+        env:
+          VITE_BASE_PATH: ${{ secrets.VITE_STAGING_BASE_PATH }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_STAGING_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_STAGING_SUPABASE_ANON_KEY }}
+          VITE_ARCHIVE_TABLE: archive
+          VITE_STAKE_PW: ${{ secrets.VITE_STAKE_PW }}
+          VITE_ADMIN_PW: ${{ secrets.VITE_ADMIN_PW }}
+          VITE_CONCERN_EMAIL_URL: ${{ secrets.VITE_CONCERN_EMAIL_URL }}
+          VITE_CONCERN_EMAIL_TOKEN: ${{ secrets.VITE_CONCERN_EMAIL_TOKEN }}
+          VITE_MEMBER_PROVISION_URL: ${{ secrets.VITE_MEMBER_PROVISION_URL }}
+          VITE_MEMBER_PROVISION_TOKEN: ${{ secrets.VITE_MEMBER_PROVISION_TOKEN }}
+
+      - name: Deploy dist to staging repo
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.STAGING_DEPLOY_TOKEN }}
+          external_repository: thoseguys/the-record-staging
+          publish_branch: gh-pages
+          publish_dir: ./dist
+          force_orphan: true
+          commit_message: "deploy: staging build from ${{ github.sha }}"

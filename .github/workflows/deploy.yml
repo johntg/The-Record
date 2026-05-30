@@ -34,11 +34,11 @@ jobs:
         run: npm install
 
       - name: Build site
-        run: npm run build
+        run: npm run build:prod
         env:
           VITE_BASE_PATH: ${{ secrets.VITE_BASE_PATH }}
-          VITE_SUPABASE_URL_PROD: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY_PROD: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SUPABASE_URL_TRAINING: ${{ secrets.VITE_SUPABASE_URL_TRAINING }}
           VITE_SUPABASE_ANON_KEY_TRAINING: ${{ secrets.VITE_SUPABASE_ANON_KEY_TRAINING }}
           VITE_ARCHIVE_TABLE: archive

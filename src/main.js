@@ -39,8 +39,8 @@ const PUBLIC_VAPID_KEY =
 import createPushSubscription from "./utils/notifications.js";
 
 // Single database with mode-based table prefixes
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL_PROD;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY_PROD;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase =
   supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
@@ -2721,7 +2721,7 @@ async function startApp() {
   if (!supabase) {
     showFatalError(
       "Missing configuration",
-      "VITE_SUPABASE_URL_PROD/TRAINING and VITE_SUPABASE_ANON_KEY_PROD/TRAINING must be set for this build.",
+      "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for this build.",
     );
     return;
   }
@@ -2866,11 +2866,9 @@ async function repairPushSubscriptionIfNeeded(user) {
 
 async function sendWelcomeNotification(registration) {
   try {
-    // Send a welcome notification using the Notification API
-    // This happens immediately, showing the user that notifications are working
     const title = "Notifications Enabled! 🎉";
     const options = {
-      body: "Thankyou for moving to version 3 of The Record. You can now receive important information from The Record. ",
+      body: "Thank you for moving to version 3 of The Record. You can now receive important information from The Record.",
       icon: `${import.meta.env.BASE_URL}favicon.ico`,
       badge: `${import.meta.env.BASE_URL}favicon.ico`,
       tag: "welcome-notification",
@@ -2878,17 +2876,39 @@ async function sendWelcomeNotification(registration) {
       silent: false,
     };
 
-    // If service worker is active, use it to show the notification
-    if (registration.active) {
-      registration.showNotification(title, options);
-    } else {
-      // Fallback: use the Notification API directly
-      new Notification(title, options);
+    console.log("[notification] Attempting to send welcome notification", {
+      swReady: !!registration,
+      swActive: !!registration?.active,
+      permissionStatus: Notification.permission,
+    });
+
+    // Wait a moment for the service worker to be fully ready
+    if (registration && !registration.active) {
+      console.log("[notification] Service worker not yet active, waiting...");
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    console.log("Welcome notification sent");
+    // Try service worker first (more reliable for push notifications)
+    if (registration?.active) {
+      console.log("[notification] Using service worker to show notification");
+      await registration.showNotification(title, options);
+      console.log("[notification] Welcome notification sent via service worker");
+      return;
+    }
+
+    // Fallback: use Notification API directly
+    if (Notification.permission === "granted") {
+      console.log("[notification] Using Notification API directly");
+      new Notification(title, options);
+      console.log("[notification] Welcome notification sent via Notification API");
+      return;
+    }
+
+    console.warn(
+      "[notification] Could not send notification - permission not granted or SW not ready"
+    );
   } catch (error) {
-    console.warn("Could not send welcome notification:", error);
+    console.error("[notification] Error sending welcome notification:", error);
     // Non-fatal — user is still subscribed
   }
 }
