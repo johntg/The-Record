@@ -1,4 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 function normalizeBasePath(basePath) {
   if (!basePath || basePath === "/") {
@@ -43,5 +45,22 @@ export default defineConfig(({ mode }) => {
   return {
     base,
     server,
+    plugins: [
+      {
+        name: "patch-manifest-base-path",
+        closeBundle() {
+          const outDir = "dist";
+          const manifestPath = join(outDir, "manifest.json");
+          try {
+            const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+            manifest.start_url = base;
+            manifest.scope = base;
+            writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+          } catch {
+            // manifest.json not in output (e.g. dev server), skip
+          }
+        },
+      },
+    ],
   };
 });
