@@ -1,8 +1,8 @@
 {
   "name": "the-record",
-  "version": "3.2.3",
-  "buildNumber": "150",
-  "gitCommit": "ec708c1",
-  "generatedAt": "2026-05-31T21:43:31.249Z",
-  "displayVersion": "3.2.3+build.150"
+  "version": "3.2.4",
+  "buildNumber": "151",
+  "gitCommit": "e499dee",
+  "generatedAt": "2026-05-31T21:52:08.042Z",
+  "displayVersion": "3.2.4+build.151"
 }
