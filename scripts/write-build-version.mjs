@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 const packageJsonPath = path.join(rootDir, "package.json");
 const outputPath = path.join(rootDir, "public", "build-version.json");
+const indexHtmlPath = path.join(rootDir, "index.html");
 
 function getGitCommit() {
   try {
@@ -65,6 +66,19 @@ async function main() {
   };
 
   await writeFile(outputPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
+
+  // Stamp the version directly into index.html so Vite bakes the correct
+  // value into the build. Without this the span shows a stale hardcoded
+  // version until the async build-version.json fetch completes.
+  const indexHtml = await readFile(indexHtmlPath, "utf8");
+  const updatedHtml = indexHtml.replace(
+    /(<span id="app-version">)[^<]*(<\/span>)/,
+    `$1v${baseVersion}$2`,
+  );
+  if (updatedHtml !== indexHtml) {
+    await writeFile(indexHtmlPath, updatedHtml, "utf8");
+    console.log(`Stamped index.html with v${baseVersion}`);
+  }
 
   console.log(
     `Wrote build metadata: ${metadata.displayVersion} (${metadata.gitCommit})`,
