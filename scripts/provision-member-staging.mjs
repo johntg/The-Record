@@ -101,7 +101,18 @@ if (sendInvite) {
       error.code === "email_exists" ||
       error.status === 422
     ) {
-      console.log(`Auth user already exists for ${email} (invite skipped).`);
+      console.log(`Auth user already exists for ${email} — looking up their ID.`);
+      const { data: listData, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      if (listError) {
+        console.error("Failed to look up existing auth user:", listError.message);
+        process.exit(1);
+      }
+      authUser = listData?.users?.find((u) => u.email === email) || null;
+      if (authUser) {
+        console.log(`Found existing auth user: ${authUser.id}`);
+      } else {
+        console.warn(`Could not find auth user for ${email} — auth_user_id will not be set.`);
+      }
     } else {
       console.error("Failed to invite auth user:", error.message);
       process.exit(1);
@@ -123,7 +134,18 @@ if (sendInvite) {
       error.code === "email_exists" ||
       error.status === 422
     ) {
-      console.log(`Auth user already exists for ${email} (creation skipped).`);
+      console.log(`Auth user already exists for ${email} — looking up their ID.`);
+      const { data: listData, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      if (listError) {
+        console.error("Failed to look up existing auth user:", listError.message);
+        process.exit(1);
+      }
+      authUser = listData?.users?.find((u) => u.email === email) || null;
+      if (authUser) {
+        console.log(`Found existing auth user: ${authUser.id}`);
+      } else {
+        console.warn(`Could not find auth user for ${email} — auth_user_id will not be set.`);
+      }
     } else {
       console.error("Failed to create auth user:", error.message);
       process.exit(1);
@@ -132,6 +154,11 @@ if (sendInvite) {
     authUser = data?.user || null;
     console.log(`Created auth user ${email} (email_confirm: true).`);
   }
+}
+
+// Include auth_user_id in the member payload if we have it
+if (authUser?.id) {
+  memberPayload.auth_user_id = authUser.id;
 }
 
 const { data: upsertedMember, error: memberError } = await supabase
@@ -222,9 +249,8 @@ function loadEnvFile(filePath) {
     const key = trimmed.slice(0, equalsIndex).trim();
     const value = trimmed.slice(equalsIndex + 1).trim();
 
-    if (!process.env[key]) {
-      process.env[key] = stripQuotes(value);
-    }
+    // Always override — staging script must use .env.staging values, not shell env
+    process.env[key] = stripQuotes(value);
   });
 }
 
