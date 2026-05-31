@@ -15,6 +15,7 @@
     "version:minor": "npm version minor --no-git-tag-version",
     "version:major": "npm version major --no-git-tag-version",
     "provision:member": "node scripts/provision-member.mjs",
+    "provision:member:staging": "node scripts/provision-member-staging.mjs",
     "provision:member:training": "node scripts/provision-member-training.mjs",
     "inspect:auth-user": "node scripts/inspect-auth-user.mjs",
     "inspect:auth-user:training": "node scripts/inspect-auth-user-training.mjs"
