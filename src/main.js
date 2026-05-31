@@ -42,65 +42,121 @@ import createPushSubscription from "./utils/notifications.js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Cookie-based storage adapter for Supabase auth.
-// On iOS PWAs, localStorage is cleared after ~7 days of inactivity.
-// First-party cookies with an explicit max-age survive that clearing.
-// Falls back to localStorage for values that exceed the 4 KB cookie limit.
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, rolling
-
-const cookieAuthStorage = {
-  getItem(key) {
-    const encodedKey = encodeURIComponent(key);
-    const match = document.cookie.match(
-      new RegExp("(?:^|;)\\s*" + encodedKey + "=([^;]*)"),
-    );
-    if (match) {
-      // Roll the expiry: every read resets the 7-day countdown
-      document.cookie = `${encodedKey}=${match[1]}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Strict`;
-      return decodeURIComponent(match[1]);
-    }
-    // Fallback: check localStorage for sessions written before this change
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setItem(key, value) {
-    const encodedKey = encodeURIComponent(key);
-    const encodedValue = encodeURIComponent(value);
-    if (encodedKey.length + encodedValue.length <= 3800) {
-      document.cookie = `${encodedKey}=${encodedValue}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Strict`;
-    }
-    // Always mirror to localStorage so non-iOS paths keep working
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      /* ignore */
-    }
-  },
-  removeItem(key) {
-    const encodedKey = encodeURIComponent(key);
-    document.cookie = `${encodedKey}=; max-age=0; path=/; SameSite=Strict`;
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      /* ignore */
-    }
-  },
-};
-
 const supabase =
-  supabaseUrl && supabaseKey
-    ? createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          storage: cookieAuthStorage,
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
-        },
-      })
-    : null;
+  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+// ─── DB-BACKED SESSION PERSISTENCE ──────────────────────────────────────────
+// After every OTP login the Supabase refresh_token is saved to the
+// user_sessions table. The client holds only a tiny UUID lookup token in a
+// cookie (~36 chars, 30-day rolling expiry).
+//
+// On startup: getSession() tries localStorage first (fast path, works on
+// desktop/Android). If localStorage was cleared (common on iOS PWAs) the app
+// calls restore_session() — a SECURITY DEFINER Postgres function that works
+// without a valid JWT — fetches the refresh_token, and exchanges it for a
+// live session via supabase.auth.refreshSession(). The UUID IS the credential;
+// 122-bit entropy from gen_random_uuid() makes it unguessable.
+
+const SESSION_COOKIE = "tr-sid";
+const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, rolling
+
+function getSessionCookie() {
+  const match = document.cookie.match(
+    new RegExp("(?:^|;)\\s*" + SESSION_COOKIE + "=([^;]+)"),
+  );
+  return match ? match[1] : null;
+}
+
+function setSessionCookie(token) {
+  document.cookie = [
+    `${SESSION_COOKIE}=${token}`,
+    `max-age=${SESSION_COOKIE_MAX_AGE}`,
+    "path=/",
+    "SameSite=Strict",
+  ].join("; ");
+}
+
+function clearSessionCookie() {
+  document.cookie = `${SESSION_COOKIE}=; max-age=0; path=/; SameSite=Strict`;
+}
+
+// Called after every successful OTP verification.
+// Inserts a new row (supports multiple devices simultaneously).
+async function saveDbSession(session) {
+  if (!supabase || !session?.refresh_token || !session?.user?.id) return;
+
+  const { data, error } = await supabase
+    .from("user_sessions")
+    .insert({ user_id: session.user.id, refresh_token: session.refresh_token })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.warn("[session] Failed to save DB session:", error.message);
+    return;
+  }
+
+  setSessionCookie(data.id);
+  console.log("[session] DB session saved");
+}
+
+// Called on startup when localStorage is empty.
+// Uses the UUID cookie to fetch the refresh_token from the DB without auth,
+// then exchanges it for a live session.
+async function restoreDbSession() {
+  if (!supabase) return null;
+
+  const token = getSessionCookie();
+  if (!token) return null;
+
+  console.log("[session] Attempting DB session restore…");
+
+  // Step 1: fetch the stored refresh_token (SECURITY DEFINER — no JWT needed)
+  const { data, error } = await supabase.rpc("restore_session", {
+    lookup_token: token,
+  });
+
+  if (error || !data?.length) {
+    console.warn("[session] DB session not found or expired");
+    clearSessionCookie();
+    return null;
+  }
+
+  // Step 2: exchange the refresh_token for a new live session
+  const { data: refreshed, error: refreshError } =
+    await supabase.auth.refreshSession({
+      refresh_token: data[0].refresh_token,
+    });
+
+  if (refreshError || !refreshed?.session) {
+    console.warn("[session] Token refresh failed:", refreshError?.message);
+    clearSessionCookie();
+    return null;
+  }
+
+  // Step 3: update the DB row with the rotated refresh_token (now authenticated)
+  await supabase
+    .from("user_sessions")
+    .update({
+      refresh_token: refreshed.session.refresh_token,
+      last_seen: new Date().toISOString(),
+    })
+    .eq("id", token);
+
+  // Step 4: roll the cookie expiry
+  setSessionCookie(token);
+
+  console.log("[session] DB session restored");
+  return refreshed.session.user;
+}
+
+// Called on logout — removes this device's DB row and clears the cookie.
+async function deleteDbSession() {
+  const token = getSessionCookie();
+  clearSessionCookie();
+  if (!token || !supabase) return;
+  await supabase.from("user_sessions").delete().eq("id", token);
+}
 
 // Helper function to get table name based on current mode
 // Members table is shared; all others use prod_ or train_ prefix
@@ -2403,7 +2459,7 @@ function renderLogin() {
       `[OTP] Verifying code for ${verifyEmail} in ${dbModeLabel} mode`,
     );
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data: verifyData, error } = await supabase.auth.verifyOtp({
       email: verifyEmail,
       token,
       type: "email",
@@ -2416,8 +2472,10 @@ function renderLogin() {
       return;
     }
 
-    // Success! Supabase will trigger onAuthStateChange
-    // or you can manually call startApp() to refresh the UI
+    // Persist the session in DB so iOS can restore it even after
+    // localStorage is cleared.
+    await saveDbSession(verifyData?.session);
+
     message.textContent = "Success! Loading...";
 
     // Clear the stored email after successful login
@@ -2465,6 +2523,9 @@ function ensureConcernNoticeModal() {
 }
 
 window.logout = async () => {
+  // Remove this device's DB session row and cookie before signing out
+  await deleteDbSession();
+
   try {
     await supabase.auth.signOut();
   } catch (error) {
@@ -2809,11 +2870,15 @@ async function startApp() {
     return;
   }
 
-  const user = session?.user ?? null;
+  let user = session?.user ?? null;
 
   if (!user) {
-    renderLogin();
-    return;
+    // localStorage may have been cleared (common on iOS PWAs) — try DB restore
+    user = await restoreDbSession();
+    if (!user) {
+      renderLogin();
+      return;
+    }
   }
 
   const matchedMember =
