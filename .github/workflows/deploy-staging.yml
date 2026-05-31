@@ -46,7 +46,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ secrets.STAGING_DEPLOY_TOKEN }}
-          external_repository: thoseguys/the-record-staging
+          external_repository: johntg/therecord-staging
           publish_branch: gh-pages
           publish_dir: ./dist
           force_orphan: true
