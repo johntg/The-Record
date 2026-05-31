@@ -1064,6 +1064,10 @@ function renderAdminPage() {
                   </span>
                   ${m.receive_concern ? "✓" : ""}
                 </div>
+                <div class="member-row">
+                  <span class="member-label">App Version:</span>
+                  <span class="member-version-cell" style="font-size:0.8rem;color:var(--text-muted);opacity:0.45;">…</span>
+                </div>
                 <div class="member-row member-actions">
                   <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
                   <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
@@ -1098,6 +1102,10 @@ function renderAdminPage() {
       }
     });
   }
+
+  // Fill in app version + last-seen for each member card asynchronously
+  // so the grid renders immediately and the version data follows.
+  fetchAndRenderMemberVersions();
 }
 
 let notifSubscribersCache = [];
@@ -2832,6 +2840,66 @@ window.deleteMember = async (memberEmail) => {
   }
 };
 
+// ─── VERSION TELEMETRY ──────────────────────────────────────────────────────
+
+// Upserts this user's current app version on every startup.
+// Non-blocking — runs in the background after the UI has rendered.
+async function recordAppVersion(user) {
+  if (!supabase || !user?.id) return;
+  const version =
+    document.getElementById("app-version")?.textContent?.trim() || "unknown";
+  await supabase.from("user_app_versions").upsert(
+    {
+      user_id: user.id,
+      email: user.email,
+      version,
+      last_seen: new Date().toISOString(),
+      user_agent: navigator.userAgent,
+    },
+    { onConflict: "user_id" },
+  );
+}
+
+// Formats a timestamp as a short relative string: "just now", "4h ago", "3d ago".
+function formatRelativeTime(isoString) {
+  if (!isoString) return "never";
+  const mins = Math.floor((Date.now() - new Date(isoString).getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// Fetches every member's recorded version and fills in the admin panel cells.
+// Called after renderAdminPage() so the grid is in the DOM before we update it.
+async function fetchAndRenderMemberVersions() {
+  if (!supabase) return;
+  const { data, error } = await supabase
+    .from("user_app_versions")
+    .select("email, version, last_seen");
+  if (error || !data) return;
+
+  const byEmail = new Map(
+    data.map((r) => [String(r.email || "").toLowerCase(), r]),
+  );
+
+  document.querySelectorAll(".member-card[data-member-email]").forEach((card) => {
+    const email = String(card.dataset.memberEmail || "").toLowerCase();
+    const rec = byEmail.get(email);
+    const cell = card.querySelector(".member-version-cell");
+    if (!cell) return;
+
+    if (rec?.version) {
+      cell.textContent = `${rec.version} · ${formatRelativeTime(rec.last_seen)}`;
+      cell.style.opacity = "1";
+    } else {
+      cell.textContent = "Not yet seen";
+      cell.style.opacity = "0.45";
+    }
+  });
+}
+
 async function startApp() {
   const savedThemeMode = getSavedThemeMode();
   applyThemeMode(savedThemeMode, appState);
@@ -2924,9 +2992,9 @@ async function startApp() {
   renderHeader();
   renderCurrentPage();
 
-  // Silently repair the push subscription in the background.
-  // Runs after render so it never blocks the UI.
+  // Background tasks — none of these block the UI.
   repairPushSubscriptionIfNeeded(user);
+  recordAppVersion(user);
 }
 
 async function repairPushSubscriptionIfNeeded(user) {
