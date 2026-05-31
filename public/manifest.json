@@ -32,7 +32,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    }
+    },
     {
       "src": "./notification-badge.png",
       "sizes": "96x96",
