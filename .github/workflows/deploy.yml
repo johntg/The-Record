@@ -4,12 +4,22 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -32,6 +42,16 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Bump version
+        run: |
+          BUMP="${{ github.event.inputs.version_bump || 'patch' }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          npm version $BUMP --no-git-tag-version
+          git add package.json
+          git commit -m "chore: bump $BUMP version to $(node -p 'require(\"./package.json\").version') [skip ci]"
+          git push
 
       - name: Build site
         run: npm run build:prod
