@@ -39,8 +39,8 @@ jobs:
           VITE_ADMIN_PW: ${{ secrets.VITE_ADMIN_PW }}
           VITE_CONCERN_EMAIL_URL: ${{ secrets.VITE_CONCERN_EMAIL_URL }}
           VITE_CONCERN_EMAIL_TOKEN: ${{ secrets.VITE_CONCERN_EMAIL_TOKEN }}
-          VITE_MEMBER_PROVISION_URL: ${{ secrets.VITE_MEMBER_PROVISION_URL }}
-          VITE_MEMBER_PROVISION_TOKEN: ${{ secrets.VITE_MEMBER_PROVISION_TOKEN }}
+          VITE_MEMBER_PROVISION_URL: ${{ secrets.VITE_STAGING_MEMBER_PROVISION_URL }}
+          VITE_MEMBER_PROVISION_TOKEN: ${{ secrets.VITE_STAGING_MEMBER_PROVISION_TOKEN }}
 
       - name: Deploy dist to staging repo
         uses: peaceiris/actions-gh-pages@v4
