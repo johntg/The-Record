@@ -42,8 +42,65 @@ import createPushSubscription from "./utils/notifications.js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Cookie-based storage adapter for Supabase auth.
+// On iOS PWAs, localStorage is cleared after ~7 days of inactivity.
+// First-party cookies with an explicit max-age survive that clearing.
+// Falls back to localStorage for values that exceed the 4 KB cookie limit.
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, rolling
+
+const cookieAuthStorage = {
+  getItem(key) {
+    const encodedKey = encodeURIComponent(key);
+    const match = document.cookie.match(
+      new RegExp("(?:^|;)\\s*" + encodedKey + "=([^;]*)"),
+    );
+    if (match) {
+      // Roll the expiry: every read resets the 7-day countdown
+      document.cookie = `${encodedKey}=${match[1]}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Strict`;
+      return decodeURIComponent(match[1]);
+    }
+    // Fallback: check localStorage for sessions written before this change
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key, value) {
+    const encodedKey = encodeURIComponent(key);
+    const encodedValue = encodeURIComponent(value);
+    if (encodedKey.length + encodedValue.length <= 3800) {
+      document.cookie = `${encodedKey}=${encodedValue}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Strict`;
+    }
+    // Always mirror to localStorage so non-iOS paths keep working
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      /* ignore */
+    }
+  },
+  removeItem(key) {
+    const encodedKey = encodeURIComponent(key);
+    document.cookie = `${encodedKey}=; max-age=0; path=/; SameSite=Strict`;
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
 const supabase =
-  supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+  supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          storage: cookieAuthStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+        },
+      })
+    : null;
 
 // Helper function to get table name based on current mode
 // Members table is shared; all others use prod_ or train_ prefix
@@ -2741,22 +2798,18 @@ async function startApp() {
     console.log("Auth state changed:", event);
   });
 
-  // const {
-  //   data: { user },
-  //   error: userError,
-  // } = await supabase.auth.getUser();
-
-  await supabase.auth.getSession();
   const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
-  if (userError && userError.name !== "AuthSessionMissingError") {
-    console.error("Auth user lookup failed:", userError);
+  if (sessionError && sessionError.name !== "AuthSessionMissingError") {
+    console.error("Auth session lookup failed:", sessionError);
     renderLogin();
     return;
   }
+
+  const user = session?.user ?? null;
 
   if (!user) {
     renderLogin();
@@ -2892,7 +2945,9 @@ async function sendWelcomeNotification(registration) {
     if (registration?.active) {
       console.log("[notification] Using service worker to show notification");
       await registration.showNotification(title, options);
-      console.log("[notification] Welcome notification sent via service worker");
+      console.log(
+        "[notification] Welcome notification sent via service worker",
+      );
       return;
     }
 
@@ -2900,12 +2955,14 @@ async function sendWelcomeNotification(registration) {
     if (Notification.permission === "granted") {
       console.log("[notification] Using Notification API directly");
       new Notification(title, options);
-      console.log("[notification] Welcome notification sent via Notification API");
+      console.log(
+        "[notification] Welcome notification sent via Notification API",
+      );
       return;
     }
 
     console.warn(
-      "[notification] Could not send notification - permission not granted or SW not ready"
+      "[notification] Could not send notification - permission not granted or SW not ready",
     );
   } catch (error) {
     console.error("[notification] Error sending welcome notification:", error);
