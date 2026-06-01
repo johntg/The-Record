@@ -638,7 +638,10 @@ function isAssignedToCurrentUser(row) {
 }
 
 function userHasAssignments() {
-  return appState.callings.some((row) => isAssignedToCurrentUser(row));
+  return appState.callings.some((row) => {
+    if (isShcRole() && !isCompletedValue(row?.sp_approved)) return false;
+    return isAssignedToCurrentUser(row);
+  });
 }
 
 function getVisibleCallings() {
