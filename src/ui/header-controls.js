@@ -151,7 +151,7 @@ export async function renderHeader({
 
     <div class='main-header-title'>
       <h1><span>The</span>Record</h1>
-      <h3 class="main-header-subtitle">STAGING</h3>
+      <h3 class="main-header-subtitle">${import.meta.env.VITE_SUBTITLE ?? "Christchurch Stake"}</h3>
     </div>
   </div>
 
