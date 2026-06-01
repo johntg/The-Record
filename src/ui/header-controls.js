@@ -160,7 +160,8 @@ export async function renderHeader({
       <button onclick="window.togglePage()">${pageToggleLabel}</button>
       ${
         showScopeToggle
-git          : ""
+          ? `<button onclick="window.toggleCallingScope()">${scopeLabel}</button>`
+          : ""
       }
       ${
         showAdminButton
