@@ -661,8 +661,12 @@ function getVisibleCallings() {
       return false;
     }
 
-    // If the user has assignments, default to showing only those assignments
-    if (hasAssignments && !appState.showAllCallingsForStake) {
+    // In "My Assignments" mode: SHC always filters; others filter only when they have assignments
+    const inMyAssignmentsMode = isShcRole()
+      ? !appState.showAllCallingsForStake
+      : hasAssignments && !appState.showAllCallingsForStake;
+
+    if (inMyAssignmentsMode) {
       return isAssignedToCurrentUser(row);
     }
 
