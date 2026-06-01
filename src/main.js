@@ -653,7 +653,7 @@ function getVisibleCallings() {
       return false;
     }
 
-    // For SHC role members, only show if sp_approved is TRUE
+    // For SHC role members, only show callings that are SP approved (i.e. "current")
     if (isShcRole() && !isCompletedValue(row?.sp_approved)) {
       return false;
     }

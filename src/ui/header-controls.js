@@ -82,21 +82,26 @@ export async function renderHeader({
 
   const hasNotificationSubscription = appState.hasPushSubscription ?? false;
 
-  const showScopeToggle = appState.callings?.some((row) => {
-    const currentUser = String(appState.currentMember?.name || "")
-      .toLowerCase()
-      .trim();
+  const isShcMember =
+    String(appState.currentMember?.role || "").toLowerCase().trim() === "shc";
 
-    if (!currentUser) return false;
+  const showScopeToggle =
+    isShcMember ||
+    appState.callings?.some((row) => {
+      const currentUser = String(appState.currentMember?.name || "")
+        .toLowerCase()
+        .trim();
 
-    return ["sus_assigned", "interview_by", "set_apart_by"].some((field) => {
-      return (
-        String(row?.[field] || "")
-          .toLowerCase()
-          .trim() === currentUser
-      );
+      if (!currentUser) return false;
+
+      return ["sus_assigned", "interview_by", "set_apart_by"].some((field) => {
+        return (
+          String(row?.[field] || "")
+            .toLowerCase()
+            .trim() === currentUser
+        );
+      });
     });
-  });
 
   const showAdminButton = isSuperAdminUser
     ? isSuperAdminUser() === true
