@@ -27,3 +27,6 @@ dist-ssr
 *.sw?
 
 resources
+
+# Generated at build time — not committed
+public/build-version.json

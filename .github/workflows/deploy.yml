@@ -49,9 +49,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           npm version $BUMP --no-git-tag-version
-          node scripts/write-build-version.mjs
           NEW_VERSION=$(node -p 'require("./package.json").version')
-          git add package.json public/build-version.json index.html
+          git add package.json
           git commit -m "chore: bump $BUMP version to $NEW_VERSION [skip ci]"
           git push
 
