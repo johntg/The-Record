@@ -61,7 +61,8 @@ export function syncFabVisibility({
     return;
   }
 
-  const shouldShow = !hideFab && hasAuthenticatedShell && hasAdminPasswordAccess();
+  const shouldShow =
+    !hideFab && hasAuthenticatedShell && hasAdminPasswordAccess();
   fab.style.display = shouldShow ? "flex" : "none";
   fab.style.visibility = shouldShow ? "visible" : "hidden";
 
@@ -83,7 +84,9 @@ export async function renderHeader({
   const hasNotificationSubscription = appState.hasPushSubscription ?? false;
 
   const isShcMember =
-    String(appState.currentMember?.role || "").toLowerCase().trim() === "shc";
+    String(appState.currentMember?.role || "")
+      .toLowerCase()
+      .trim() === "shc";
 
   const showScopeToggle =
     isShcMember ||
@@ -148,7 +151,7 @@ export async function renderHeader({
 
     <div class='main-header-title'>
       <h1><span>The</span>Record</h1>
-      <h3 class="main-header-subtitle">Christchurch Stake</h3>
+      <h3 class="main-header-subtitle">STAGING</h3>
     </div>
   </div>
 
