@@ -175,7 +175,7 @@ function getTableName(baseTable) {
   return `${prefix}_${baseTable}`;
 }
 
-console.log(`[App] Initializing in single database mode`);
+console.log(`[App] Initializing — Supabase: ${supabaseUrl}`);
 
 // Apps Script email configuration (shared across production and training)
 const concernEmailUrl = import.meta.env.VITE_CONCERN_EMAIL_URL || "";

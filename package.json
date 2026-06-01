@@ -7,6 +7,7 @@
     "build:meta": "node scripts/write-build-version.mjs",
     "prebuild": "npm run build:meta",
     "dev": "vite --host",
+    "dev:staging": "vite --host --mode staging",
     "build": "vite build",
     "build:staging": "vite build --mode staging",
     "build:prod": "vite build --mode production",
