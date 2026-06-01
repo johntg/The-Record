@@ -54,6 +54,9 @@ jobs:
           git commit -m "chore: bump $BUMP version to $NEW_VERSION [skip ci]"
           git push
 
+      - name: Generate build metadata
+        run: npm run build:meta
+
       - name: Build site
         run: npm run build:prod
         env:
