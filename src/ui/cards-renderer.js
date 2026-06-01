@@ -329,7 +329,7 @@ export function createCardsRenderer({
       .join("")}
   </select>
 </div>
-            <div style="display: grid; grid-template-columns: ${isHcDetailsExpanded && hasAdminPasswordAccess() ? "1fr" : "1fr 1fr"}; gap: 10px; margin: 14px 0;">
+            <div style="display: grid; grid-template-columns: ${hasAdminPasswordAccess() && !isHcDetailsExpanded ? "1fr 1fr" : "1fr"}; gap: 10px; margin: 14px 0;">
               <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <input type="checkbox" ${row.sp_approved ? "checked" : ""} onchange="window.updateField('${row.id}', 'sp_approved', this.checked)">
