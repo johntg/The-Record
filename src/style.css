@@ -2192,7 +2192,8 @@ select {
 }
 
 .btn-secondary:hover {
-  background: #e0e0e0;
+  background: var(--productionClr);
+  color: white;
 }
 
 .assign-off {

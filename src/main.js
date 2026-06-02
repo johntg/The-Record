@@ -2543,6 +2543,14 @@ function ensureConcernNoticeModal() {
   return modal;
 }
 
+window.confirmLogout = async () => {
+  const confirmed = await showModalConfirm(
+    "You will need to obtain another six-digit code to log in again.",
+    { title: "Log out?" }
+  );
+  if (confirmed) window.logout();
+};
+
 window.logout = async () => {
   // Remove this device's DB session row and cookie before signing out
   await deleteDbSession();

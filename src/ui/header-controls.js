@@ -174,7 +174,7 @@ export async function renderHeader({
           : ""
       }
       <button onclick="window.openInbox()">Messages</button>
-      <button onclick="window.logout()">Logout</button>
+      <button onclick="window.confirmLogout()">Logout</button>
       
     </div>
   </div>
