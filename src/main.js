@@ -3075,16 +3075,17 @@ async function sendWelcomeNotification(registration) {
       permissionStatus: Notification.permission,
     });
 
-    // Wait a moment for the service worker to be fully ready
-    if (registration && !registration.active) {
-      console.log("[notification] Service worker not yet active, waiting...");
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    // Wait for the service worker to be active before showing the notification
+    let activeRegistration = registration;
+    if (!registration?.active) {
+      console.log("[notification] Waiting for service worker to activate...");
+      activeRegistration = await navigator.serviceWorker.ready;
     }
 
     // Try service worker first (more reliable for push notifications)
-    if (registration?.active) {
+    if (activeRegistration?.active) {
       console.log("[notification] Using service worker to show notification");
-      await registration.showNotification(title, options);
+      await activeRegistration.showNotification(title, options);
       console.log(
         "[notification] Welcome notification sent via service worker",
       );
