@@ -1921,6 +1921,7 @@ window.sendPushNotifications = async () => {
   let failCount = 0;
   let lastError = "";
   const deliveredTo = []; // track successfully delivered recipient emails
+  const failedEmails = [];
 
   for (const i of selectedIndices) {
     const sub = notifSubscribersCache[i];
@@ -1954,11 +1955,13 @@ window.sendPushNotifications = async () => {
       } else {
         failCount++;
         lastError = result?.error ?? `HTTP ${res.status}`;
+        if (sub.user_email) failedEmails.push(sub.user_email);
         console.error("send-notification error:", lastError, result);
       }
     } catch (err) {
       failCount++;
       lastError = err.message;
+      if (sub.user_email) failedEmails.push(sub.user_email);
       console.error("send-notification fetch error:", err);
     }
   }
@@ -1984,7 +1987,10 @@ window.sendPushNotifications = async () => {
     parts.push(
       `${staleCount} expired (removed — recipient needs to re-subscribe)`,
     );
-  if (failCount) parts.push(`${failCount} failed — ${lastError}`);
+  if (failCount) {
+    const who = failedEmails.length ? ` (${failedEmails.join(", ")})` : "";
+    parts.push(`${failCount} failed${who} — ${lastError}`);
+  }
 
   const style =
     failCount > 0 || staleCount > 0
