@@ -21,7 +21,7 @@ export function showAdminHubModal() {
         <button type="button" class="btn btn-primary admin-hub-btn" id="admin-hub-members-btn">
           Member Maintenance
         </button>
-        <button type="button" class="btn btn-secondary admin-hub-btn" id="admin-hub-notifications-btn">
+        <button type="button" class="btn btn-tertiary admin-hub-btn" id="admin-hub-notifications-btn">
           Notifications
         </button>
       </div>
