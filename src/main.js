@@ -1826,6 +1826,7 @@ window.updateField = async (id, field, value) =>
 
 window.toggleCallingScope = () => {
   appState.showAllCallingsForStake = !appState.showAllCallingsForStake;
+  appState.currentPage = "callings";
   renderHeader();
   renderCurrentPage();
 };
