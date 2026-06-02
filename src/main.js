@@ -1170,7 +1170,7 @@ function renderNotificationsPage() {
         </div>
         <div class="btn-group">
           <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">Send</button>
-          <button type="button" class="btn btn-secondary" onclick="window.toggleAllNotifRecipients()">Select All</button>
+          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">Select All</button>
         </div>
         <div id="notif-status" class="notif-status hidden"></div>
       </article>
@@ -2876,7 +2876,9 @@ async function recordAppVersion(user) {
 // Formats a timestamp as a short relative string: "just now", "4h ago", "3d ago".
 function formatRelativeTime(isoString) {
   if (!isoString) return "never";
-  const mins = Math.floor((Date.now() - new Date(isoString).getTime()) / 60_000);
+  const mins = Math.floor(
+    (Date.now() - new Date(isoString).getTime()) / 60_000,
+  );
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -2897,20 +2899,22 @@ async function fetchAndRenderMemberVersions() {
     data.map((r) => [String(r.email || "").toLowerCase(), r]),
   );
 
-  document.querySelectorAll(".member-card[data-member-email]").forEach((card) => {
-    const email = String(card.dataset.memberEmail || "").toLowerCase();
-    const rec = byEmail.get(email);
-    const cell = card.querySelector(".member-version-cell");
-    if (!cell) return;
+  document
+    .querySelectorAll(".member-card[data-member-email]")
+    .forEach((card) => {
+      const email = String(card.dataset.memberEmail || "").toLowerCase();
+      const rec = byEmail.get(email);
+      const cell = card.querySelector(".member-version-cell");
+      if (!cell) return;
 
-    if (rec?.version) {
-      cell.textContent = `${rec.version} · ${formatRelativeTime(rec.last_seen)}`;
-      cell.style.opacity = "1";
-    } else {
-      cell.textContent = "Not yet seen";
-      cell.style.opacity = "0.45";
-    }
-  });
+      if (rec?.version) {
+        cell.textContent = `${rec.version} · ${formatRelativeTime(rec.last_seen)}`;
+        cell.style.opacity = "1";
+      } else {
+        cell.textContent = "Not yet seen";
+        cell.style.opacity = "0.45";
+      }
+    });
 }
 
 async function startApp() {
