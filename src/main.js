@@ -201,6 +201,7 @@ const appState = {
   dbMode: localStorage.getItem("dbMode") || "production",
   currentReportType: "sustain-setapart-release",
   reportOutput: "",
+  archiveCurrentPage: 0,
   currentUser: null,
   currentMember: null,
   currentRole: null,
@@ -978,10 +979,12 @@ function renderAdminPage() {
   if (!adminPage) return;
 
   const inboxPage = document.getElementById("inbox-page");
+  const archivePageEl2 = document.getElementById("archive-page");
   if (list) list.classList.add("hidden");
   if (reportsPage) reportsPage.classList.add("hidden");
   if (notificationsPage) notificationsPage.classList.add("hidden");
   if (inboxPage) inboxPage.classList.add("hidden");
+  if (archivePageEl2) archivePageEl2.classList.add("hidden");
 
   adminPage.classList.remove("hidden");
 
@@ -1231,6 +1234,8 @@ function renderInboxPage() {
   if (reportsPage) reportsPage.classList.add("hidden");
   if (adminPage) adminPage.classList.add("hidden");
   if (notificationsPage) notificationsPage.classList.add("hidden");
+  const archivePageEl4 = document.getElementById("archive-page");
+  if (archivePageEl4) archivePageEl4.classList.add("hidden");
   inboxPage.classList.remove("hidden");
 
   inboxPage.innerHTML = `
@@ -1359,6 +1364,8 @@ function renderReportsPage() {
   if (notificationsPage) notificationsPage.classList.add("hidden");
   const inboxPage2 = document.getElementById("inbox-page");
   if (inboxPage2) inboxPage2.classList.add("hidden");
+  const archivePageEl3 = document.getElementById("archive-page");
+  if (archivePageEl3) archivePageEl3.classList.add("hidden");
 
   reportsPage.classList.remove("hidden");
 
@@ -1417,6 +1424,97 @@ function renderReportsPage() {
   `;
 }
 
+function renderArchivePage() {
+  const list = document.getElementById("data-list");
+  const reportsPage = document.getElementById("reports-page");
+  const adminPage = document.getElementById("admin-page");
+  const notificationsPage = document.getElementById("notifications-page");
+  const inboxPage = document.getElementById("inbox-page");
+  const archivePage = document.getElementById("archive-page");
+  if (!archivePage) return;
+
+  if (list) list.classList.add("hidden");
+  if (reportsPage) reportsPage.classList.add("hidden");
+  if (adminPage) adminPage.classList.add("hidden");
+  if (notificationsPage) notificationsPage.classList.add("hidden");
+  if (inboxPage) inboxPage.classList.add("hidden");
+  archivePage.classList.remove("hidden");
+
+  const PAGE_SIZE = 10;
+  const items = appState.archivedItems || [];
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const currentPage = Math.min(appState.archiveCurrentPage, totalPages - 1);
+  appState.archiveCurrentPage = currentPage;
+
+  const pageItems = items.slice(
+    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE + PAGE_SIZE,
+  );
+
+  const formatDate = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const rows = pageItems.length
+    ? pageItems
+        .map(
+          (item) => `
+        <tr>
+          <td>${escapeHtml(item.name || "—")}</td>
+          <td>${escapeHtml(item.position || "—")}</td>
+          <td>${escapeHtml(item.unit || "—")}</td>
+          <td>${escapeHtml(item.status || "—")}</td>
+          <td>${formatDate(item.created_at)}</td>
+        </tr>`,
+        )
+        .join("")
+    : `<tr><td colspan="5" class="archive-empty">No archived items found.</td></tr>`;
+
+  archivePage.innerHTML = `
+    <section class="archive-header">
+      <h2>Archive</h2>
+      <p>Completed and archived callings</p>
+    </section>
+
+    <section class="archive-content">
+      <table class="archive-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Unit</th>
+            <th>Status</th>
+            <th>Archived</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="archive-pagination">
+      <button
+        class="btn btn-secondary"
+        onclick="window.archivePagePrev()"
+        ${currentPage === 0 ? "disabled" : ""}
+      >Previous</button>
+      <span class="archive-page-indicator">Page ${currentPage + 1} of ${totalPages}</span>
+      <button
+        class="btn btn-secondary"
+        onclick="window.archivePageNext()"
+        ${currentPage >= totalPages - 1 ? "disabled" : ""}
+      >Next</button>
+    </section>
+  `;
+}
+
 function renderCurrentPage() {
   const isAdmin = appState.currentPage === "admin";
   const isNotifications = appState.currentPage === "notifications";
@@ -1450,6 +1548,16 @@ function renderCurrentPage() {
 
   if (appState.currentPage === "reports") {
     renderReportsPage();
+    return;
+  }
+
+  if (appState.currentPage === "archive") {
+    if (!isAdminRole()) {
+      appState.currentPage = "callings";
+      renderCards();
+      return;
+    }
+    renderArchivePage();
     return;
   }
 
@@ -1719,10 +1827,12 @@ function renderCards() {
   const list = document.getElementById("data-list");
 
   const inboxPage4 = document.getElementById("inbox-page");
+  const archivePageEl = document.getElementById("archive-page");
   if (adminPage) adminPage.classList.add("hidden");
   if (reportsPage) reportsPage.classList.add("hidden");
   if (notificationsPage) notificationsPage.classList.add("hidden");
   if (inboxPage4) inboxPage4.classList.add("hidden");
+  if (archivePageEl) archivePageEl.classList.add("hidden");
   if (list) list.classList.remove("hidden");
 
   cardsRenderer.renderCards();
@@ -1873,6 +1983,32 @@ window.openInbox = () => {
   appState.currentPage = "inbox";
   renderHeader();
   renderCurrentPage();
+};
+
+window.openArchivePage = () => {
+  if (!isAdminRole()) return;
+  appState.currentPage = "archive";
+  appState.archiveCurrentPage = 0;
+  renderHeader();
+  renderCurrentPage();
+};
+
+window.archivePagePrev = () => {
+  if (appState.archiveCurrentPage > 0) {
+    appState.archiveCurrentPage -= 1;
+    renderArchivePage();
+  }
+};
+
+window.archivePageNext = () => {
+  const totalPages = Math.max(
+    1,
+    Math.ceil((appState.archivedItems || []).length / 10),
+  );
+  if (appState.archiveCurrentPage < totalPages - 1) {
+    appState.archiveCurrentPage += 1;
+    renderArchivePage();
+  }
 };
 
 window.sendPushNotifications = async () => {
@@ -2630,6 +2766,7 @@ function renderHeader() {
   renderHeaderUi({
     appState,
     isSuperAdminUser: isSuperAdmin,
+    isAdminRoleUser: isAdminRole,
     ensureCreateCallingUi,
   });
 

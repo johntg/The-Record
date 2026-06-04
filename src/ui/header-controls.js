@@ -72,6 +72,7 @@ export function syncFabVisibility({
 export async function renderHeader({
   appState,
   isSuperAdminUser,
+  isAdminRoleUser,
   ensureCreateCallingUi,
   documentRef = document,
 }) {
@@ -109,6 +110,7 @@ export async function renderHeader({
   const showAdminButton = isSuperAdminUser
     ? isSuperAdminUser() === true
     : false;
+  const showArchiveButton = isAdminRoleUser ? isAdminRoleUser() === true : false;
   const scopeLabel = appState.showAllCallingsForStake
     ? "My Assignments"
     : "All Callings";
@@ -166,6 +168,11 @@ export async function renderHeader({
       ${
         showAdminButton
           ? `<button onclick="window.showAdminModal()">Admin</button>`
+          : ""
+      }
+      ${
+        showArchiveButton
+          ? `<button onclick="window.openArchivePage()">Archive</button>`
           : ""
       }
       ${
@@ -245,6 +252,13 @@ export async function renderHeader({
     inbox.id = "inbox-page";
     inbox.className = "admin-page hidden";
     app.appendChild(inbox);
+  }
+
+  if (!documentRef.getElementById("archive-page")) {
+    const archive = documentRef.createElement("div");
+    archive.id = "archive-page";
+    archive.className = "archive-page hidden";
+    app.appendChild(archive);
   }
 
   const refreshIcon = documentRef.getElementById("refreshicon");
