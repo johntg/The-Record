@@ -24,6 +24,9 @@ export function showAdminHubModal() {
         <button type="button" class="btn btn-tertiary admin-hub-btn" id="admin-hub-notifications-btn">
           Notifications
         </button>
+        <button type="button" class="btn btn-tertiary admin-hub-btn" id="admin-hub-archive-btn">
+          Archive
+        </button>
       </div>
     </section>
   `;
@@ -45,5 +48,10 @@ export function showAdminHubModal() {
   overlay.querySelector("#admin-hub-notifications-btn").onclick = () => {
     close();
     window.openNotificationsPage?.();
+  };
+
+  overlay.querySelector("#admin-hub-archive-btn").onclick = () => {
+    close();
+    window.openArchivePage?.();
   };
 }

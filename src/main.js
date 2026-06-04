@@ -2766,7 +2766,6 @@ function renderHeader() {
   renderHeaderUi({
     appState,
     isSuperAdminUser: isSuperAdmin,
-    isAdminRoleUser: isAdminRole,
     ensureCreateCallingUi,
   });
 
