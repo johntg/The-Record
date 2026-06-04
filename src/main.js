@@ -1456,13 +1456,12 @@ function renderArchivePage() {
   );
 
   const formatDate = (iso) => {
-    if (!iso) return "—";
+    if (!iso) return "";
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
   };
 
   const rows = pageItems.length
@@ -1471,16 +1470,16 @@ function renderArchivePage() {
           const typeClass = String(item.type || "").toLowerCase().includes("release")
             ? "archive-row-release"
             : "archive-row-calling";
+          const dateStr = formatDate(item.created_at);
           return `
         <tr>
           <td class="${typeClass}">${escapeHtml(item.name || "—")}</td>
           <td>${escapeHtml(item.position || "—")}</td>
-          <td>${escapeHtml(item.status || "—")}</td>
-          <td>${formatDate(item.created_at)}</td>
+          <td>${escapeHtml(item.status || "—")}${dateStr ? `<br><span class="archive-status-date">${dateStr}</span>` : ""}</td>
         </tr>`;
         })
         .join("")
-    : `<tr><td colspan="4" class="archive-empty">No archived items found.</td></tr>`;
+    : `<tr><td colspan="3" class="archive-empty">No archived items found.</td></tr>`;
 
   archivePage.innerHTML = `
     <section class="archive-header">
@@ -1495,7 +1494,6 @@ function renderArchivePage() {
             <th>Name</th>
             <th>Position</th>
             <th>Status</th>
-            <th>Archived</th>
           </tr>
         </thead>
         <tbody>

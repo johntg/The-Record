@@ -2497,6 +2497,13 @@ body.dark-mode .notif-status-error {
   color: var(--text-muted);
 }
 
+.archive-status-date {
+  display: block;
+  font-size: 0.75em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
 .archive-row-calling {
   border-left: 4px solid #3a7fd4;
 }
