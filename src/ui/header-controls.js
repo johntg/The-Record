@@ -247,6 +247,13 @@ export async function renderHeader({
     app.appendChild(inbox);
   }
 
+  if (!documentRef.getElementById("archive-page")) {
+    const archive = documentRef.createElement("div");
+    archive.id = "archive-page";
+    archive.className = "archive-page hidden";
+    app.appendChild(archive);
+  }
+
   const refreshIcon = documentRef.getElementById("refreshicon");
 
   refreshIcon.addEventListener("click", async () => {
