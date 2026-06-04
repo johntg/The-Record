@@ -1463,18 +1463,20 @@ function renderArchivePage() {
 
   const rows = pageItems.length
     ? pageItems
-        .map(
-          (item) => `
+        .map((item) => {
+          const typeClass = String(item.type || "").toLowerCase().includes("release")
+            ? "archive-row-release"
+            : "archive-row-calling";
+          return `
         <tr>
-          <td>${escapeHtml(item.name || "—")}</td>
+          <td class="${typeClass}">${escapeHtml(item.name || "—")}</td>
           <td>${escapeHtml(item.position || "—")}</td>
-          <td>${escapeHtml(item.unit || "—")}</td>
           <td>${escapeHtml(item.status || "—")}</td>
           <td>${formatDate(item.created_at)}</td>
-        </tr>`,
-        )
+        </tr>`;
+        })
         .join("")
-    : `<tr><td colspan="5" class="archive-empty">No archived items found.</td></tr>`;
+    : `<tr><td colspan="4" class="archive-empty">No archived items found.</td></tr>`;
 
   archivePage.innerHTML = `
     <section class="archive-header">
@@ -1488,7 +1490,6 @@ function renderArchivePage() {
           <tr>
             <th>Name</th>
             <th>Position</th>
-            <th>Unit</th>
             <th>Status</th>
             <th>Archived</th>
           </tr>

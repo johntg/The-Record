@@ -2497,6 +2497,14 @@ body.dark-mode .notif-status-error {
   color: var(--text-muted);
 }
 
+.archive-row-calling {
+  border-left: 4px solid #3a7fd4;
+}
+
+.archive-row-release {
+  border-left: 4px solid #e07b39;
+}
+
 .archive-pagination {
   display: flex;
   align-items: center;
