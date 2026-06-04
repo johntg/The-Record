@@ -1,4 +1,4 @@
-export function showAdminHubModal() {
+export function showAdminHubModal({ showMemberMaintenance = false } = {}) {
   const existing = document.getElementById("admin-hub-modal");
   if (existing) existing.remove();
 
@@ -18,9 +18,9 @@ export function showAdminHubModal() {
         </button>
       </div>
       <div class="admin-hub-body">
-        <button type="button" class="btn btn-primary admin-hub-btn" id="admin-hub-members-btn">
+        ${showMemberMaintenance ? `<button type="button" class="btn btn-primary admin-hub-btn" id="admin-hub-members-btn">
           Member Maintenance
-        </button>
+        </button>` : ""}
         <button type="button" class="btn btn-tertiary admin-hub-btn" id="admin-hub-notifications-btn">
           Notifications
         </button>
@@ -40,10 +40,10 @@ export function showAdminHubModal() {
     if (e.target === overlay) close();
   });
 
-  overlay.querySelector("#admin-hub-members-btn").onclick = () => {
+  overlay.querySelector("#admin-hub-members-btn")?.addEventListener("click", () => {
     close();
     window.openMemberMaintenancePage?.();
-  };
+  });
 
   overlay.querySelector("#admin-hub-notifications-btn").onclick = () => {
     close();

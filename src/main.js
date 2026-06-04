@@ -262,6 +262,10 @@ function isSuperAdmin() {
   return appState.currentMember?.super === true;
 }
 
+function isAdminAccess() {
+  return isAdminRole() || isSuperAdmin();
+}
+
 function isAuthenticatedMember() {
   return !!appState.currentUser && !!appState.currentMember;
 }
@@ -1952,7 +1956,7 @@ window.togglePage = () => {
 };
 
 window.toggleAdminPage = () => {
-  if (!isSuperAdmin()) {
+  if (!isAdminAccess()) {
     return;
   }
   appState.currentPage =
@@ -1962,8 +1966,8 @@ window.toggleAdminPage = () => {
 };
 
 window.showAdminModal = () => {
-  if (!isSuperAdmin()) return;
-  showAdminHubModal();
+  if (!isAdminAccess()) return;
+  showAdminHubModal({ showMemberMaintenance: isSuperAdmin() });
 };
 
 window.openMemberMaintenancePage = () => {
@@ -1974,7 +1978,7 @@ window.openMemberMaintenancePage = () => {
 };
 
 window.openNotificationsPage = () => {
-  if (!isSuperAdmin()) return;
+  if (!isAdminAccess()) return;
   appState.currentPage = "notifications";
   renderHeader();
   renderCurrentPage();
@@ -2766,7 +2770,7 @@ window.setThemeMode = (mode) => {
 function renderHeader() {
   renderHeaderUi({
     appState,
-    isSuperAdminUser: isSuperAdmin,
+    isSuperAdminUser: isAdminAccess,
     ensureCreateCallingUi,
   });
 
