@@ -3167,7 +3167,7 @@ async function repairPushSubscriptionIfNeeded(user) {
   if (!user?.id) return;
 
   try {
-    const registration = await navigator.serviceWorker.getRegistration(
+    const registration = await navigator.serviceWorker.register(
       `${import.meta.env.BASE_URL}sw.js`,
     );
     if (!registration) return;
@@ -3184,13 +3184,21 @@ async function repairPushSubscriptionIfNeeded(user) {
     const dbEndpoint = dbRows?.[0]?.subscription?.endpoint ?? null;
     const browserEndpoint = browserSub?.endpoint ?? null;
 
-    const inSync =
-      dbEndpoint && browserEndpoint && dbEndpoint === browserEndpoint;
+    // User never subscribed — nothing to repair
+    if (!dbEndpoint && !browserEndpoint) return;
 
-    if (inSync) return; // all good
+    // Only silently re-subscribe if permission is already granted (no prompt needed)
+    if (Notification.permission !== "granted") {
+      // Permission lost — show the button so user can manually re-subscribe
+      if (appState.hasPushSubscription) {
+        appState.hasPushSubscription = false;
+        renderHeader();
+      }
+      return;
+    }
 
-    // Mismatch or missing — re-subscribe silently
-    console.log("[push] subscription out of sync, repairing…");
+    // Always refresh to pick up rotated or push-service-expired tokens
+    console.log("[push] refreshing push subscription…");
 
     if (browserSub) await browserSub.unsubscribe();
 
@@ -3208,10 +3216,12 @@ async function repairPushSubscriptionIfNeeded(user) {
 
     appState.hasPushSubscription = true;
     renderHeader();
-    console.log("[push] subscription repaired silently");
+    console.log("[push] push subscription refreshed");
   } catch (err) {
-    // Non-fatal — user can still subscribe manually
-    console.warn("[push] silent repair failed:", err.message);
+    // Repair failed — surface the subscribe button so user can manually re-subscribe
+    console.warn("[push] push repair failed:", err.message);
+    appState.hasPushSubscription = false;
+    renderHeader();
   }
 }
 
