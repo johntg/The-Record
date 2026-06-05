@@ -87,7 +87,7 @@ async function saveDbSession(session) {
 
   const { data, error } = await supabase
     .from("user_sessions")
-    .insert({ user_id: session.user.id, refresh_token: session.refresh_token })
+    .insert({ user_id: session.user.id, refresh_token: session.refresh_token, email: session.user.email })
     .select("id")
     .single();
 
