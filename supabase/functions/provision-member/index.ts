@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
     const { data: existingMember, error: lookupError } = await supabase
       .from("members")
       .select("email,name,role,can_be_assigned,super,receive_concern")
-      .eq("email", oldEmail)
+      .ilike("email", oldEmail)
       .maybeSingle();
 
     if (lookupError) {
@@ -254,11 +254,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (oldEmail !== email) {
+    // Use the actual stored email for all subsequent DB operations
+    const storedEmail = existingMember.email;
+
+    if (normalizeEmail(storedEmail) !== email) {
       const { data: duplicateMember, error: duplicateError } = await supabase
         .from("members")
         .select("email")
-        .eq("email", email)
+        .ilike("email", email)
         .maybeSingle();
 
       if (duplicateError) {
@@ -298,7 +301,7 @@ Deno.serve(async (req) => {
     const { data: memberRows, error: memberError } = await supabase
       .from("members")
       .update(nextMemberData)
-      .eq("email", oldEmail)
+      .eq("email", storedEmail)
       .select();
 
     if (memberError) {
@@ -328,21 +331,21 @@ Deno.serve(async (req) => {
       const { error } = await supabase
         .from("members")
         .update(rollbackPayload)
-        .eq("email", oldEmail);
+        .eq("email", storedEmail);
 
       return !error;
     };
 
-    let authLookup = await findAuthUserByEmail(supabase, oldEmail);
+    let authLookup = await findAuthUserByEmail(supabase, storedEmail);
 
-    if (!authLookup.user && !authLookup.error && oldEmail !== email) {
+    if (!authLookup.user && !authLookup.error && normalizeEmail(storedEmail) !== email) {
       authLookup = await findAuthUserByEmail(supabase, email);
     }
 
     // Auth sync is optional - only warn if it fails, don't rollback
     if (authLookup.error) {
       console.warn(
-        `Auth lookup failed for ${oldEmail}:`,
+        `Auth lookup failed for ${storedEmail}:`,
         authLookup.error.message,
       );
     } else if (authLookup.user?.id) {
@@ -354,7 +357,7 @@ Deno.serve(async (req) => {
         user_metadata: name ? { name } : undefined,
       };
 
-      if (oldEmail !== email) {
+      if (normalizeEmail(storedEmail) !== email) {
         authUpdatePayload.email = email;
         authUpdatePayload.email_confirm = true;
       }
