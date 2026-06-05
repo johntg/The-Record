@@ -2162,7 +2162,7 @@ window.selectReportType = (value) => {
 window.generateCurrentReport = () => {
   appState.reportOutput = generateReport(
     appState.currentReportType,
-    getVisibleCallings(),
+    appState.callings,
     {
       getHighCouncilVoteSummary,
       hcVotingTableAvailable: appState.hcVotingTableAvailable,
@@ -2235,7 +2235,7 @@ window.refreshData = async () => {
     if (appState.currentPage === "reports" && appState.currentReportType) {
       appState.reportOutput = generateReport(
         appState.currentReportType,
-        getVisibleCallings(),
+        appState.callings,
         {
           getHighCouncilVoteSummary,
           hcVotingTableAvailable: appState.hcVotingTableAvailable,
