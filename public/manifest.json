@@ -1,6 +1,6 @@
 {
-  "name": "STAGING: The Record",
-  "short_name": "STAGING: The Record",
+  "name": "The Record",
+  "short_name": "The Record",
   "description": "Track Church callings and releases.",
   "start_url": "/therecord-staging/",
   "scope": "/therecord-staging/",
