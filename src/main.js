@@ -2556,13 +2556,18 @@ function renderLogin() {
     userEmail = normalizeEmail(document.getElementById("email-input").value);
     if (!userEmail) return;
 
-    const isKnownMember = appState.members.some(
-      (member) => normalizeEmail(member?.email) === userEmail,
-    );
+    message.textContent = "Checking registration...";
+    message.classList.remove("error");
 
-    if (!isKnownMember) {
-      const dbModeLabel = (appState.dbMode || "production").toUpperCase();
-      message.textContent = `That email is not authorized for the ${dbModeLabel} database. Please use your member email or check that your account exists in this database.`;
+    const { data: memberRow, error: memberLookupError } = await supabase
+      .from("members")
+      .select("email")
+      .eq("email", userEmail)
+      .maybeSingle();
+
+    if (!memberLookupError && !memberRow) {
+      message.textContent =
+        "This email address has not been registered. Please contact an administrator.";
       message.classList.add("error");
       return;
     }
