@@ -1177,7 +1177,7 @@ function renderNotificationsPage() {
         </div>
         <div class="btn-group">
           <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">Send</button>
-          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">Select All</button>
+          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">Deselect All</button>
         </div>
         <div id="notif-status" class="notif-status hidden"></div>
       </article>
