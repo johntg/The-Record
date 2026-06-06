@@ -342,13 +342,21 @@ Deno.serve(async (req) => {
       authLookup = await findAuthUserByEmail(supabase, email);
     }
 
-    // Auth sync is optional - only warn if it fails, don't rollback
     if (authLookup.error) {
-      console.warn(
-        `Auth lookup failed for ${storedEmail}:`,
-        authLookup.error.message,
+      await rollbackMember();
+      return new Response(
+        JSON.stringify({
+          error: `Auth lookup failed: ${authLookup.error.message}`,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
-    } else if (authLookup.user?.id) {
+    }
+
+    if (authLookup.user?.id) {
+      const emailChanging = normalizeEmail(storedEmail) !== email;
       const authUpdatePayload: {
         email?: string;
         email_confirm?: boolean;
@@ -357,7 +365,7 @@ Deno.serve(async (req) => {
         user_metadata: name ? { name } : undefined,
       };
 
-      if (normalizeEmail(storedEmail) !== email) {
+      if (emailChanging) {
         authUpdatePayload.email = email;
         authUpdatePayload.email_confirm = true;
       }
@@ -369,9 +377,15 @@ Deno.serve(async (req) => {
         );
 
       if (authUpdateError) {
-        console.warn(
-          `Auth update failed for ${oldEmail}:`,
-          authUpdateError.message,
+        await rollbackMember();
+        return new Response(
+          JSON.stringify({
+            error: `Auth update failed: ${authUpdateError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
     }
