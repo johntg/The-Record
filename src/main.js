@@ -2093,6 +2093,7 @@ window.sendPushNotifications = async () => {
   let lastError = "";
   const deliveredTo = []; // track successfully delivered recipient emails
   const failedEmails = [];
+  const staleEmails = [];
 
   for (const i of selectedIndices) {
     const sub = notifSubscribersCache[i];
@@ -2121,6 +2122,7 @@ window.sendPushNotifications = async () => {
       } else if (result?.error?.includes("410")) {
         // Subscription expired — remove it from the database silently
         staleCount++;
+        if (sub.user_email) staleEmails.push(sub.user_email);
         supabase.from("push_subscriptions").delete().eq("id", sub.id).then();
         console.warn("Removed stale subscription:", sub.user_email);
       } else {
@@ -2154,10 +2156,10 @@ window.sendPushNotifications = async () => {
 
   const parts = [];
   if (successCount) parts.push(`${successCount} sent`);
-  if (staleCount)
-    parts.push(
-      `${staleCount} expired (removed — recipient needs to re-subscribe)`,
-    );
+  if (staleCount) {
+    const who = staleEmails.length ? ` (${staleEmails.join(", ")})` : "";
+    parts.push(`${staleCount} expired${who} — recipient needs to re-subscribe`);
+  }
   if (failCount) {
     const who = failedEmails.length ? ` (${failedEmails.join(", ")})` : "";
     parts.push(`${failCount} failed${who} — ${lastError}`);
