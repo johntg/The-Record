@@ -1272,6 +1272,46 @@ body.modal-open {
   background: #ffe958;
 }
 
+.scroll-to-top-btn {
+  position: fixed;
+  bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  left: 25px;
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(30, 30, 30, 0.6);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  z-index: 1100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  pointer-events: none;
+}
+
+.scroll-to-top-btn.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.scroll-to-top-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+body.dark-mode .scroll-to-top-btn {
+  background: rgba(60, 60, 60, 0.75);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
 .fab {
   position: fixed;
   bottom: calc(40px + env(safe-area-inset-bottom, 0px));

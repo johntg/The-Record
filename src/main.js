@@ -19,6 +19,7 @@ import {
 import { createCardsRenderer } from "./ui/cards-renderer.js";
 import { showAdminHubModal } from "./ui/admin-hub-modal.js";
 import { createCallingsActions } from "./actions/callings-actions.js";
+import { initScrollToTop } from "./ui/scroll-to-top.js";
 import { generateReport } from "./reports/index.js";
 import {
   escapeHtml,
@@ -603,6 +604,7 @@ if (!import.meta.env.DEV && typeof window !== "undefined") {
 
 if (typeof window !== "undefined") {
   applyBuildVersionToCreditLine();
+  initScrollToTop();
 
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
