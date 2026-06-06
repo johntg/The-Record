@@ -6,6 +6,48 @@ import {
   resolveSettingApartDoneField,
 } from "../utils/app-utils.js";
 
+const STAKE_BUSINESS_STRINGS = {
+  en: {
+    reportTitle: "Stake Business - in units",
+    stakeHeading: "STAKE BUSINESS",
+    noItems: "No members require sustaining, setting apart, or release at this time.",
+    releases: "RELEASES",
+    releasedFrom: "The following have been released from their positions in the Stake:",
+    voteOfThanks: "It is proposed they be given a vote of thanks for their service.",
+    inFavour: "Those in favour manifest it by the uplifted hand.",
+    sustainings: "SUSTAININGS",
+    calledToServe: "The following have been called to serve in positions in the Stake:",
+    proposed: "It is proposed that they be sustained.",
+    opposed: "Those opposed, if any, by the same sign.",
+  },
+  sm: {
+    reportTitle: "Pisinisi a le Siteki - i iunite",
+    stakeHeading: "PISINISI A LE SITEKI",
+    noItems: "E leai se tagata e mana'omia le fa'atuatua, fa'ate'a, pe tu'usao i lenei taimi.",
+    releases: "FA'ATE'AGA",
+    releasedFrom: "O i latou o lo'o fa'ailo i lalo na fa'ate'a mai o latou tulaga i le Siteki:",
+    voteOfThanks: "E tatau ona foa'i atu se vōte o fa'afetai mo lo latou tautua.",
+    inFavour: "O i latou e finafinau fa'ailoa mai i le lima seia.",
+    sustainings: "FA'ATUATUA",
+    calledToServe: "O i latou o lo'o fa'ailo i lalo na valaaulia e tautua i tulaga i le Siteki:",
+    proposed: "E tatau ona fa'atuatuaina i latou.",
+    opposed: "O i latou e tetee, afai e iai, i le faailoga lava lea.",
+  },
+  to: {
+    reportTitle: "Pisinisi ʻa e Steiki - ʻi he ngaahi ʻiuniti",
+    stakeHeading: "PISINISI ʻA E STEIKI",
+    noItems: "ʻOku ʻikai ha kau mēmipa ʻoku fie poupouʻi, tānaki, pe tukuange ʻi he taimi ni.",
+    releases: "TUKUANGE",
+    releasedFrom: "Ko e kakai ʻoku hā ʻi lalo naʻe tukuange mei honau ngāue ʻi he Steiki:",
+    voteOfThanks: "ʻOku fakafofongaʻi ke foaki ha vouti fakamālohi ki honau ngāue.",
+    inFavour: "Ko kinautolu ʻoku tui ke fakaʻasi ʻaki ʻa e nima hake.",
+    sustainings: "POUPOU",
+    calledToServe: "Ko e kakai ʻoku hā ʻi lalo naʻe ui ke ngāue ʻi he ngāue ʻi he Steiki:",
+    proposed: "ʻOku fakafofongaʻi ke poupouʻi kinautolu.",
+    opposed: "Ko kinautolu ʻoku fakaʻikai, kapau ʻoku ai, ʻaki ʻa e fakaʻilonga tatau.",
+  },
+};
+
 function formatReportHeader(title, count) {
   return `${title}\n${"=".repeat(title.length)}\nItems: ${count}`;
 }
@@ -160,7 +202,8 @@ function buildUnassignedAssignmentsReport(rows) {
   return `${formatReportHeader("Assignments Not Yet Made", totalMissing)}\n\n${sections}`;
 }
 
-function buildUnitSection(unitTitle, releases, toSustain) {
+function buildUnitSection(unitTitle, releases, toSustain, lang = "en") {
+  const t = STAKE_BUSINESS_STRINGS[lang] || STAKE_BUSINESS_STRINGS.en;
   const lines = [];
 
   lines.push(unitTitle);
@@ -168,11 +211,9 @@ function buildUnitSection(unitTitle, releases, toSustain) {
   lines.push("");
 
   if (releases.length > 0) {
-    lines.push("RELEASES");
+    lines.push(t.releases);
     lines.push("");
-    lines.push(
-      "The following have been released from their positions in the Stake:",
-    );
+    lines.push(t.releasedFrom);
     lines.push("");
 
     releases.forEach((row, index) => {
@@ -182,19 +223,15 @@ function buildUnitSection(unitTitle, releases, toSustain) {
     });
 
     lines.push("");
-    lines.push(
-      "It is proposed they be given a vote of thanks for their service.",
-    );
-    lines.push("Those in favour manifest it by the uplifted hand.");
+    lines.push(t.voteOfThanks);
+    lines.push(t.inFavour);
     lines.push("");
   }
 
   if (toSustain.length > 0) {
-    lines.push("SUSTAININGS");
+    lines.push(t.sustainings);
     lines.push("");
-    lines.push(
-      "The following have been called to serve in positions in the Stake:",
-    );
+    lines.push(t.calledToServe);
     lines.push("");
 
     toSustain.forEach((row, index) => {
@@ -204,16 +241,16 @@ function buildUnitSection(unitTitle, releases, toSustain) {
     });
 
     lines.push("");
-    lines.push("It is proposed that they be sustained.");
-    lines.push("Those in favour manifest it by the uplifted hand.");
-    lines.push("Those opposed, if any, by the same sign.");
+    lines.push(t.proposed);
+    lines.push(t.inFavour);
+    lines.push(t.opposed);
     lines.push("");
   }
 
   return lines.join("\n");
 }
 
-function buildSustainSetApartReleaseReport(rows) {
+function buildSustainSetApartReleaseReport(rows, lang = "en") {
   const unitsSet = new Set(rows.map((row) => row.unit).filter(Boolean));
   const units = Array.from(unitsSet).sort();
   const isInProgress = (row) =>
@@ -266,9 +303,11 @@ function buildSustainSetApartReleaseReport(rows) {
   const stakeReleases = releases.filter((row) => row.unit === "Stake");
   const stakeToSustain = toSustain.filter((row) => row.unit === "Stake");
 
+  const t = STAKE_BUSINESS_STRINGS[lang] || STAKE_BUSINESS_STRINGS.en;
+
   if (stakeReleases.length > 0 || stakeToSustain.length > 0) {
     reportSections.push(
-      buildUnitSection("STAKE BUSINESS", stakeReleases, stakeToSustain),
+      buildUnitSection(t.stakeHeading, stakeReleases, stakeToSustain, lang),
     );
   }
 
@@ -280,7 +319,7 @@ function buildSustainSetApartReleaseReport(rows) {
 
     if (unitReleases.length > 0 || unitToSustain.length > 0) {
       reportSections.push(
-        buildUnitSection(unit.toUpperCase(), unitReleases, unitToSustain),
+        buildUnitSection(unit.toUpperCase(), unitReleases, unitToSustain, lang),
       );
     }
   }
@@ -288,10 +327,10 @@ function buildSustainSetApartReleaseReport(rows) {
   const totalItems = releases.length + toSustain.length;
 
   if (reportSections.length === 0) {
-    return `${formatReportHeader("Stake Business - in units", 0)}\n\nNo members require sustaining, setting apart, or release at this time.`;
+    return `${formatReportHeader(t.reportTitle, 0)}\n\n${t.noItems}`;
   }
 
-  return `${formatReportHeader("Stake Business - in units", totalItems)}\n\n${reportSections.join("\n\n")}`;
+  return `${formatReportHeader(t.reportTitle, totalItems)}\n\n${reportSections.join("\n\n")}`;
 }
 
 function formatArchiveDate(value) {
@@ -410,7 +449,7 @@ export function generateReport(type, rows, reportContext = {}) {
   }
 
   if (type === "sustain-setapart-release") {
-    return buildSustainSetApartReleaseReport(rows);
+    return buildSustainSetApartReleaseReport(rows, reportContext.language || "en");
   }
 
   if (type === "unassigned-assignments") {

@@ -208,6 +208,7 @@ const appState = {
   currentRole: null,
   hasPushSubscription: false,
   hasUnreadMessages: false,
+  reportLanguage: "en",
   adminFormData: {
     action: "list",
     selectedMemberEmail: null,
@@ -1447,6 +1448,15 @@ function renderReportsPage() {
           appState.currentReportType === "archive-items" ? "selected" : ""
         }>Archive Items</option>
       </select>
+      ${(() => {
+        if (appState.currentReportType !== "sustain-setapart-release") return "";
+        const l = appState.reportLanguage || "en";
+        return `<div class="lang-switcher" role="group" aria-label="Report language">
+        <button type="button" class="btn lang-btn ${l === "en" ? "lang-btn-active" : ""}" onclick="window.setReportLanguage('en')">English</button>
+        <button type="button" class="btn lang-btn ${l === "sm" ? "lang-btn-active" : ""}" onclick="window.setReportLanguage('sm')">Samoan</button>
+        <button type="button" class="btn lang-btn ${l === "to" ? "lang-btn-active" : ""}" onclick="window.setReportLanguage('to')">Tongan</button>
+      </div>`;
+      })()}
       <button type="button" class="btn btn-primary" onclick="window.generateCurrentReport()">Generate Report</button>
     </section>
 
@@ -2201,9 +2211,19 @@ window.generateCurrentReport = () => {
       hcVotingTableAvailable: appState.hcVotingTableAvailable,
       archivedRows: appState.archivedItems,
       pageSize: 25,
+      language: appState.reportLanguage,
     },
   );
   renderReportsPage();
+};
+
+window.setReportLanguage = (lang) => {
+  appState.reportLanguage = lang;
+  if (appState.reportOutput && appState.currentReportType === "sustain-setapart-release") {
+    window.generateCurrentReport();
+  } else {
+    renderReportsPage();
+  }
 };
 
 function spinRefreshIcon() {

@@ -1557,6 +1557,30 @@ select {
   border: 2px solid white;
 }
 
+.lang-switcher {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.lang-btn {
+  flex: none;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: var(--card-bg, #f0f0f0);
+  color: var(--text, #333);
+  border: 1px solid var(--border, #ccc);
+  cursor: pointer;
+}
+
+.lang-btn-active {
+  background: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+}
+
 #delete-reports-btn {
   background: #dc3545;
   color: var(--white);
