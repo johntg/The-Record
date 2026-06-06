@@ -207,6 +207,7 @@ const appState = {
   currentMember: null,
   currentRole: null,
   hasPushSubscription: false,
+  hasUnreadMessages: false,
   adminFormData: {
     action: "list",
     selectedMemberEmail: null,
@@ -1229,6 +1230,9 @@ async function loadNotificationSubscribers() {
 }
 
 function renderInboxPage() {
+  localStorage.setItem("lastInboxView", new Date().toISOString());
+  appState.hasUnreadMessages = false;
+
   const list = document.getElementById("data-list");
   const reportsPage = document.getElementById("reports-page");
   const adminPage = document.getElementById("admin-page");
@@ -1354,6 +1358,29 @@ window.deleteInboxMessage = async function (id) {
     if (emptyEl) emptyEl.classList.remove("hidden");
   }
 };
+
+async function checkInboxAlert() {
+  const lastView = localStorage.getItem("lastInboxView") || "1970-01-01T00:00:00.000Z";
+  try {
+    const { count, error } = await supabase
+      .from("app_notifications")
+      .select("id", { count: "exact", head: true })
+      .gt("sent_at", lastView);
+
+    if (error) return;
+
+    const hasUnread = (count ?? 0) > 0;
+    if (appState.hasUnreadMessages === hasUnread) return;
+
+    appState.hasUnreadMessages = hasUnread;
+    const btn = document.getElementById("messages-btn");
+    if (btn) {
+      btn.classList.toggle("inbox-alert", hasUnread);
+    }
+  } catch (_) {
+    // silently ignore — non-critical UI hint
+  }
+}
 
 function renderReportsPage() {
   const list = document.getElementById("data-list");
@@ -1985,6 +2012,8 @@ window.openNotificationsPage = () => {
 };
 
 window.openInbox = () => {
+  localStorage.setItem("lastInboxView", new Date().toISOString());
+  appState.hasUnreadMessages = false;
   appState.currentPage = "inbox";
   renderHeader();
   renderCurrentPage();
@@ -3167,6 +3196,15 @@ async function startApp() {
   // Background tasks — none of these block the UI.
   repairPushSubscriptionIfNeeded(user);
   recordAppVersion(user);
+  checkInboxAlert();
+  supabase
+    .channel("inbox-alert")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "app_notifications" },
+      () => checkInboxAlert(),
+    )
+    .subscribe();
 }
 
 async function repairPushSubscriptionIfNeeded(user) {

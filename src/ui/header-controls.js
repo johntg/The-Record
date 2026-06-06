@@ -82,6 +82,7 @@ export async function renderHeader({
   }
 
   const hasNotificationSubscription = appState.hasPushSubscription ?? false;
+  const hasUnreadMessages = appState.hasUnreadMessages ?? false;
 
   const isShcMember =
     String(appState.currentMember?.role || "")
@@ -173,7 +174,7 @@ export async function renderHeader({
           ? `<button onclick="window.subscribeToNotifications()">Notifications</button>`
           : ""
       }
-      <button onclick="window.openInbox()">Messages</button>
+      <button id="messages-btn" class="${hasUnreadMessages ? "inbox-alert" : ""}" onclick="window.openInbox()">Messages</button>
       <button onclick="window.confirmLogout()">Logout</button>
       
     </div>

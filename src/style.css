@@ -508,6 +508,22 @@ body.modal-open {
   background: var(--iconClr);
 }
 
+@keyframes inbox-alert-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+    border-color: transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.5);
+    border-color: rgba(220, 38, 38, 0.85);
+  }
+}
+
+.inbox-alert {
+  animation: inbox-alert-pulse 2s ease-in-out infinite;
+  border: 2px solid rgba(220, 38, 38, 0.85) !important;
+}
+
 .alertBnr {
   background-color: var(--alertbnrclr);
   color: #000;
