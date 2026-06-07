@@ -279,24 +279,13 @@ function buildSustainSetApartReleaseReport(rows, lang = "en") {
       !hasBeenAnnouncedInAnyUnit(row),
   );
 
-  const hasBeenSustainedAnywhere = (row) =>
-    Array.isArray(row.units_sustained) &&
-    row.units_sustained
-      .map((unit) =>
-        String(unit || "")
-          .toLowerCase()
-          .trim(),
-      )
-      .some(Boolean);
-
   const toSustain = rows.filter(
     (row) =>
       String(row.type || "").toUpperCase() !== "RELEASE" &&
       isInProgress(row) &&
       isCompletedValue(row.interviewed) &&
       (isCompletedValue(row.sp_approved) ||
-        isCompletedValue(row.hc_sustained)) &&
-      !hasBeenSustainedAnywhere(row),
+        isCompletedValue(row.hc_sustained)),
   );
   const reportSections = [];
 
