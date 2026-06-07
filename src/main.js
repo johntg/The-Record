@@ -1976,6 +1976,19 @@ window.archiveCalling = async (id) => callingsActions.archiveCalling(id);
 window.updateField = async (id, field, value) =>
   callingsActions.updateField(id, field, value);
 
+window.toggleSpApproval = async (id, checkbox) => {
+  if (!checkbox.checked) {
+    const confirmed = await showModalConfirm(
+      "Remove S.Pres Approval? This will clear the approval date and status."
+    );
+    if (!confirmed) {
+      checkbox.checked = true;
+      return;
+    }
+  }
+  callingsActions.updateField(id, "sp_approved", checkbox.checked);
+};
+
 window.toggleCallingScope = () => {
   appState.showAllCallingsForStake = !appState.showAllCallingsForStake;
   appState.currentPage = "callings";

@@ -332,7 +332,7 @@ export function createCardsRenderer({
             <div style="display: grid; grid-template-columns: ${hasAdminPasswordAccess() && !isHcDetailsExpanded ? "1fr 1fr" : "1fr"}; gap: 10px; margin: 14px 0;">
               <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <input type="checkbox" ${row.sp_approved ? "checked" : ""} onchange="window.updateField('${row.id}', 'sp_approved', this.checked)">
+                  <input type="checkbox" ${row.sp_approved ? "checked" : ""} onchange="window.toggleSpApproval('${row.id}', this)">
                   <span style="font-weight: bold;">S.Pres Approved</span>
                 </div>
                 ${row.sp_approved_date ? `<span style="font-size: 0.75rem; color: var(--workflow-date); margin-left: 26px;">${new Date(row.sp_approved_date).toLocaleDateString()}</span>` : ""}
