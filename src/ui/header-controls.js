@@ -1,4 +1,5 @@
 import { showModalConfirm } from "./modal-manager.js";
+import { getCurrentLang, LANGUAGES } from "../i18n/index.js";
 
 function updateFabDebugBadge(documentRef = document) {
   const badge = documentRef.getElementById("fab-debug-badge");
@@ -176,7 +177,13 @@ export async function renderHeader({
       }
       <button id="messages-btn" class="${hasUnreadMessages ? "inbox-alert" : ""}" onclick="window.openInbox()">Messages</button>
       <button onclick="window.confirmLogout()">Logout</button>
-      
+      <select
+        onchange="window.setLanguage(this.value)"
+        title="Language / Gagana / Lea / Reo"
+        style="font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer;"
+      >
+        ${LANGUAGES.map(({ code, label }) => `<option value="${code}" ${getCurrentLang() === code ? "selected" : ""}>${label}</option>`).join("")}
+      </select>
     </div>
   </div>
 

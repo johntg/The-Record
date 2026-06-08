@@ -1,5 +1,6 @@
 import "./style.css";
 
+import { loadLocale, setLang, getCurrentLang, t } from "./i18n/index.js";
 import {
   applyThemeMode,
   getSavedThemeMode,
@@ -343,7 +344,7 @@ function ensureBuildVersionModal() {
   modal.innerHTML = `
     <section class="modal version-info-modal" role="dialog" aria-modal="true" aria-labelledby="build-version-title">
       <div class="modal-header version-info-header">
-        <h2 id="build-version-title">App Version</h2>
+        <h2 id="build-version-title">${t('version_modal_title')}</h2>
         <button type="button" class="icon-button" aria-label="Close version details" onclick="window.closeBuildVersionPopup()">×</button>
       </div>
       <div class="version-info-body">
@@ -351,7 +352,7 @@ function ensureBuildVersionModal() {
         <pre id="build-version-full" class="version-info-full"></pre>
       </div>
       <div class="btn-group version-info-actions">
-        <button type="button" class="btn btn-primary" onclick="window.closeBuildVersionPopup()">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.closeBuildVersionPopup()">${t('btn_close')}</button>
       </div>
     </section>
   `;
@@ -371,7 +372,7 @@ function showBuildVersionPopup() {
   const shortNode = modal.querySelector("#build-version-short");
   const fullNode = modal.querySelector("#build-version-full");
 
-  const shortText = buildVersionState.short || "Version unavailable";
+  const shortText = buildVersionState.short || t('version_unavailable');
   const fullText = buildVersionState.full || shortText;
 
   if (shortNode) {
@@ -403,10 +404,10 @@ window.subscribeToNotifications = async () => {
     });
 
     appState.hasPushSubscription = true;
-    await showModalAlert("Notifications enabled.");
+    await showModalAlert(t('notif_enabled'));
   } catch (error) {
     console.error("Notification subscription failed:", error);
-    await showModalAlert(error?.message || "Could not enable notifications.");
+    await showModalAlert(error?.message || t('notif_enable_failed'));
   } finally {
     renderHeader();
   }
@@ -425,7 +426,7 @@ async function applyBuildVersionToCreditLine() {
     versionNode.style.cursor = "pointer";
     versionNode.setAttribute("role", "button");
     versionNode.setAttribute("tabindex", "0");
-    versionNode.title = "Click for full version details";
+    versionNode.title = t('version_click_details');
     versionNode.addEventListener("click", showBuildVersionPopup);
     versionNode.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -962,7 +963,7 @@ async function toggleDatabaseMode() {
     console.error("Error reloading data after mode switch:", error);
     // If data reload fails, show an alert but keep the UI functional
     await showModalAlert(
-      `Switched to ${newMode} mode, but some data may not have loaded. Try refreshing the page.`,
+      t('mode_switch_partial_error', { mode: newMode }),
     );
   }
 }
@@ -1002,52 +1003,52 @@ function renderAdminPage() {
 
   adminPage.innerHTML = `
     <section class="admin-header">
-      <h2>Admin Panel</h2>
-      <p>Manage members and roles</p>
+      <h2>${t('admin_panel_title')}</h2>
+      <p>${t('admin_panel_subtitle')}</p>
     </section>
 
     <section class="admin-actions">
-      <button type="button" class="btn btn-primary" onclick="window.startNewMemberForm()">+ Add New Member</button>
+      <button type="button" class="btn btn-primary" onclick="window.startNewMemberForm()">${t('admin_add_member_btn')}</button>
     </section>
 
     <section class="admin-content">
       <div id="admin-form" class="hidden">
         <article class="card admin-form-card">
-          <h3 id="admin-form-title">Add New Member</h3>
+          <h3 id="admin-form-title">${t('admin_form_title_add')}</h3>
           <form id="admin-member-form" onsubmit="window.submitMemberForm(event)">
             <div class="form-group">
-              <label for="member-email">Email</label>
+              <label for="member-email">${t('label_email')}</label>
               <input type="email" id="member-email" required />
             </div>
             <div class="form-group">
-              <label for="member-name">Name</label>
+              <label for="member-name">${t('label_name')}</label>
               <input type="text" id="member-name" required />
             </div>
             <div class="form-group">
-              <label for="member-role">Role</label>
+              <label for="member-role">${t('label_role')}</label>
               <select id="member-role" required>
-                <option value="">Select a role</option>
+                <option value="">${t('label_select_role')}</option>
                 ${roles}
               </select>
             </div>
             <div class="form-group">
               <label for="member-can-assign">
-                <input type="checkbox" id="member-can-assign" /> Can be assigned
+                <input type="checkbox" id="member-can-assign" /> ${t('label_can_assign')}
               </label>
             </div>
             <div class="form-group">
               <label for="member-super">
-                <input type="checkbox" id="member-super" /> Super Admin
+                <input type="checkbox" id="member-super" /> ${t('label_super_admin')}
               </label>
             </div>
             <div class="form-group">
               <label for="member-receive-concern">
-                <input type="checkbox" id="member-receive-concern" /> Receive Concern Emails
+                <input type="checkbox" id="member-receive-concern" /> ${t('label_receive_concern')}
               </label>
             </div>
             <div class="btn-group">
-              <button type="submit" class="btn btn-primary">Save Member</button>
-              <button type="button" class="btn btn-secondary" onclick="window.cancelAdminForm()">Cancel</button>
+              <button type="submit" class="btn btn-primary">${t('btn_save_member')}</button>
+              <button type="button" class="btn btn-secondary" onclick="window.cancelAdminForm()">${t('btn_cancel')}</button>
             </div>
           </form>
         </article>
@@ -1055,40 +1056,40 @@ function renderAdminPage() {
 
       <div id="admin-members-list">
         <article class="card admin-members-card">
-          <h3>Members</h3>
+          <h3>${t('admin_members_heading')}</h3>
           <div class="members-grid">
             ${appState.members
               .map(
                 (m) => `
               <div class="member-card" data-member-email="${escapeHtml(m.email)}">
-                <div class="member-row"><span class="member-label">Name:</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
-                <div class="member-row"><span class="member-label">Email:</span> <span class="email" title="${escapeHtml(m.email)}">${escapeHtml(m.email)}</span></div>
-                <div class="member-row"><span class="member-label">Role:</span> ${escapeHtml(m.role || "")}</div>
+                <div class="member-row"><span class="member-label">${t('label_name_colon')}</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
+                <div class="member-row"><span class="member-label">${t('label_email_colon')}</span> <span class="email" title="${escapeHtml(m.email)}">${escapeHtml(m.email)}</span></div>
+                <div class="member-row"><span class="member-label">${t('label_role_colon')}</span> ${escapeHtml(m.role || "")}</div>
                 <div class="member-row">
                   <span class="member-label ${m.can_be_assigned ? "assign-on" : "assign-off"}">
-                    Assign:
+                    ${t('label_assign_colon')}
                   </span>
                   ${m.can_be_assigned ? "✓" : ""}
                 </div>
                 <div class="member-row">
                   <span class="member-label ${m.super ? "super-admin-on" : "super-admin-off"}">
-                    Super Admin:
+                    ${t('label_super_admin_colon')}
                   </span>
                   ${m.super ? "✓" : ""}
                 </div>
                 <div class="member-row">
                   <span class="member-label ${m.receive_concern ? "concern-recipient-on" : "concern-recipient-off"}">
-                    Concern Recipient:
+                    ${t('label_concern_recipient_colon')}
                   </span>
                   ${m.receive_concern ? "✓" : ""}
                 </div>
                 <div class="member-row">
-                  <span class="member-label">App Version:</span>
+                  <span class="member-label">${t('label_app_version_colon')}</span>
                   <span class="member-version-cell" style="font-size:0.8rem;color:var(--text-muted);opacity:0.45;">…</span>
                 </div>
                 <div class="member-row member-actions">
-                  <button type="button" class="btn btn-secondary btn-sm" data-action="edit">Edit</button>
-                  <button type="button" class="btn btn-danger btn-sm" data-action="delete">Delete</button>
+                  <button type="button" class="btn btn-secondary btn-sm" data-action="edit">${t('btn_edit')}</button>
+                  <button type="button" class="btn btn-danger btn-sm" data-action="delete">${t('btn_delete')}</button>
                 </div>
               </div>
             `,
@@ -1146,42 +1147,42 @@ function renderNotificationsPage() {
 
   notificationsPage.innerHTML = `
     <section class="admin-header">
-      <h2>Notifications</h2>
-      <p>Manage and send push notifications</p>
+      <h2>${t('nav_notifications')}</h2>
+      <p>${t('notif_page_subtitle')}</p>
     </section>
 
     <section class="admin-content">
       <article class="card admin-form-card">
-        <h3>Your Subscription</h3>
+        <h3>${t('notif_subscription_heading')}</h3>
         <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 0.9rem;">
-          ${isSubscribed ? "You are subscribed to push notifications on this device." : "You are not subscribed to push notifications on this device."}
+          ${isSubscribed ? t('notif_subscribed') : t('notif_not_subscribed')}
         </p>
         ${
           !isSubscribed
-            ? `<button type="button" class="btn btn-primary" onclick="window.subscribeToNotifications()">Subscribe This Device</button>`
+            ? `<button type="button" class="btn btn-primary" onclick="window.subscribeToNotifications()">${t('notif_subscribe_btn')}</button>`
             : ""
         }
       </article>
 
       <article class="card admin-form-card">
-        <h3>Send Notification</h3>
+        <h3>${t('notif_send_heading')}</h3>
         <div class="form-group">
-          <label for="notif-title">Title</label>
+          <label for="notif-title">${t('label_title')}</label>
           <input type="text" id="notif-title" placeholder="Notification title" />
         </div>
         <div class="form-group">
-          <label for="notif-body">Message</label>
+          <label for="notif-body">${t('label_message')}</label>
           <textarea id="notif-body" rows="4" placeholder="Enter your message..." style="width: 100%; box-sizing: border-box; resize: vertical; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font: inherit; background: var(--white); color: var(--text);"></textarea>
         </div>
         <div class="form-group">
-          <label>Recipients</label>
-          <div id="notif-recipients-loading" style="color: var(--text-muted); font-size: 0.9rem;">Loading subscribers...</div>
+          <label>${t('label_recipients')}</label>
+          <div id="notif-recipients-loading" style="color: var(--text-muted); font-size: 0.9rem;">${t('notif_loading_subscribers')}</div>
           <div id="notif-recipients-list" class="notif-recipients-list hidden"></div>
-          <div id="notif-no-subscribers" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">No subscribers found.</div>
+          <div id="notif-no-subscribers" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">${t('notif_no_subscribers')}</div>
         </div>
         <div class="btn-group">
-          <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">Send</button>
-          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">Deselect All</button>
+          <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">${t('btn_send')}</button>
+          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">${t('btn_deselect_all')}</button>
         </div>
         <div id="notif-status" class="notif-status hidden"></div>
       </article>
@@ -1219,14 +1220,14 @@ async function loadNotificationSubscribers() {
         (sub, i) => `
         <label class="notif-recipient-item">
           <input type="checkbox" name="notif-recipient" value="${i}" checked />
-          <span>${escapeHtml(sub.user_email || `Subscriber ${i + 1}`)}</span>
+          <span>${escapeHtml(sub.user_email || t('notif_subscriber_label', { n: i + 1 }))}</span>
         </label>
       `,
       )
       .join("");
   } catch (err) {
     if (loadingEl)
-      loadingEl.textContent = `Error loading subscribers: ${err.message}`;
+      loadingEl.textContent = t('notif_load_error', { message: err.message });
   }
 }
 
@@ -1251,14 +1252,14 @@ function renderInboxPage() {
 
   inboxPage.innerHTML = `
     <section class="admin-header">
-      <h2>Messages</h2>
-      <p>Notifications sent to this group</p>
+      <h2>${t('nav_messages')}</h2>
+      <p>${t('inbox_subtitle')}</p>
     </section>
     <section class="admin-content">
       <article class="card admin-form-card">
-        <div id="inbox-loading" style="color: var(--text-muted); font-size: 0.9rem;">Loading messages…</div>
+        <div id="inbox-loading" style="color: var(--text-muted); font-size: 0.9rem;">${t('inbox_loading')}</div>
         <div id="inbox-list" class="inbox-list hidden"></div>
-        <div id="inbox-empty" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">No messages yet.</div>
+        <div id="inbox-empty" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">${t('inbox_empty')}</div>
       </article>
     </section>
   `;
@@ -1312,14 +1313,14 @@ async function loadInboxMessages() {
               </div>
             </div>
             <div class="inbox-item-body">${escapeHtml(n.body)}</div>
-            ${n.sent_by_email ? `<div class="inbox-item-from">From: ${escapeHtml(n.sent_by_email)}</div>` : ""}
+            ${n.sent_by_email ? `<div class="inbox-item-from">${t('inbox_from', { email: escapeHtml(n.sent_by_email) })}</div>` : ""}
           </div>
         `;
       })
       .join("");
   } catch (err) {
     if (loadingEl)
-      loadingEl.textContent = `Error loading messages: ${err.message}`;
+      loadingEl.textContent = t('inbox_load_error', { message: err.message });
   }
 }
 
@@ -1417,8 +1418,8 @@ function renderReportsPage() {
 
   reportsPage.innerHTML = `
     <section class="reports-header">
-      <h2>Reports</h2>
-      <p>SELECT REPORT THEN GENERATE</p>
+      <h2>${t('nav_reports')}</h2>
+      <p>${t('reports_subtitle')}</p>
     </section>
 
     <section class="report-actions">
@@ -1427,26 +1428,26 @@ function renderReportsPage() {
           appState.currentReportType === "sustain-setapart-release"
             ? "selected"
             : ""
-        }>Stake Business in units</option>
+        }>${t('report_stake_business')}</option>
         <option value="awaiting-shc" ${
           appState.currentReportType === "awaiting-shc" ? "selected" : ""
-        }>Calls Awaiting HC Sustaining</option>
+        }>${t('report_awaiting_hc')}</option>
         <option value="unassigned-assignments" ${
           appState.currentReportType === "unassigned-assignments"
             ? "selected"
             : ""
-        }>Assignments Not Yet Made</option>
+        }>${t('report_unassigned')}</option>
         <option value="assignments-by-person" ${
           appState.currentReportType === "assignments-by-person"
             ? "selected"
             : ""
-        }>Assignments by Person</option>
+        }>${t('report_by_person')}</option>
         <option value="status-summary" ${
           appState.currentReportType === "status-summary" ? "selected" : ""
-        }>Status Summary</option>
+        }>${t('report_status_summary')}</option>
         <option value="archive-items" ${
           appState.currentReportType === "archive-items" ? "selected" : ""
-        }>Archive Items</option>
+        }>${t('report_archive_items')}</option>
       </select>
       ${(() => {
         if (appState.currentReportType !== "sustain-setapart-release") return "";
@@ -1457,7 +1458,7 @@ function renderReportsPage() {
         <button type="button" class="btn lang-btn ${l === "to" ? "lang-btn-active" : ""}" onclick="window.setReportLanguage('to')">Tongan</button>
       </div>`;
       })()}
-      <button type="button" class="btn btn-primary" onclick="window.generateCurrentReport()">Generate Report</button>
+      <button type="button" class="btn btn-primary" onclick="window.generateCurrentReport()">${t('btn_generate_report')}</button>
     </section>
 
     <article class="card report-card">
@@ -1518,21 +1519,21 @@ function renderArchivePage() {
         </tr>`;
         })
         .join("")
-    : `<tr><td colspan="3" class="archive-empty">No archived items found.</td></tr>`;
+    : `<tr><td colspan="3" class="archive-empty">${t('archive_empty')}</td></tr>`;
 
   archivePage.innerHTML = `
     <section class="archive-header">
-      <h2>Archive</h2>
-      <p>Completed and archived callings</p>
+      <h2>${t('nav_archive')}</h2>
+      <p>${t('archive_subtitle')}</p>
     </section>
 
     <section class="archive-content">
       <table class="archive-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Position</th>
-            <th>Status</th>
+            <th>${t('col_name')}</th>
+            <th>${t('col_position')}</th>
+            <th>${t('col_status')}</th>
           </tr>
         </thead>
         <tbody>
@@ -1546,13 +1547,13 @@ function renderArchivePage() {
         class="btn btn-secondary"
         onclick="window.archivePagePrev()"
         ${currentPage === 0 ? "disabled" : ""}
-      >Previous</button>
-      <span class="archive-page-indicator">Page ${currentPage + 1} of ${totalPages}</span>
+      >${t('btn_previous')}</button>
+      <span class="archive-page-indicator">${t('archive_page_indicator', { current: currentPage + 1, total: totalPages })}</span>
       <button
         class="btn btn-secondary"
         onclick="window.archivePageNext()"
         ${currentPage >= totalPages - 1 ? "disabled" : ""}
-      >Next</button>
+      >${t('btn_next')}</button>
     </section>
   `;
 }
@@ -1610,14 +1611,14 @@ async function archiveCallingRecord(id, options = {}) {
   const { confirm = true } = options;
 
   if (!isAdminRole()) {
-    await showModalAlert("Only admins can archive items.");
+    await showModalAlert(t('error_admin_only'));
     renderCurrentPage();
     return false;
   }
 
   const item = appState.callings.find((calling) => calling.id === id);
   if (!item) {
-    await showModalAlert("Could not find this item to archive.");
+    await showModalAlert(t('error_not_found'));
     renderCurrentPage();
     return false;
   }
@@ -1625,9 +1626,7 @@ async function archiveCallingRecord(id, options = {}) {
   const normalizedStatus = String(item.status || "").trim();
 
   if (normalizedStatus === "In Progress") {
-    await showModalAlert(
-      "Item with a status of 'In Progress' cannot be archived. Please change the status.",
-    );
+    await showModalAlert(t('error_archive_in_progress'));
     renderCurrentPage();
     return false;
   }
@@ -1636,10 +1635,8 @@ async function archiveCallingRecord(id, options = {}) {
 
   if (confirm) {
     const message = isDeleteMistake
-      ? `This item is marked "Mistake: DELETE".\n\nName: ${
-          item.name || "(no name)"
-        }\n\nPress OK to permanently remove it from the database.\nThis cannot be undone.`
-      : "Archive this item?";
+      ? t('confirm_delete_mistake', { name: item.name || t('no_name') })
+      : t('confirm_archive');
 
     const confirmed = await showModalConfirm(message);
     if (!confirmed) {
@@ -1694,7 +1691,7 @@ async function archiveCallingRecord(id, options = {}) {
         `[Delete] Failed to delete from both prod_callings and train_callings`,
       );
       await showModalAlert(
-        `Failed to permanently delete item: ${error.message}\n\nThe record was not found in either database table. It may have already been deleted.`,
+        t('error_perm_delete_failed', { message: error.message }),
       );
       renderCurrentPage();
       return false;
@@ -1735,7 +1732,7 @@ async function archiveCallingRecord(id, options = {}) {
         `[Archive] Failed to archive from both prod_callings and train_callings`,
       );
       await showModalAlert(
-        `Failed to archive item: ${error.message}\n\nThe record was not found in either database table. It may have already been archived.`,
+        t('error_archive_failed', { message: error.message }),
       );
       renderCurrentPage();
       return false;
@@ -1976,10 +1973,17 @@ window.archiveCalling = async (id) => callingsActions.archiveCalling(id);
 window.updateField = async (id, field, value) =>
   callingsActions.updateField(id, field, value);
 
+window.setLanguage = async (lang) => {
+  await loadLocale(lang);
+  setLang(lang);
+  renderHeader();
+  renderCurrentPage();
+};
+
 window.toggleSpApproval = async (id, checkbox) => {
   if (!checkbox.checked) {
     const confirmed = await showModalConfirm(
-      "Remove S.Pres Approval? This will clear the approval date and status."
+      t('confirm_remove_sp_approval')
     );
     if (!confirmed) {
       checkbox.checked = true;
@@ -2077,7 +2081,7 @@ window.sendPushNotifications = async () => {
   const body = bodyEl?.value?.trim();
 
   if (!title || !body) {
-    await showModalAlert("Please enter both a title and a message.");
+    await showModalAlert(t('notif_send_title_body_required'));
     return;
   }
 
@@ -2089,7 +2093,7 @@ window.sendPushNotifications = async () => {
   );
 
   if (selectedIndices.length === 0) {
-    await showModalAlert("Please select at least one recipient.");
+    await showModalAlert(t('notif_send_recipient_required'));
     return;
   }
 
@@ -2100,7 +2104,7 @@ window.sendPushNotifications = async () => {
     statusEl.className = `notif-status${style ? ` ${style}` : ""}`;
   }
 
-  setStatus(`Sending to ${selectedIndices.length} recipient(s)…`);
+  setStatus(t('notif_sending_to', { count: selectedIndices.length }));
 
   // Get the session JWT; fall back to the anon key so the request always
   // carries an Authorization header (function has verify_jwt = false but
@@ -2208,7 +2212,7 @@ window.toggleAllNotifRecipients = () => {
   const btn = document.querySelector(
     ".btn-group button[onclick='window.toggleAllNotifRecipients()']",
   );
-  if (btn) btn.textContent = allChecked ? "Select All" : "Deselect All";
+  if (btn) btn.textContent = allChecked ? t('btn_select_all') : t('btn_deselect_all');
 };
 
 window.selectReportType = (value) => {
@@ -2315,12 +2319,12 @@ window.refreshData = async () => {
     renderCurrentPage();
 
     if (typeof window.showToast === "function") {
-      window.showToast("Data refreshed");
+      window.showToast(t('toast_data_refreshed'));
     }
   } catch (error) {
     console.error("Failed to refresh data:", error);
     await showModalAlert(
-      `Failed to refresh data: ${error?.message || "Unknown error"}`,
+      t('error_refresh_data', { message: error?.message || t('unknown_error') }),
     );
   } finally {
     appState.isRefreshing = false;
@@ -2352,24 +2356,22 @@ window.softRefreshApp = async () => {
 
 window.copyReportToClipboard = async () => {
   if (!appState.reportOutput) {
-    await showModalAlert("No report to copy.");
+    await showModalAlert(t('report_none_to_copy'));
     return;
   }
 
   try {
     await navigator.clipboard.writeText(appState.reportOutput);
-    await showModalAlert("Report copied to clipboard!");
+    await showModalAlert(t('report_copied'));
   } catch (err) {
     console.error("Failed to copy report:", err);
-    await showModalAlert(
-      "Failed to copy report to clipboard. Please try again.",
-    );
+    await showModalAlert(t('report_copy_failed'));
   }
 };
 
 window.printReport = async () => {
   if (!appState.reportOutput) {
-    await showModalAlert("No report to print.");
+    await showModalAlert(t('report_none_to_print'));
     return;
   }
 
@@ -2401,7 +2403,7 @@ window.printReport = async () => {
 
 window.resetCacheAndReload = async () => {
   const confirmed = await showModalConfirm(
-    "Reset app cache and reload now? This will sign you out.",
+    t('confirm_reset_cache'),
   );
   if (!confirmed) return;
 
@@ -2436,7 +2438,7 @@ window.handleConcernClick = async (event, id) => {
 
   if (button) {
     button.classList.add("is-sending");
-    button.textContent = "Sending";
+    button.textContent = t('btn_concern_sending');
   }
 
   try {
@@ -2450,10 +2452,10 @@ window.handleConcernClick = async (event, id) => {
 
       if (currentUserVote === "concern") {
         button.classList.add("is-sent", "is-selected");
-        button.textContent = "Concerned";
+        button.textContent = t('btn_concern_voted');
       } else {
         button.classList.remove("is-sent", "is-selected");
-        button.textContent = "Concern";
+        button.textContent = t('btn_concern');
       }
     }
   } catch (error) {
@@ -2461,10 +2463,10 @@ window.handleConcernClick = async (event, id) => {
 
     if (button) {
       button.classList.remove("is-sending");
-      button.textContent = "Concern";
+      button.textContent = t('btn_concern');
     }
 
-    await showModalAlert("Failed to record concern.");
+    await showModalAlert(t('error_concern_failed'));
   }
 };
 
@@ -2483,38 +2485,38 @@ function renderLogin() {
     const errorStatus = Number(error?.status || 0);
 
     if (errorCode === "email_not_confirmed") {
-      return "This auth user exists, but their email is not confirmed in Supabase Auth yet.";
+      return t('login_err_email_not_confirmed');
     }
 
     if (errorCode === "otp_disabled") {
-      return "Email OTP is disabled in Supabase Authentication settings.";
+      return t('login_err_otp_disabled');
     }
 
     if (errorCode === "signup_disabled") {
-      return "Closed-group sign-in is enabled, and Supabase is refusing to create or use a new auth signup for this email.";
+      return t('login_err_signup_disabled');
     }
 
     if (errorCode === "over_email_send_rate_limit") {
-      return "Too many login emails have been sent to this address. Please wait a little and try again.";
+      return t('login_err_rate_limit_email');
     }
 
     if (errorCode === "over_request_rate_limit") {
-      return "Too many login attempts have been made from this client. Please wait a few minutes and try again.";
+      return t('login_err_rate_limit_requests');
     }
 
     if (errorCode === "email_address_not_authorized") {
-      return "Supabase's current email provider is not allowed to send to this address. Check your SMTP/provider configuration.";
+      return t('login_err_email_not_authorized');
     }
 
     if (errorCode === "unexpected_failure" || errorStatus >= 500) {
-      return "Supabase Auth hit a backend error. If this user was added manually to auth.users, recreate them with the admin provisioning script so their email identity and confirmation state are created correctly.";
+      return t('login_err_backend');
     }
 
     if (/database error finding user/i.test(error?.message || "")) {
-      return "Supabase could not find a usable email auth identity for this address. The user may exist in auth.users but still be missing a valid email identity or confirmed email.";
+      return t('login_err_no_identity');
     }
 
-    return error?.message || "Unable to send the sign-in code right now.";
+    return error?.message || t('login_err_generic');
   };
 
   // Initial UI state: Email Entry
@@ -2523,12 +2525,12 @@ function renderLogin() {
       <div class="login-card">
         <div class="login-splash">
           <h1><span>The</span> Record</h1>
-          <h3>From inspiration to setting apart</h3>
+          <h3>${t('login_tagline')}</h3>
           ${
             appState.dbMode === "training"
               ? `
             <div style="background-color: #f59e0b; color: #000; padding: 8px; margin-top: 12px; border-radius: 6px; font-size: 13px; font-weight: bold;">
-              ⚠️ TRAINING MODE - Sandbox Database
+              ${t('login_training_mode')}
             </div>
           `
               : ""
@@ -2540,16 +2542,16 @@ function renderLogin() {
             <input
               id="email-input"
               type="email"
-              placeholder="Email address"
+              placeholder="${t('login_email_placeholder')}"
               required
               class="loginEntry"
             />
-            <button type="submit">Email me a 6-digit code</button>
+            <button type="submit">${t('login_send_code_btn')}</button>
           </form>
         </div>
 
         <div id="auth-step-code" class="hidden">
-          <p class="form-instruction">Enter the code sent to your email:</p>
+          <p class="form-instruction">${t('login_enter_code')}</p>
           <p id="auth-step-code-email" class="form-instruction" style="font-size: 0.85em; opacity: 0.7; margin-top: -8px;"></p>
           <form id="otp-verify-form">
             <input
@@ -2563,8 +2565,8 @@ function renderLogin() {
               class="loginEntry"
               autocomplete="one-time-code"
             />
-            <button type="submit">Verify & Sign In</button>
-            <button type="button" class="btn-link" id="back-to-email-btn">Request a new code</button>
+            <button type="submit">${t('login_verify_btn')}</button>
+            <button type="button" class="btn-link" id="back-to-email-btn">${t('login_new_code_btn')}</button>
           </form>
         </div>
 
@@ -2610,8 +2612,7 @@ function renderLogin() {
   if (userEmail) {
     document.getElementById("email-input").value = userEmail;
     showCodeStep(userEmail);
-    message.textContent =
-      "Enter the code from your email, or request a new one.";
+    message.textContent = t('login_code_instruction');
   }
 
   // Step 1: Request the OTP
@@ -2620,7 +2621,7 @@ function renderLogin() {
     userEmail = normalizeEmail(document.getElementById("email-input").value);
     if (!userEmail) return;
 
-    message.textContent = "Checking registration...";
+    message.textContent = t('login_checking');
     message.classList.remove("error");
 
     const { data: memberRow, error: memberLookupError } = await supabase
@@ -2630,13 +2631,12 @@ function renderLogin() {
       .maybeSingle();
 
     if (!memberLookupError && !memberRow) {
-      message.textContent =
-        "This email address has not been registered. Please contact an administrator.";
+      message.textContent = t('login_unregistered_email');
       message.classList.add("error");
       return;
     }
 
-    message.textContent = "Sending code...";
+    message.textContent = t('login_sending_code');
     message.classList.remove("error");
 
     // Store email so it persists across page reloads (but will be cleared on database switch)
@@ -2665,7 +2665,7 @@ function renderLogin() {
 
     // Success: Hide email form, show code form
     showCodeStep(userEmail);
-    message.textContent = `Check your email for the 6-digit code (${dbModeLabel} database).`;
+    message.textContent = t('login_check_email', { mode: dbModeLabel });
   });
 
   // Step 2: Verify the OTP
@@ -2677,13 +2677,13 @@ function renderLogin() {
     const verifyEmail = localStorage.getItem("otp-email") || userEmail;
 
     if (!verifyEmail) {
-      message.textContent = "Session expired. Please start over.";
+      message.textContent = t('login_session_expired');
       message.classList.add("error");
       setTimeout(() => renderLogin(), 2000);
       return;
     }
 
-    message.textContent = "Verifying...";
+    message.textContent = t('login_verifying');
     message.classList.remove("error");
 
     const dbModeLabel = (appState.dbMode || "production").toUpperCase();
@@ -2699,7 +2699,7 @@ function renderLogin() {
 
     if (error) {
       const dbModeLabel = (appState.dbMode || "production").toUpperCase();
-      message.textContent = `Invalid or expired code. Make sure you're using the latest code sent to your email for the ${dbModeLabel} database.`;
+      message.textContent = t('login_invalid_code', { mode: dbModeLabel });
       message.classList.add("error");
       return;
     }
@@ -2708,7 +2708,7 @@ function renderLogin() {
     // localStorage is cleared.
     await saveDbSession(verifyData?.session);
 
-    message.textContent = "Success! Loading...";
+    message.textContent = t('login_success');
 
     // Clear the stored email after successful login
     localStorage.removeItem("otp-email");
@@ -2731,15 +2731,15 @@ function ensureConcernNoticeModal() {
   modal.innerHTML = `
     <section class="modal notice-modal" role="dialog" aria-modal="true" aria-labelledby="concern-notice-title">
       <div class="modal-header notice-modal-header">
-        <h2 id="concern-notice-title">Concern Recorded</h2>
+        <h2 id="concern-notice-title">${t('concern_modal_title')}</h2>
       </div>
       <div class="notice-modal-body">
         <p>
-          You have indicated a concern. Please contact a member of the Stake Presidency as soon as possible.
+          ${t('concern_modal_body')}
         </p>
       </div>
       <div class="btn-group notice-modal-actions">
-        <button type="button" class="btn btn-primary" onclick="window.closeConcernNoticeModal()">I understand</button>
+        <button type="button" class="btn btn-primary" onclick="window.closeConcernNoticeModal()">${t('btn_i_understand')}</button>
       </div>
     </section>
   `;
@@ -2756,8 +2756,8 @@ function ensureConcernNoticeModal() {
 
 window.confirmLogout = async () => {
   const confirmed = await showModalConfirm(
-    "You will need to obtain another six-digit code to log in again.",
-    { title: "Log out?" }
+    t('confirm_logout_body'),
+    { title: t('confirm_logout_title') }
   );
   if (confirmed) window.logout();
 };
@@ -2848,7 +2848,7 @@ function renderHeader() {
 
 window.startNewMemberForm = () => {
   if (!isSuperAdmin()) {
-    showModalAlert("Only super admins can add members.");
+    showModalAlert(t('error_super_admin_only'));
     return;
   }
 
@@ -2862,7 +2862,7 @@ window.startNewMemberForm = () => {
     list.classList.add("hidden");
   }
 
-  document.getElementById("admin-form-title").textContent = "Add New Member";
+  document.getElementById("admin-form-title").textContent = t('admin_form_title_add');
   document.getElementById("admin-member-form").reset();
   document.getElementById("member-email").disabled = false;
   appState.adminFormData.action = "create";
@@ -2885,7 +2885,7 @@ window.submitMemberForm = async (event) => {
   event.preventDefault();
 
   if (!isSuperAdmin()) {
-    await showModalAlert("Only super admins can modify members.");
+    await showModalAlert(t('error_super_admin_modify'));
     return;
   }
 
@@ -2903,7 +2903,7 @@ window.submitMemberForm = async (event) => {
   ).checked;
 
   if (!email || !name || !role) {
-    await showModalAlert("Please fill in all required fields.");
+    await showModalAlert(t('error_required_fields'));
     return;
   }
 
@@ -2922,22 +2922,18 @@ window.submitMemberForm = async (event) => {
 
       if (!result.ok) {
         console.error("Provisioning error:", result.error);
-        await showModalAlert(`Failed to provision member: ${result.error}`);
+        await showModalAlert(t('error_provision_member', { error: result.error }));
         return;
       }
 
-      await showModalAlert(
-        "Member provisioned successfully in Auth and members table.",
-      );
+      await showModalAlert(t('member_provisioned'));
     } else if (appState.adminFormData.action === "update") {
       const oldEmail = String(appState.adminFormData.selectedMemberEmail || "")
         .trim()
         .toLowerCase();
 
       if (!oldEmail) {
-        await showModalAlert(
-          "Missing original member email. Please cancel and open the member again.",
-        );
+        await showModalAlert(t('error_missing_member_email'));
         return;
       }
 
@@ -2955,11 +2951,11 @@ window.submitMemberForm = async (event) => {
 
       if (!result.ok) {
         console.error("Update error:", result.error);
-        await showModalAlert(`Failed to update member: ${result.error}`);
+        await showModalAlert(t('error_update_member', { error: result.error }));
         return;
       }
 
-      await showModalAlert("Member updated successfully.");
+      await showModalAlert(t('member_updated'));
     }
 
     await fetchReferenceData();
@@ -2967,13 +2963,13 @@ window.submitMemberForm = async (event) => {
     renderAdminPage();
   } catch (error) {
     console.error("Form submission error:", error);
-    await showModalAlert(`Error: ${error.message}`);
+    await showModalAlert(t('error_generic', { message: error.message }));
   }
 };
 
 window.editMember = async (memberEmail) => {
   if (!isSuperAdmin()) {
-    await showModalAlert("Only super admins can edit members.");
+    await showModalAlert(t('error_super_admin_edit'));
     return;
   }
 
@@ -2990,7 +2986,7 @@ window.editMember = async (memberEmail) => {
   );
   if (!member) {
     console.error(`Member not found with email: ${normalizedEmail}`);
-    await showModalAlert("Member not found.");
+    await showModalAlert(t('error_member_not_found'));
     return;
   }
 
@@ -3027,7 +3023,7 @@ window.editMember = async (memberEmail) => {
 
 window.deleteMember = async (memberEmail) => {
   if (!isSuperAdmin()) {
-    await showModalAlert("Only super admins can delete members.");
+    await showModalAlert(t('error_super_admin_delete'));
     return;
   }
 
@@ -3041,12 +3037,12 @@ window.deleteMember = async (memberEmail) => {
         .toLowerCase() === normalizedEmail,
   );
   if (!member) {
-    await showModalAlert("Member not found.");
+    await showModalAlert(t('error_member_not_found'));
     return;
   }
 
   const confirmed = await showModalConfirm(
-    `Delete member "${escapeHtml(member.name)}"? This cannot be undone.`,
+    t('confirm_delete_member', { name: member.name }),
   );
 
   if (!confirmed) return;
@@ -3059,16 +3055,16 @@ window.deleteMember = async (memberEmail) => {
 
     if (!result.ok) {
       console.error("Delete error:", result.error);
-      await showModalAlert(`Failed to delete member: ${result.error}`);
+      await showModalAlert(t('error_delete_member', { error: result.error }));
       return;
     }
 
-    await showModalAlert("Member deleted successfully.");
+    await showModalAlert(t('member_deleted'));
     await fetchReferenceData();
     renderAdminPage();
   } catch (error) {
     console.error("Delete error:", error);
-    await showModalAlert(`Error: ${error.message}`);
+    await showModalAlert(t('error_generic', { message: error.message }));
   }
 };
 
@@ -3130,7 +3126,7 @@ async function fetchAndRenderMemberVersions() {
         cell.textContent = `${rec.version} · ${formatRelativeTime(rec.last_seen)}`;
         cell.style.opacity = "1";
       } else {
-        cell.textContent = "Not yet seen";
+        cell.textContent = t('admin_version_not_seen');
         cell.style.opacity = "0.45";
       }
     });
@@ -3140,10 +3136,14 @@ async function startApp() {
   const savedThemeMode = getSavedThemeMode();
   applyThemeMode(savedThemeMode, appState);
 
+  await loadLocale("en");
+  const savedLang = getCurrentLang();
+  if (savedLang !== "en") await loadLocale(savedLang);
+
   if (!supabase) {
     showFatalError(
-      "Missing configuration",
-      "VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set for this build.",
+      t('fatal_missing_config'),
+      t('fatal_missing_config_detail'),
     );
     return;
   }
@@ -3153,8 +3153,8 @@ async function startApp() {
   } catch (error) {
     console.error("Error fetching members:", error);
     showFatalError(
-      "Could not load app data",
-      error?.message || "The app could not fetch members from Supabase.",
+      t('fatal_load_error'),
+      error?.message || t('fatal_fetch_members'),
     );
     return;
   }
@@ -3198,8 +3198,8 @@ async function startApp() {
 
   if (!matchedMember) {
     showFatalError(
-      "Access denied",
-      "Your email address is not listed in the members table.",
+      t('fatal_access_denied'),
+      t('fatal_not_in_members'),
     );
     return;
   }
@@ -3361,7 +3361,7 @@ async function sendWelcomeNotification(registration) {
 
 async function subscribeToPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-    throw new Error("Push notifications are not supported on this browser.");
+    throw new Error(t('push_not_supported'));
   }
 
   // Use BASE_URL so the path is correct for subdirectory deployments
@@ -3372,7 +3372,7 @@ async function subscribeToPush() {
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
-    throw new Error("Notification permission was denied.");
+    throw new Error(t('push_permission_denied'));
   }
 
   // Always unsubscribe from the browser side first so the push service
@@ -3391,7 +3391,7 @@ async function subscribeToPush() {
   } = await supabase.auth.getUser();
 
   if (!user?.id) {
-    throw new Error("Could not determine the current user.");
+    throw new Error(t('push_no_user'));
   }
 
   // Remove any existing subscription for this user before inserting the new one
@@ -3405,7 +3405,7 @@ async function subscribeToPush() {
     ]);
 
   if (error) {
-    throw new Error(`Failed to save subscription: ${error.message}`);
+    throw new Error(t('push_save_failed', { message: error.message }));
   }
 
   // Send welcome notification to confirm subscription worked
@@ -3422,7 +3422,7 @@ async function subscribeToPush() {
 startApp().catch((error) => {
   console.error("Failed to start app:", error);
   showFatalError(
-    "Failed to start app",
-    error?.message || "Unexpected startup error.",
+    t('fatal_start_error'),
+    error?.message || t('fatal_unexpected'),
   );
 });
