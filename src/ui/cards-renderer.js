@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.js";
+
 export function createCardsRenderer({
   appState,
   getSortedVisibleCallings,
@@ -155,35 +157,14 @@ export function createCardsRenderer({
   }
 
   function getReleaseCheckTitle(groupKey) {
-    if (groupKey === "ward support") {
-      return "Previous ward support release check";
-    }
-
-    if (groupKey === "bishopric") {
-      return "Previous bishopric release check";
-    }
-
-    if (groupKey === "elders quorum") {
-      return "Previous Elders Quorum presidency release check";
-    }
-
-    if (groupKey === "relief society") {
-      return "Previous Relief Society presidency release check";
-    }
-
-    if (groupKey === "primary") {
-      return "Previous Primary presidency release check";
-    }
-
-    if (groupKey === "young women") {
-      return "Previous Young Women presidency release check";
-    }
-
-    if (groupKey === "young men") {
-      return "Previous Young Men presidency release check";
-    }
-
-    return "Previous presidency release check";
+    if (groupKey === "ward support") return t('release_check_ward_support');
+    if (groupKey === "bishopric") return t('release_check_bishopric');
+    if (groupKey === "elders quorum") return t('release_check_elders_quorum');
+    if (groupKey === "relief society") return t('release_check_relief_society');
+    if (groupKey === "primary") return t('release_check_primary');
+    if (groupKey === "young women") return t('release_check_young_women');
+    if (groupKey === "young men") return t('release_check_young_men');
+    return t('release_check_generic');
   }
 
   function renderReleaseCheck(row) {
@@ -204,8 +185,8 @@ export function createCardsRenderer({
             return `
               <div class="releaseCheck">
                 ${done ? "✅" : "❌"}
-                ${escapeHtml(release.name || "(No name)")} — ${escapeHtml(release.position || "(No position)")}
-                <span style="color:  var(--danger-text); font-weight: 400";">Release interview ${done ? "done" : "pending"}</span>
+                ${escapeHtml(release.name || t('no_name'))} — ${escapeHtml(release.position || t('no_position'))}
+                <span style="color:  var(--danger-text); font-weight: 400";">${done ? t('release_interview_done') : t('release_interview_pending')}</span>
               </div>
             `;
           })
@@ -232,7 +213,7 @@ export function createCardsRenderer({
       list.innerHTML = `
         <article class="card">
           <div style="padding: 25px; text-align: center; color: #666;">
-            No assigned callings to display.
+            ${t('cards_empty')}
           </div>
         </article>
       `;
@@ -307,7 +288,7 @@ export function createCardsRenderer({
         <article class="card ${isRelease ? "releaseCard" : "callingCard"}">
           <div style="background: ${isRelease ? "var(--banner-release-bg)" : "var(--banner-call-bg)"}; 
           padding: 10px; text-align: center; font-weight: 900; color: ${isRelease ? "var(--banner-release-text)" : "var(--banner-call-text)"};">
-            ${isRelease ? "RELEASE" : "CALLING"}
+            ${isRelease ? t('type_release') : t('type_calling')}
           </div>
 
           <div style="padding: 18px;">
@@ -333,13 +314,13 @@ export function createCardsRenderer({
               <label class="workflow-block ${row.sp_approved ? "done" : ""}" style="display: flex; flex-direction: column; gap: 6px; padding: 10px; background: ${row.sp_approved ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px; cursor: pointer;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <input type="checkbox" ${row.sp_approved ? "checked" : ""} onchange="window.toggleSpApproval('${row.id}', this)">
-                  <span style="font-weight: bold;">S.Pres Approved</span>
+                  <span style="font-weight: bold;">${t('label_sp_approved')}</span>
                 </div>
                 ${row.sp_approved_date ? `<span style="font-size: 0.75rem; color: var(--workflow-date); margin-left: 26px;">${new Date(row.sp_approved_date).toLocaleDateString()}</span>` : ""}
               </label>
 
               <div class="workflow-block ${row.hc_sustained ? "done" : ""}" style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: ${row.hc_sustained ? "var(--block-done)" : "var(--block-pending)"}; color: var(--workflow-text); border-radius: 12px;">
-                <span style="font-weight: bold;">SHC Sustaining</span>
+                <span style="font-weight: bold;">${t('label_shc_sustaining')}</span>
 
                 ${
                   isRelease
@@ -352,11 +333,11 @@ export function createCardsRenderer({
                   ${
                     appState.hcVotingTableAvailable
                       ? `
-                    <span style="font-size: 0.78rem; color: var(--workflow-date);">Sustain: ${voteSummary.sustainCount} | Concern: ${voteSummary.concernCount} | Pending: ${voteSummary.pendingCount}</span>
+                    <span style="font-size: 0.78rem; color: var(--workflow-date);">${t('hc_vote_summary', { sustain: voteSummary.sustainCount, concern: voteSummary.concernCount, pending: voteSummary.pendingCount })}</span>
                   `
                       : `
                     <span style="font-size: 0.78rem; color: #8b1e1e; font-weight: 600;">
-                      Voting table missing in database. Run migration to enable per-member SHC votes.
+                      ${t('hc_voting_table_missing')}
                     </span>
                   `
                   }
@@ -369,7 +350,7 @@ export function createCardsRenderer({
                         type="button"
                         onclick="window.submitHighCouncilVote('${row.id}', ${currentUserVote === "sustain" ? "'clear'" : "'sustain'"})"
                         style="padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${currentUserVote === "sustain" ? "var(--chip-selected-bg)" : "var(--white)"}; color: ${currentUserVote === "sustain" ? "var(--chip-selected-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
-                      >${currentUserVote === "sustain" ? "Undo Sustain" : "Sustain"}</button>
+                      >${currentUserVote === "sustain" ? t('btn_undo_sustain') : t('btn_sustain')}</button>
                      
                       <button
                           type="button"
@@ -386,9 +367,9 @@ export function createCardsRenderer({
                           ${
                             currentUserVote === "concern"
                               ? hasAdminPasswordAccess()
-                                ? "Undo Concern"
-                                : "Concerned"
-                              : "Concern"
+                                ? t('btn_undo_concern')
+                                : t('btn_concern_voted')
+                              : t('btn_concern')
                           }
                         </button>
 
@@ -396,7 +377,7 @@ export function createCardsRenderer({
                       type="button"
                       onclick="window.submitHighCouncilVote('${row.id}', 'clear')"
                       style="margin-top: 2px; padding: 5px 8px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;"
-                    >Clear my vote</button>
+                    >${t('btn_clear_vote')}</button>
                   `
                       : ""
                   }
@@ -408,7 +389,7 @@ export function createCardsRenderer({
                       type="button"
                       onclick="window.toggleHighCouncilDetails('${row.id}')"
                       style="margin-top: 2px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--accent-border); background: var(--accent-soft); color: var(--accent-text); font-weight: 700; cursor: pointer;"
-                    >${isHcDetailsExpanded ? "▲ Hide SHC details" : "▼ Show SHC details"}</button>
+                    >${isHcDetailsExpanded ? t('btn_hide_shc_details') : t('btn_show_shc_details')}</button>
                   `
                       : ""
                   }
@@ -417,15 +398,15 @@ export function createCardsRenderer({
                     isHcDetailsExpanded && appState.hcVotingTableAvailable
                       ? `
                     <div style="margin-top: 4px; display: grid; gap: 4px; font-size: 0.75rem; color: var(--workflow-date);">
-                      <span>Majority required: ${voteSummary.majorityCount || "-"} of ${voteSummary.eligibleCount}</span>
+                      <span>${t('hc_majority_required', { count: voteSummary.majorityCount || "-", total: voteSummary.eligibleCount })}</span>
                       ${
                         isHcBypassed
-                          ? `<span style="color: var(--danger-text); font-weight: 700;">Admin bypass enabled${row.hc_sustained_bypass_by ? ` by ${escapeHtml(row.hc_sustained_bypass_by)}` : ""}</span>`
+                          ? `<span style="color: var(--danger-text); font-weight: 700;">${row.hc_sustained_bypass_by ? t('hc_bypass_enabled_by', { name: escapeHtml(row.hc_sustained_bypass_by) }) : t('hc_bypass_enabled')}</span>`
                           : ""
                       }
                       ${
                         row.hc_sustained_date
-                          ? `<span>Majority reached: ${new Date(row.hc_sustained_date).toLocaleDateString()}</span>`
+                          ? `<span>${t('hc_majority_reached', { date: new Date(row.hc_sustained_date).toLocaleDateString() })}</span>`
                           : ""
                       }
                     </div>
@@ -435,7 +416,7 @@ export function createCardsRenderer({
                       <div style="margin-top: 4px; font-size: 0.75rem; color: var(--workflow-date); display: grid; gap: 3px;">
                         
                       <div>
-                        <strong>Sustained by:</strong>
+                        <strong>${t('hc_sustained_by')}</strong>
                         ${
                           voteSummary.sustainVoters.length
                             ? `
@@ -457,12 +438,12 @@ export function createCardsRenderer({
                               .join("")}
                           </div>
                         `
-                            : " None"
+                            : ` ${t('hc_none')}`
                         }
                       </div>
 
                       <div>
-                        <strong>Unable to sustain:</strong>
+                        <strong>${t('hc_unable_to_sustain')}</strong>
                         ${
                           voteSummary.concernVoters.length
                             ? `
@@ -484,7 +465,7 @@ export function createCardsRenderer({
                               .join("")}
                           </div>
                         `
-                            : " None"
+                            : ` ${t('hc_none')}`
                         }
                       </div>
 
@@ -494,10 +475,10 @@ export function createCardsRenderer({
                           type="button"
                           onclick="window.setHighCouncilBypass('${row.id}', ${isHcBypassed ? "false" : "true"})"
                           style="padding: 7px 8px; border-radius: 8px; border: 1px solid var(--border); background: ${isHcBypassed ? "var(--danger-soft)" : "var(--surface-subtle)"}; color: ${isHcBypassed ? "var(--danger-text)" : "var(--text)"}; font-weight: 700; cursor: pointer;"
-                        >${isHcBypassed ? "Disable admin bypass" : "Enable admin bypass"}</button>
+                        >${isHcBypassed ? t('btn_disable_bypass') : t('btn_enable_bypass')}</button>
                         ${
                           !appState.hcBypassAvailable
-                            ? `<span style="font-size: 0.72rem; color: #8b1e1e; font-weight: 600;">Bypass DB columns not found. Run migration to enable this control.</span>`
+                            ? `<span style="font-size: 0.72rem; color: #8b1e1e; font-weight: 600;">${t('hc_bypass_columns_missing')}</span>`
                             : ""
                         }
                       </div>
@@ -514,21 +495,21 @@ export function createCardsRenderer({
 
             <button onclick="window.toggleDetails('${row.id}')" 
               style="width: 100%; padding: 10px; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 8px; font-weight: bold; color: var(--text-muted); cursor: pointer;">
-              ${isExpanded ? "▲ Hide Details" : "▼ More Details"}
+              ${isExpanded ? t('btn_hide_details') : t('btn_more_details')}
             </button>
 
             <div style="display: ${isExpanded ? "block" : "none"}; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border);">
-              <p style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 8px;">DETAILED STEPS:</p>
+              <p style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 8px;">${t('label_detailed_steps')}</p>
               <div style="background: var(--surface-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
                 <div style="display: grid; gap: 10px; margin-bottom: 10px;">
                   <div>
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Interview assigned to</label>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_interview_assigned_to')}</label>
                     <select
                       onchange="window.updateAssignment('${row.id}', 'interview_by', this.value)"
                       ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                       style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
                     >
-                      <option value="">Assignment pending...</option>
+                      <option value="">${t('option_assignment_pending')}</option>
                       ${appState.assignableNames
                         .map(
                           (name) =>
@@ -540,7 +521,7 @@ export function createCardsRenderer({
 
                   <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.interviewed ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
                     <input type="checkbox" ${row.interviewed ? "checked" : ""} onchange="window.updateField('${row.id}', 'interviewed', this.checked)">
-                    <span>Interview completed</span>
+                    <span>${t('label_interview_completed')}</span>
                   </label>
 
                  ${
@@ -548,7 +529,7 @@ export function createCardsRenderer({
                      ? ""
                      : `<label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${row.prev_release ? "var(--warning-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
       <input type="checkbox" ${row.prev_release ? "checked" : ""} onchange="window.updateField('${row.id}', 'prev_release', this.checked)">
-      <span>Reminder: verify previous release</span>
+      <span>${t('label_verify_prev_release')}</span>
     </label>`
                  }
                 </div>
@@ -558,14 +539,14 @@ export function createCardsRenderer({
                     ? `
                   <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
                     <button onclick="window.toggleReleaseAnnouncementUnits('${row.id}')" style="width: 100%; padding: 8px; background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 8px; font-weight: 600; color: var(--accent-text); cursor: pointer; font-size: 0.9rem;">
-                      ${appState.expandedReleaseAnnouncementIds.has(row.id) ? "▲ Hide" : "▼ Show"} Release Announced in Units (${releaseAnnouncementCount})
+                      ${t(appState.expandedReleaseAnnouncementIds.has(row.id) ? 'btn_hide_release_announced' : 'btn_show_release_announced', { count: releaseAnnouncementCount })}
                     </button>
 
                     ${
                       appState.expandedReleaseAnnouncementIds.has(row.id)
                         ? `
                       <div style="margin-top: 10px; padding: 10px; background: var(--surface-muted); border-radius: 8px;">
-                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">Units where release has been announced</p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">${t('label_release_announced_units')}</p>
                         <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                           ${appState.units
                             .map((unit) => {
@@ -600,14 +581,14 @@ export function createCardsRenderer({
   ${renderReleaseCheck(row)}
 
   <div style="margin-bottom: 10px;">
-    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Sustaining assigned to</label>
+    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_sustaining_assigned_to')}</label>
 
                     <select
                         onchange="window.updateAssignment('${row.id}', '${sustainingByField}', this.value)"
                         ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                         style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
                       >
-                        <option value="">Assignment pending</option>
+                        <option value="">${t('option_assignment_pending')}</option>
                         ${appState.assignableNames
                           .map(
                             (name) =>
@@ -618,14 +599,14 @@ export function createCardsRenderer({
                     </div>
 
                     <button onclick="window.toggleSustainingUnits('${row.id}')" style="width: 100%; padding: 8px; background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 8px; font-weight: 600; color: var(--accent-text); cursor: pointer; font-size: 0.9rem;">
-                      ${appState.expandedSustainingIds.has(row.id) ? "▲ Hide" : "▼ Show"} Sustaining Units
+                      ${t(appState.expandedSustainingIds.has(row.id) ? 'btn_hide_sustaining_units' : 'btn_show_sustaining_units')}
                     </button>
 
                     ${
                       appState.expandedSustainingIds.has(row.id)
                         ? `
                       <div style="margin-top: 10px; padding: 10px; background: var(--surface-muted); border-radius: 8px;">
-                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">Units to sustain</p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">${t('label_units_to_sustain')}</p>
                         <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                           ${appState.units
                             .map((unit) => {
@@ -654,13 +635,13 @@ export function createCardsRenderer({
 
                   <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: grid; gap: 10px;">
                     <div>
-                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Setting apart assigned to</label>
+                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_setting_apart_assigned_to')}</label>
                       <select
                         onchange="window.updateAssignment('${row.id}', '${settingApartByField}', this.value)"
                         ${canAssign ? "" : "disabled title='Admin password required for assignments'"}
                         style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
                       >
-                        <option value="">Assignment pending...</option>
+                        <option value="">${t('option_assignment_pending')}</option>
                         ${appState.assignableNames
                           .map(
                             (name) =>
@@ -672,19 +653,19 @@ export function createCardsRenderer({
 
                     <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${settingApartDone ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
                       <input type="checkbox" ${settingApartDone ? "checked" : ""} onchange="window.updateField('${row.id}', '${settingApartDoneField}', this.checked)">
-                      <span>Setting apart completed</span>
+                      <span>${t('label_setting_apart_completed')}</span>
                     </label>
 
                     <label style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: ${lcrRecorded ? "var(--success-soft)" : "var(--surface-muted)"}; color: var(--text); font-weight: 600; cursor: pointer;">
                       <input type="checkbox" ${lcrRecorded ? "checked" : ""} onchange="window.updateField('${row.id}', '${lcrRecordedField}', this.checked)">
-                      <span>Recorded in LCR</span>
+                      <span>${t('label_recorded_in_lcr')}</span>
                     </label>
                   </div>
                   `
                 }
 
                 <div style="margin: 10px 0 0 0;">
-                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">Status</label>
+                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('col_status')}</label>
                   <select
                     onchange="window.updateAssignment('${row.id}', 'status', this.value)"
                     style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
@@ -704,7 +685,7 @@ export function createCardsRenderer({
                       onclick="window.archiveCalling('${row.id}')"
                       style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: white; font-weight: 700; cursor: pointer;"
                     >
-                      Archive
+                      ${t('btn_archive')}
                     </button>
   `
                       : ""

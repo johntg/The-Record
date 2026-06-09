@@ -1,4 +1,5 @@
 import { showModalAlert } from "./modal-manager.js";
+import { t } from "../i18n/index.js";
 
 export function ensureCreateCallingUi({
   appState,
@@ -45,34 +46,34 @@ export function ensureCreateCallingUi({
     modal.innerHTML = `
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="create-calling-title">
         <div class="modal-header">
-          <h2 id="create-calling-title">New Entry</h2>
+          <h2 id="create-calling-title">${t('create_entry_title')}</h2>
           <button type="button" class="icon-button" aria-label="Close" onclick="window.closeCreateCallingModal()">×</button>
         </div>
 
         <form class="calling-form" onsubmit="window.submitNewCalling(event)">
-          <label class="field-label" for="create-type">Type</label>
+          <label class="field-label" for="create-type">${t('label_type')}</label>
           <select id="create-type" name="type" required>
-            <option value="CALL">Call</option>
-            <option value="RELEASE">Release</option>
+            <option value="CALL">${t('type_call_option')}</option>
+            <option value="RELEASE">${t('type_release_option')}</option>
           </select>
 
-          <label class="field-label" for="create-name">Name</label>
-          <input id="create-name" name="name" type="text" placeholder="Full Name" required />
+          <label class="field-label" for="create-name">${t('label_name')}</label>
+          <input id="create-name" name="name" type="text" placeholder="${t('create_name_placeholder')}" required />
 
-          <label class="field-label" for="create-position">Position</label>
-          <input id="create-position" name="position" type="text" placeholder="Position" required />
+          <label class="field-label" for="create-position">${t('col_position')}</label>
+          <input id="create-position" name="position" type="text" placeholder="${t('col_position')}" required />
 
-          <label class="field-label" for="create-unit">Unit <span>(where to be sustained)</span></label>
+          <label class="field-label" for="create-unit">${t('label_unit')} <span>${t('label_unit_sustain_hint')}</span></label>
           <select id="create-unit" name="unit" required>
-            <option value="" disabled selected>Select Unit...</option>
+            <option value="" disabled selected>${t('option_select_unit')}</option>
             ${appState.units.map((unit) => `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`).join("")}
           </select>
 
           <p id="create-calling-message" class="form-message" aria-live="polite"></p>
 
           <div class="btn-group">
-            <button type="button" class="btn btn-secondary" onclick="window.closeCreateCallingModal()">Cancel</button>
-            <button id="create-calling-submit" type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" onclick="window.closeCreateCallingModal()">${t('btn_cancel')}</button>
+            <button id="create-calling-submit" type="submit" class="btn btn-primary">${t('btn_save')}</button>
           </div>
         </form>
       </section>
@@ -96,7 +97,7 @@ export async function openCreateCallingModal({
 }) {
   if (!hasAdminPasswordAccess()) {
     await showModalAlert(
-      "Creating entries requires signing in with the admin password.",
+      t('error_admin_password_required'),
     );
     return;
   }
@@ -148,7 +149,7 @@ export async function submitNewCalling({
 
   if (!hasAdminPasswordAccess()) {
     await showModalAlert(
-      "Creating entries requires signing in with the admin password.",
+      t('error_admin_password_required'),
     );
     return;
   }
@@ -170,14 +171,14 @@ export async function submitNewCalling({
 
   if (!payload.type || !payload.name || !payload.position || !payload.unit) {
     if (message) {
-      message.textContent = "Please complete all fields.";
+      message.textContent = t('error_complete_all_fields');
       message.classList.add("error");
     }
     return;
   }
 
   if (message) {
-    message.textContent = "Saving...";
+    message.textContent = t('create_saving');
     message.classList.remove("error");
   }
 
@@ -198,7 +199,7 @@ export async function submitNewCalling({
   if (error) {
     console.error("Create entry error:", error);
     if (message) {
-      message.textContent = `Failed to save entry: ${error.message}`;
+      message.textContent = t('error_save_entry', { message: error.message });
       message.classList.add("error");
     }
     return;

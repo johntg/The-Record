@@ -1,5 +1,5 @@
 import { showModalConfirm } from "./modal-manager.js";
-import { getCurrentLang, LANGUAGES } from "../i18n/index.js";
+import { t, getCurrentLang, LANGUAGES } from "../i18n/index.js";
 
 function updateFabDebugBadge(documentRef = document) {
   const badge = documentRef.getElementById("fab-debug-badge");
@@ -14,7 +14,7 @@ function ensureResetCacheQuickAction(onResetCache, documentRef = document) {
     button = documentRef.createElement("button");
     button.id = "reset-cache-quick-btn";
     button.type = "button";
-    button.textContent = "Reset Cache";
+    button.textContent = t('btn_reset_cache');
     button.onclick = () => onResetCache();
     Object.assign(button.style, {
       position: "fixed",
@@ -112,10 +112,10 @@ export async function renderHeader({
     ? isSuperAdminUser() === true
     : false;
   const scopeLabel = appState.showAllCallingsForStake
-    ? "My Assignments"
-    : "All Callings";
+    ? t('nav_my_assignments')
+    : t('nav_all_callings');
   const pageToggleLabel =
-    appState.currentPage === "callings" ? "Reports" : "Callings";
+    appState.currentPage === "callings" ? t('nav_reports') : t('nav_callings');
   const isTraining = appState.dbMode === "training";
   const header = documentRef.createElement("header");
   header.className = "main-header";
@@ -147,7 +147,7 @@ export async function renderHeader({
           <span class="slider round"></span>
         </label>
         <span style="font-size: 12px; font-weight: bold; color: ${isTraining ? trainingClr : prodClr};">
-          ${isTraining ? "TRAINING" : "LIVE"}
+          ${isTraining ? t('mode_training') : t('mode_live')}
         </span>
       </div>
 
@@ -167,16 +167,16 @@ export async function renderHeader({
       }
       ${
         showAdminButton
-          ? `<button onclick="window.showAdminModal()">Admin</button>`
+          ? `<button onclick="window.showAdminModal()">${t('nav_admin')}</button>`
           : ""
       }
       ${
         !hasNotificationSubscription
-          ? `<button onclick="window.subscribeToNotifications()">Notifications</button>`
+          ? `<button onclick="window.subscribeToNotifications()">${t('nav_notifications')}</button>`
           : ""
       }
-      <button id="messages-btn" class="${hasUnreadMessages ? "inbox-alert" : ""}" onclick="window.openInbox()">Messages</button>
-      <button onclick="window.confirmLogout()">Logout</button>
+      <button id="messages-btn" class="${hasUnreadMessages ? "inbox-alert" : ""}" onclick="window.openInbox()">${t('nav_messages')}</button>
+      <button onclick="window.confirmLogout()">${t('nav_logout')}</button>
       <select
         onchange="window.setLanguage(this.value)"
         title="Language / Gagana / Lea / Reo"
@@ -213,7 +213,7 @@ export async function renderHeader({
    isTraining
      ? `
     <div class="alertBnr" ">
-      ⚠️ YOU ARE CURRENTLY IN TRAINING MODE ⚠️ 
+      ${t('banner_training')}
     </div>
   `
      : ""
@@ -265,7 +265,7 @@ export async function renderHeader({
   const refreshIcon = documentRef.getElementById("refreshicon");
 
   refreshIcon.addEventListener("click", async () => {
-    const confirmed = await showModalConfirm("Refresh app to latest data?");
+    const confirmed = await showModalConfirm(t('confirm_refresh'));
     if (!confirmed) return;
 
     window.softRefreshApp?.();
