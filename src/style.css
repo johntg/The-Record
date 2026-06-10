@@ -334,11 +334,12 @@ input:checked + .slider:before {
 
 .main-header-title-translation {
   color: var(--recordClr);
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 400;
   margin: 0;
   opacity: 0.7;
   font-style: italic;
+  margin-bottom: 0.5em;
 }
 
 .main-header-subtitle {
