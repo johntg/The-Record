@@ -1,6 +1,13 @@
 import { showModalConfirm } from "./modal-manager.js";
 import { t, getCurrentLang, LANGUAGES } from "../i18n/index.js";
 
+const APP_NAME_TRANSLATIONS = {
+  sm: "O le Fa'amaumauga",
+  to: "Ko e Lēkooti",
+  mi: "Te Rekoata",
+  tl: "Ang Talaan",
+};
+
 function updateFabDebugBadge(documentRef = document) {
   const badge = documentRef.getElementById("fab-debug-badge");
   if (badge) {
@@ -162,6 +169,7 @@ export async function renderHeader({
 
   <div class='main-header-title'>
     <h1><span>The</span>Record</h1>
+    ${APP_NAME_TRANSLATIONS[getCurrentLang()] ? `<p class="main-header-title-translation">${APP_NAME_TRANSLATIONS[getCurrentLang()]}</p>` : ""}
     <h3 class="main-header-subtitle">${import.meta.env.VITE_SUBTITLE ?? "Christchurch Stake"}</h3>
   </div>
 
