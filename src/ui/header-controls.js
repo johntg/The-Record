@@ -14,7 +14,7 @@ function ensureResetCacheQuickAction(onResetCache, documentRef = document) {
     button = documentRef.createElement("button");
     button.id = "reset-cache-quick-btn";
     button.type = "button";
-    button.textContent = t('btn_reset_cache');
+    button.textContent = t("btn_reset_cache");
     button.onclick = () => onResetCache();
     Object.assign(button.style, {
       position: "fixed",
@@ -112,10 +112,10 @@ export async function renderHeader({
     ? isSuperAdminUser() === true
     : false;
   const scopeLabel = appState.showAllCallingsForStake
-    ? t('nav_my_assignments')
-    : t('nav_all_callings');
+    ? t("nav_my_assignments")
+    : t("nav_all_callings");
   const pageToggleLabel =
-    appState.currentPage === "callings" ? t('nav_reports') : t('nav_callings');
+    appState.currentPage === "callings" ? t("nav_reports") : t("nav_callings");
   const isTraining = appState.dbMode === "training";
   const header = documentRef.createElement("header");
   header.className = "main-header";
@@ -133,28 +133,36 @@ export async function renderHeader({
   const trainingClr = "var(--alertbnrclr)";
 
   header.innerHTML = `
- 
-  <div style="display: flex; align-items: center; gap: 16px;">
-    
-      <div class="dbSwitch">
-        <label class="switcher" title="Toggle between Production and Training modes">
-          <input 
-            type="checkbox" 
-            id="db-toggle-switch" 
-            onclick="window.toggleDatabaseMode()" 
-            ${isTraining ? "checked" : ""}
-          >
-          <span class="slider round"></span>
-        </label>
-        <span style="font-size: 12px; font-weight: bold; color: ${isTraining ? trainingClr : prodClr};">
-          ${isTraining ? t('mode_training') : t('mode_live')}
-        </span>
-      </div>
 
-    <div class='main-header-title'>
-      <h1><span>The</span>Record</h1>
-      <h3 class="main-header-subtitle">${import.meta.env.VITE_SUBTITLE ?? "Christchurch Stake"}</h3>
+  <div class="header-left-controls">
+    <div class="hamburger-menu">
+      <button class="hamburger-btn" id="hamburger-btn" onclick="window.toggleLangMenu()" title="Language / Gagana / Lea / Reo" aria-label="Language selector">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="currentColor">
+          <rect width="18" height="2" rx="1"/>
+          <rect y="6" width="18" height="2" rx="1"/>
+          <rect y="12" width="18" height="2" rx="1"/>
+        </svg>
+      </button>
+      <div id="lang-dropdown" class="lang-dropdown hidden">
+        ${LANGUAGES.map(({ code, label }) => `<button class="lang-dropdown-item${getCurrentLang() === code ? " lang-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
+        <div class="lang-dropdown-separator"></div>
+        <button id="logoutBtn" ;class="lang-dropdown-item lang-dropdown-item--logout" onclick="window.closeLangMenu();window.confirmLogout()">${t("nav_logout")}</button>
+      </div>
     </div>
+    <div class="dbSwitch">
+      <label class="switcher" title="Toggle between Production and Training modes">
+        <input type="checkbox" id="db-toggle-switch" onclick="window.toggleDatabaseMode()" ${isTraining ? "checked" : ""}>
+        <span class="slider round"></span>
+      </label>
+      <span style="font-size: 11px; font-weight: bold; color: ${isTraining ? trainingClr : prodClr};">
+        ${isTraining ? t("mode_training") : t("mode_live")}
+      </span>
+    </div>
+  </div>
+
+  <div class='main-header-title'>
+    <h1><span>The</span>Record</h1>
+    <h3 class="main-header-subtitle">${import.meta.env.VITE_SUBTITLE ?? "Christchurch Stake"}</h3>
   </div>
 
   <div class="main-header-center">
@@ -167,23 +175,15 @@ export async function renderHeader({
       }
       ${
         showAdminButton
-          ? `<button onclick="window.showAdminModal()">${t('nav_admin')}</button>`
+          ? `<button onclick="window.showAdminModal()">${t("nav_admin")}</button>`
           : ""
       }
       ${
         !hasNotificationSubscription
-          ? `<button onclick="window.subscribeToNotifications()">${t('nav_notifications')}</button>`
+          ? `<button onclick="window.subscribeToNotifications()">${t("nav_notifications")}</button>`
           : ""
       }
-      <button id="messages-btn" class="${hasUnreadMessages ? "inbox-alert" : ""}" onclick="window.openInbox()">${t('nav_messages')}</button>
-      <button onclick="window.confirmLogout()">${t('nav_logout')}</button>
-      <select
-        onchange="window.setLanguage(this.value)"
-        title="Language / Gagana / Lea / Reo"
-        style="font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer;"
-      >
-        ${LANGUAGES.map(({ code, label }) => `<option value="${code}" ${getCurrentLang() === code ? "selected" : ""}>${label}</option>`).join("")}
-      </select>
+      <button id="messages-btn" class="${hasUnreadMessages ? "inbox-alert" : ""}" onclick="window.openInbox()">${t("nav_messages")}</button>
     </div>
   </div>
 
@@ -213,7 +213,7 @@ export async function renderHeader({
    isTraining
      ? `
     <div class="alertBnr" ">
-      ${t('banner_training')}
+      ${t("banner_training")}
     </div>
   `
      : ""
@@ -262,10 +262,29 @@ export async function renderHeader({
     app.appendChild(archive);
   }
 
+  window.toggleLangMenu = () => {
+    documentRef.getElementById("lang-dropdown")?.classList.toggle("hidden");
+  };
+  window.closeLangMenu = () => {
+    documentRef.getElementById("lang-dropdown")?.classList.add("hidden");
+  };
+
+  if (!window._langMenuOutsideListenerAdded) {
+    window._langMenuOutsideListenerAdded = true;
+    document.addEventListener("click", (e) => {
+      if (
+        !e.target.closest("#hamburger-btn") &&
+        !e.target.closest("#lang-dropdown")
+      ) {
+        document.getElementById("lang-dropdown")?.classList.add("hidden");
+      }
+    });
+  }
+
   const refreshIcon = documentRef.getElementById("refreshicon");
 
   refreshIcon.addEventListener("click", async () => {
-    const confirmed = await showModalConfirm(t('confirm_refresh'));
+    const confirmed = await showModalConfirm(t("confirm_refresh"));
     if (!confirmed) return;
 
     window.softRefreshApp?.();
