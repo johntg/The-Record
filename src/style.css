@@ -332,6 +332,16 @@ input:checked + .slider:before {
   margin: 0;
 }
 
+.main-header-title-translation {
+  color: var(--recordClr);
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0;
+  opacity: 0.7;
+  font-style: italic;
+  margin-bottom: 0.5em;
+}
+
 .main-header-subtitle {
   color: var(--workflow-text);
   font-size: 0.8rem;
