@@ -20,7 +20,7 @@ export const setLang = (lang) => {
 export const loadLocale = async (lang) => {
   if (locales[lang]) return;
   try {
-    locales[lang] = await fetch(`/locales/${lang}.json`).then((r) => r.json());
+    locales[lang] = await fetch(`${import.meta.env.BASE_URL}locales/${lang}.json`).then((r) => r.json());
   } catch {
     console.warn(`[i18n] Could not load locale: ${lang}`);
     locales[lang] = {};
