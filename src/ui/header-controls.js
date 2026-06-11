@@ -151,6 +151,18 @@ export async function renderHeader({
         </svg>
       </button>
       <div id="lang-dropdown" class="lang-dropdown hidden">
+        ${(import.meta.env.VITE_SUBTITLE || "").includes("STAGING") ? `
+        <div class="dev-role-bar">
+          <span class="dev-role-label">DEV ROLE</span>
+          <div class="dev-role-pills">
+            <button class="dev-role-pill" onclick="window.devSetRole('stake');window.closeLangMenu()">Stake</button>
+            <button class="dev-role-pill" onclick="window.devSetRole('shc');window.closeLangMenu()">SHC</button>
+            <button class="dev-role-pill" onclick="window.devSetRole('admin');window.closeLangMenu()">Admin</button>
+            <button class="dev-role-pill" onclick="window.devSetRole('super');window.closeLangMenu()">Super</button>
+          </div>
+        </div>
+        <div class="lang-dropdown-separator"></div>
+        ` : ""}
         ${LANGUAGES.map(({ code, label }) => `<button class="lang-dropdown-item${getCurrentLang() === code ? " lang-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
         <div class="lang-dropdown-separator"></div>
         <button id="dbswitchBtn" class="lang-dropdown-item lang-dropdown-item--mode${isTraining ? " lang-dropdown-item--training" : ""}" onclick="window.toggleDatabaseMode();window.closeLangMenu()">${isTraining ? t("mode_live") : t("mode_training")}</button>

@@ -173,6 +173,42 @@
   background: var(--border, #ddd);
   margin: 4px 10px;
 }
+.dev-role-bar {
+  padding: 8px 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dev-role-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+}
+.dev-role-pills {
+  display: flex;
+  gap: 4px;
+}
+.dev-role-pill {
+  flex: 1;
+  padding: 4px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-muted);
+  color: var(--text);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dev-role-pill:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+}
+
 .lang-dropdown-item--mode {
   color: var(--productionClr);
   font-weight: 700;

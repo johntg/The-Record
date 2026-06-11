@@ -1973,6 +1973,24 @@ window.archiveCalling = async (id) => callingsActions.archiveCalling(id);
 window.updateField = async (id, field, value) =>
   callingsActions.updateField(id, field, value);
 
+const DEV_ROLES = {
+  stake:  { role: "stake", super: false },
+  shc:    { role: "shc",   super: false },
+  admin:  { role: "admin", super: false },
+  super:  { role: "admin", super: true  },
+};
+
+if ((import.meta.env.VITE_SUBTITLE || "").includes("STAGING")) {
+  window.devSetRole = (key) => {
+    const r = DEV_ROLES[key];
+    if (!r || !appState.currentMember) return;
+    appState.currentRole = r.role;
+    appState.currentMember.super = r.super;
+    renderHeader();
+    renderCards();
+  };
+}
+
 window.setLanguage = async (lang) => {
   await loadLocale(lang);
   setLang(lang);
