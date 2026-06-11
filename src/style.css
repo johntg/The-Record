@@ -193,15 +193,11 @@
 }
 
 .dbSwitch {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
   scale: 0.85;
-  z-index: 100;
 }
 .switcher {
   position: relative;
@@ -273,7 +269,7 @@ input:checked + .slider:before {
   right: 10px;
   width: 35px;
   height: 120px;
-  display: flex;
+
   flex-direction: column;
   align-items: center;
   gap: 2px;
@@ -291,7 +287,7 @@ input:checked + .slider:before {
   height: 25px;
   fill: var(--iconClr);
   position: absolute;
-  right: 6px;
+  right: 0px;
   top: 45px;
   transform-origin: center;
 }
@@ -652,8 +648,6 @@ body.modal-open {
   }
   .dbSwitch {
     scale: 0.8;
-    bottom: 8px;
-    right: 8px;
   }
 }
 

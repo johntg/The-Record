@@ -156,16 +156,15 @@ export async function renderHeader({
         <button id="logoutBtn" ;class="lang-dropdown-item lang-dropdown-item--logout" onclick="window.closeLangMenu();window.confirmLogout()">${t("nav_logout")}</button>
       </div>
     </div>
-  </div>
-
-  <div class="dbSwitch">
-    <label class="switcher" title="Toggle between Production and Training modes">
-      <input type="checkbox" id="db-toggle-switch" onclick="window.toggleDatabaseMode()" ${isTraining ? "checked" : ""}>
-      <span class="slider round"></span>
-    </label>
-    <span style="font-size: 11px; font-weight: bold; color: ${isTraining ? trainingClr : prodClr};">
-      ${isTraining ? t("mode_training") : t("mode_live")}
-    </span>
+    <div class="dbSwitch">
+      <label class="switcher" title="Toggle between Production and Training modes">
+        <input type="checkbox" id="db-toggle-switch" onclick="window.toggleDatabaseMode()" ${isTraining ? "checked" : ""}>
+        <span class="slider round"></span>
+      </label>
+      <span style="font-size: 11px; font-weight: bold; color: ${isTraining ? trainingClr : prodClr};">
+        ${isTraining ? t("mode_training") : t("mode_live")}
+      </span>
+    </div>
   </div>
 
   <div class='main-header-title'>
