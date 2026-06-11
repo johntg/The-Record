@@ -197,13 +197,13 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  scale: 0.9;
+  scale: 0.85;
 }
 .switcher {
   position: relative;
   display: inline-block;
-  width: 60px;
-  height: 34px;
+  width: 34px;
+  height: 60px;
 }
 
 /* Hide default HTML checkbox */
@@ -247,9 +247,9 @@ input:focus + .slider {
 }
 
 input:checked + .slider:before {
-  -webkit-transform: translateX(26px);
-  -ms-transform: translateX(26px);
-  transform: translateX(26px);
+  -webkit-transform: translateY(-26px);
+  -ms-transform: translateY(-26px);
+  transform: translateY(-26px);
 }
 
 /* Rounded sliders */
@@ -268,11 +268,8 @@ input:checked + .slider:before {
   top: 15px;
   right: 10px;
   width: 35px;
-  height: 120px;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   z-index: 100;
 }
 
@@ -286,14 +283,15 @@ input:checked + .slider:before {
   width: 25px;
   height: 25px;
   fill: var(--iconClr);
-  position: absolute;
-  right: 6px;
-  top: 45px;
   transform-origin: center;
 }
 
 .refreshIcon svg.is-spinning {
   animation: refresh-spin 1.5s linear;
+}
+
+.refreshIcon:hover svg {
+  animation: refresh-spin 0.8s linear infinite;
 }
 
 @keyframes refresh-spin {
@@ -648,8 +646,6 @@ body.modal-open {
   }
   .dbSwitch {
     scale: 0.8;
-    left: 10px;
-    top: 15px;
   }
 }
 
@@ -1869,8 +1865,10 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
+  padding-inline: 10px;
+  margin-inline: 40px;
 }
 
 /* .main-header h1 {
