@@ -136,8 +136,8 @@ export async function renderHeader({
     activeClr = "#e55000";
   }
 
-  const prodClr = "var(--productionClr)";
-  const trainingClr = "var(--alertbnrclr)";
+  const prodClr = "var(--sliderBgClr)";
+  const trainingClr = "var(--sliderBgClr)";
 
   header.innerHTML = `
 
