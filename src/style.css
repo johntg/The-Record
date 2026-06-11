@@ -216,6 +216,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-subtle);
+  text-align: left;
 }
 .settings-dropdown-group {
   padding-left: 8px;
