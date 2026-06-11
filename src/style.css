@@ -291,7 +291,7 @@ input:checked + .slider:before {
 }
 
 .refreshIcon:hover svg {
-  animation: refresh-spin 0.6s linear;
+  animation: refresh-spin 0.8s linear infinite;
 }
 
 @keyframes refresh-spin {
