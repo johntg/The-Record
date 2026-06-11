@@ -50,6 +50,7 @@
   --alertbnrclr: var(--recordClr);
   --productionClr: #3d5f79;
   --sliderBgClr: #4eabe9;
+  --soft-borderClr: #9497a3;
 }
 
 .login-splash {
@@ -132,13 +133,14 @@
   top: calc(100% + 6px);
   left: 0;
   background: var(--surface, #fff);
-  border: 1px solid var(--border, #ccc);
+  border: 1px solid var(--soft-borderClr, #ccc);
   border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   z-index: 2000;
   min-width: 170px;
   overflow: hidden;
-  padding: 2px;
+  padding: 3px;
+  padding-bottom: 8px;
 }
 .settings-dropdown.hidden {
   display: none;
