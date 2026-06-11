@@ -268,11 +268,8 @@ input:checked + .slider:before {
   top: 15px;
   right: 10px;
   width: 35px;
-  height: 120px;
-
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   z-index: 100;
 }
 
@@ -286,9 +283,6 @@ input:checked + .slider:before {
   width: 25px;
   height: 25px;
   fill: var(--iconClr);
-  position: absolute;
-  right: 0px;
-  top: 45px;
   transform-origin: center;
 }
 
