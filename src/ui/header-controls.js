@@ -93,7 +93,7 @@ export async function renderHeader({
   const hasUnreadMessages = appState.hasUnreadMessages ?? false;
 
   const isShcMember =
-    String(appState.currentMember?.role || "")
+    String(appState.currentRole || "")
       .toLowerCase()
       .trim() === "shc";
 
