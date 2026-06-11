@@ -49,7 +49,7 @@
   --stake-blue: #4e5ff2;
   --alertbnrclr: var(--recordClr);
   --productionClr: #3d5f79;
-  --sliderBgClr: #222222;
+  --sliderBgClr: #4eabe9;
 }
 
 .login-splash {
@@ -271,6 +271,14 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+#dbswitchBtn {
+  background-color: #4c52a1;
+}
+#dbswitchBtn:hover,
+#dbswitchBtn:focus-visible {
+  background-color: #373c78;
 }
 
 .themePicker {

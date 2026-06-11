@@ -153,9 +153,9 @@ export async function renderHeader({
       <div id="lang-dropdown" class="lang-dropdown hidden">
         ${LANGUAGES.map(({ code, label }) => `<button class="lang-dropdown-item${getCurrentLang() === code ? " lang-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
         <div class="lang-dropdown-separator"></div>
-        <button class="lang-dropdown-item lang-dropdown-item--mode${isTraining ? " lang-dropdown-item--training" : ""}" onclick="window.toggleDatabaseMode();window.closeLangMenu()">${isTraining ? t("mode_training") : t("mode_live")}</button>
+        <button id="dbswitchBtn" class="lang-dropdown-item lang-dropdown-item--mode${isTraining ? " lang-dropdown-item--training" : ""}" onclick="window.toggleDatabaseMode();window.closeLangMenu()">${isTraining ? t("mode_live") : t("mode_training")}</button>
         <div class="lang-dropdown-separator"></div>
-        <button id="logoutBtn" ;class="lang-dropdown-item lang-dropdown-item--logout" onclick="window.closeLangMenu();window.confirmLogout()">${t("nav_logout")}</button>
+        <button id="logoutBtn" class="lang-dropdown-item lang-dropdown-item--logout" onclick="window.closeLangMenu();window.confirmLogout()">${t("nav_logout")}</button>
       </div>
     </div>
   </div>

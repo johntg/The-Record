@@ -8,8 +8,8 @@
   "nav_messages": "Messages",
   "nav_logout": "Logout",
 
-  "mode_live": "LIVE",
-  "mode_training": "TRAINING",
+  "mode_live": "Live",
+  "mode_training": "Training",
   "banner_training": "⚠️ YOU ARE CURRENTLY IN TRAINING MODE ⚠️",
 
   "confirm_refresh": "Refresh app to latest data?",
