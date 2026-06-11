@@ -1937,7 +1937,6 @@ select {
   flex-wrap: wrap;
   gap: 5px;
   padding-inline: 10px;
-  margin-inline: 30px;
 }
 
 /* .main-header h1 {
