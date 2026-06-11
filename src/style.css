@@ -127,7 +127,7 @@
   background: rgba(0, 0, 0, 0.22);
 }
 
-.lang-dropdown {
+.settings-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
@@ -140,10 +140,10 @@
   overflow: hidden;
   padding: 2px;
 }
-.lang-dropdown.hidden {
+.settings-dropdown.hidden {
   display: none;
 }
-.lang-dropdown-item {
+.settings-dropdown-item {
   display: block;
   width: 100%;
   padding: 10px 16px;
@@ -158,17 +158,17 @@
   transition: background 0.1s;
   outline: 1px solid white;
 }
-.lang-dropdown-item:last-child {
+.settings-dropdown-item:last-child {
   border-bottom: none;
 }
-.lang-dropdown-item:hover {
+.settings-dropdown-item:hover {
   background: var(--card-bg, #f5f5f5);
 }
-.lang-dropdown-item--active {
+.settings-dropdown-item--active {
   font-weight: 700;
   color: var(--primary, #e55000);
 }
-.lang-dropdown-separator {
+.settings-dropdown-separator {
   height: 1px;
   background: var(--border, #ddd);
   margin: 4px 10px;
@@ -209,23 +209,23 @@
   color: var(--accent-text);
 }
 
-.lang-dropdown-item--mode {
+.settings-dropdown-item--mode {
   color: var(--productionClr);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-size: 11px;
 }
-.lang-dropdown-item--training {
+.settings-dropdown-item--training {
   color: var(--alertbnrclr);
 }
 
-.lang-dropdown-item--logout {
+.settings-dropdown-item--logout {
   color: #ffffff;
   background-color: var(--danger-text);
   font-weight: 600;
 }
-.lang-dropdown-item--logout:hover {
+.settings-dropdown-item--logout:hover {
   background: #fff0ee;
 }
 

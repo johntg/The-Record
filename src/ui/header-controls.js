@@ -150,7 +150,7 @@ export async function renderHeader({
           <rect y="12" width="18" height="2" rx="1"/>
         </svg>
       </button>
-      <div id="lang-dropdown" class="lang-dropdown hidden">
+      <div id="settings-dropdown" class="settings-dropdown hidden">
         ${(import.meta.env.VITE_SUBTITLE || "").includes("STAGING") ? `
         <div class="dev-role-bar">
           <span class="dev-role-label">DEV ROLE</span>
@@ -161,13 +161,13 @@ export async function renderHeader({
             <button class="dev-role-pill" onclick="window.devSetRole('super');window.closeLangMenu()">Super</button>
           </div>
         </div>
-        <div class="lang-dropdown-separator"></div>
+        <div class="settings-dropdown-separator"></div>
         ` : ""}
-        ${LANGUAGES.map(({ code, label }) => `<button class="lang-dropdown-item${getCurrentLang() === code ? " lang-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
-        <div class="lang-dropdown-separator"></div>
-        <button id="dbswitchBtn" class="lang-dropdown-item lang-dropdown-item--mode${isTraining ? " lang-dropdown-item--training" : ""}" onclick="window.toggleDatabaseMode();window.closeLangMenu()">${isTraining ? t("mode_live") : t("mode_training")}</button>
-        <div class="lang-dropdown-separator"></div>
-        <button id="logoutBtn" class="lang-dropdown-item lang-dropdown-item--logout" onclick="window.closeLangMenu();window.confirmLogout()">${t("nav_logout")}</button>
+        ${LANGUAGES.map(({ code, label }) => `<button class="settings-dropdown-item${getCurrentLang() === code ? " settings-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
+        <div class="settings-dropdown-separator"></div>
+        <button id="dbswitchBtn" class="settings-dropdown-item settings-dropdown-item--mode${isTraining ? " settings-dropdown-item--training" : ""}" onclick="window.toggleDatabaseMode();window.closeLangMenu()">${isTraining ? t("mode_live") : t("mode_training")}</button>
+        <div class="settings-dropdown-separator"></div>
+        <button id="logoutBtn" class="settings-dropdown-item settings-dropdown-item--logout" onclick="window.closeLangMenu();window.confirmLogout()">${t("nav_logout")}</button>
       </div>
     </div>
   </div>
@@ -276,10 +276,10 @@ export async function renderHeader({
   }
 
   window.toggleLangMenu = () => {
-    documentRef.getElementById("lang-dropdown")?.classList.toggle("hidden");
+    documentRef.getElementById("settings-dropdown")?.classList.toggle("hidden");
   };
   window.closeLangMenu = () => {
-    documentRef.getElementById("lang-dropdown")?.classList.add("hidden");
+    documentRef.getElementById("settings-dropdown")?.classList.add("hidden");
   };
 
   if (!window._langMenuOutsideListenerAdded) {
@@ -287,9 +287,9 @@ export async function renderHeader({
     document.addEventListener("click", (e) => {
       if (
         !e.target.closest("#hamburger-btn") &&
-        !e.target.closest("#lang-dropdown")
+        !e.target.closest("#settings-dropdown")
       ) {
-        document.getElementById("lang-dropdown")?.classList.add("hidden");
+        document.getElementById("settings-dropdown")?.classList.add("hidden");
       }
     });
   }
