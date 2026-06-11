@@ -209,6 +209,18 @@
   color: var(--accent-text);
 }
 
+.settings-dropdown-group-label {
+  padding: 8px 16px 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+.settings-dropdown-group {
+  padding-left: 8px;
+}
+
 .settings-dropdown-item--mode {
   color: var(--productionClr);
   font-weight: 700;

@@ -163,7 +163,10 @@ export async function renderHeader({
         </div>
         <div class="settings-dropdown-separator"></div>
         ` : ""}
-        ${LANGUAGES.map(({ code, label }) => `<button class="settings-dropdown-item${getCurrentLang() === code ? " settings-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
+        <div class="settings-dropdown-group-label">${t("nav_language_heading")}</div>
+        <div class="settings-dropdown-group">
+          ${LANGUAGES.map(({ code, label }) => `<button class="settings-dropdown-item${getCurrentLang() === code ? " settings-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
+        </div>
         <div class="settings-dropdown-separator"></div>
         <button id="dbswitchBtn" class="settings-dropdown-item settings-dropdown-item--mode${isTraining ? " settings-dropdown-item--training" : ""}" onclick="window.toggleDatabaseMode();window.closeLangMenu()">${isTraining ? t("mode_live") : t("mode_training")}</button>
         <div class="settings-dropdown-separator"></div>
