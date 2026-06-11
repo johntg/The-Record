@@ -290,6 +290,10 @@ input:checked + .slider:before {
   animation: refresh-spin 1.5s linear;
 }
 
+.refreshIcon:hover svg {
+  animation: refresh-spin 0.6s linear;
+}
+
 @keyframes refresh-spin {
   from {
     transform: rotate(0deg);
@@ -1861,8 +1865,10 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
+  padding-inline: 10px;
+  margin-inline: 40px;
 }
 
 /* .main-header h1 {
