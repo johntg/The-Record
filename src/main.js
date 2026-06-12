@@ -3427,7 +3427,8 @@ async function subscribeToPush() {
   }
 
   // Delay welcome notification so it doesn't fire before the browser permission dialog fully clears
-  setTimeout(() => sendWelcomeNotification(registration), 30_000);
+  // Immediate receipt of the notifcation was sometimes not noticed by users.
+  setTimeout(() => sendWelcomeNotification(registration), 45_000);
 
   console.log("User successfully subscribed!");
 }
