@@ -284,12 +284,21 @@ export function createCardsRenderer({
           : statusOptions.filter(
               (status) => status.toLowerCase().trim() !== "archived",
             );
+        const isHeldOrNotProceeding = (() => { const s = currentStatus.toLowerCase(); return s === 'on hold' || s === 'not proceeding'; })();
         return `
-        <article class="card ${isRelease ? "releaseCard" : "callingCard"}">
-          <div style="background: ${isRelease ? "var(--banner-release-bg)" : "var(--banner-call-bg)"}; 
+        <article class="card ${isRelease ? "releaseCard" : "callingCard"}${isHeldOrNotProceeding ? " card--noproceed" : ""}">
+          <div style="background: ${isRelease ? "var(--banner-release-bg)" : "var(--banner-call-bg)"};
           padding: 10px; text-align: center; font-weight: 900; color: ${isRelease ? "var(--banner-release-text)" : "var(--banner-call-text)"};">
             ${isRelease ? t('type_release') : t('type_calling')}
           </div>
+
+          ${(() => {
+            const s = currentStatus.toLowerCase();
+            if (s === 'on hold' || s === 'not proceeding') {
+              return `<div style="text-align: center; padding: 5px 10px; background: var(--danger-btn); color: white; font-size: 0.85rem; font-weight: 700; border-bottom: 1px solid var(--border);">${escapeHtml(currentStatus)}</div>`;
+            }
+            return '';
+          })()}
 
           <div style="padding: 18px;">
             ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);")}
