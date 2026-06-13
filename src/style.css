@@ -51,6 +51,7 @@
   --productionClr: #3d5f79;
   --sliderBgClr: #4eabe9;
   --soft-borderClr: #9497a3;
+  --noproceed: #61618e;
 }
 
 .login-splash {
@@ -542,6 +543,11 @@ input:checked + .slider:before {
 }
 .callingCard {
   border: 2px solid var(--banner-call-bg);
+}
+
+.card--noproceed,
+body.dark-mode .card--noproceed {
+  background-color: var(--noproceed) !important;
 }
 
 body.dark-mode .card {
