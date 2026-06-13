@@ -151,7 +151,9 @@ export async function renderHeader({
         </svg>
       </button>
       <div id="settings-dropdown" class="settings-dropdown hidden">
-        ${(import.meta.env.VITE_SUBTITLE || "").includes("STAGING") ? `
+        ${
+          (import.meta.env.VITE_SUBTITLE || "").includes("STAGING")
+            ? `
         <div class="dev-role-bar">
           <span class="dev-role-label">DEV ROLE</span>
           <div class="dev-role-pills">
@@ -162,10 +164,12 @@ export async function renderHeader({
           </div>
         </div>
         <div class="settings-dropdown-separator"></div>
-        ` : ""}
+        `
+            : ""
+        }
         <div class="settings-dropdown-group-label">${t("nav_language_heading")}</div>
         <div class="settings-dropdown-group">
-          ${LANGUAGES.map(({ code, label }) => `<button class="settings-dropdown-item${getCurrentLang() === code ? " settings-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
+          ${LANGUAGES.map(({ code, label }) => `<button class="settings-langBtn settings-dropdown-item${getCurrentLang() === code ? " settings-dropdown-item--active" : ""}" onclick="window.setLanguage('${code}');window.closeLangMenu()">${label}</button>`).join("")}
         </div>
         <div class="settings-dropdown-separator"></div>
         <button id="dbswitchBtn" class="settings-dropdown-item settings-dropdown-item--mode${isTraining ? " settings-dropdown-item--training" : ""}" onclick="window.toggleDatabaseMode();window.closeLangMenu()">${isTraining ? t("mode_live") : t("mode_training")}</button>
@@ -278,24 +282,32 @@ export async function renderHeader({
     app.appendChild(archive);
   }
 
-  window.toggleLangMenu = () => {
-    documentRef.getElementById("settings-dropdown")?.classList.toggle("hidden");
-  };
-  window.closeLangMenu = () => {
-    documentRef.getElementById("settings-dropdown")?.classList.add("hidden");
+  window._langMenuOutsideClick = (e) => {
+    if (
+      !e.target.closest("#hamburger-btn") &&
+      !e.target.closest("#settings-dropdown")
+    ) {
+      window.closeLangMenu();
+    }
   };
 
-  if (!window._langMenuOutsideListenerAdded) {
-    window._langMenuOutsideListenerAdded = true;
-    document.addEventListener("click", (e) => {
-      if (
-        !e.target.closest("#hamburger-btn") &&
-        !e.target.closest("#settings-dropdown")
-      ) {
-        document.getElementById("settings-dropdown")?.classList.add("hidden");
-      }
-    });
-  }
+  window.toggleLangMenu = () => {
+    const dropdown = documentRef.getElementById("settings-dropdown");
+    if (!dropdown) return;
+    if (dropdown.classList.contains("hidden")) {
+      dropdown.classList.remove("hidden");
+      setTimeout(() => {
+        document.addEventListener("click", window._langMenuOutsideClick);
+      }, 0);
+    } else {
+      window.closeLangMenu();
+    }
+  };
+
+  window.closeLangMenu = () => {
+    documentRef.getElementById("settings-dropdown")?.classList.add("hidden");
+    document.removeEventListener("click", window._langMenuOutsideClick);
+  };
 
   const refreshIcon = documentRef.getElementById("refreshicon");
 
