@@ -1,6 +1,8 @@
 import { showModalConfirm } from "./modal-manager.js";
 import { t, getCurrentLang, LANGUAGES } from "../i18n/index.js";
 
+let _headerObserver = null;
+
 const APP_NAME_TRANSLATIONS = {
   sm: "O le Fa'amaumauga",
   to: "Ko e Lēkooti",
@@ -319,4 +321,18 @@ export async function renderHeader({
   });
 
   ensureCreateCallingUi();
+
+  if (_headerObserver) {
+    _headerObserver.disconnect();
+  }
+
+  _headerObserver = new IntersectionObserver(
+    ([entry]) => {
+      const btn = documentRef.getElementById("hamburger-btn");
+      if (btn) btn.style.visibility = entry.isIntersecting ? "visible" : "hidden";
+    },
+    { threshold: 0 },
+  );
+
+  _headerObserver.observe(header);
 }
