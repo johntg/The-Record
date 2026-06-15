@@ -3010,9 +3010,7 @@ window.editMember = async (memberEmail) => {
 
   document.getElementById("member-email").value = member.email || "";
   document.getElementById("member-name").value = member.name || "";
-  document.getElementById("member-role").value = String(
-    member.role || "",
-  ).toLowerCase();
+  document.getElementById("member-role").value = member.role || "";
   document.getElementById("member-can-assign").checked =
     member.can_be_assigned || false;
   document.getElementById("member-super").checked = member.super || false;
