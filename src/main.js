@@ -917,6 +917,22 @@ async function fetchReferenceData() {
   updateDerivedMemberLists();
 }
 
+async function fetchCurrentUserResponsibilities() {
+  console.log("[responsibilities] called — supabase:", !!supabase, "email:", appState.currentMember?.email);
+  if (!supabase || !appState.currentMember?.email) {
+    appState.currentResponsibilities = null;
+    return;
+  }
+  const { data, error } = await supabase
+    .from("responsibilities")
+    .select("unit, comittee, other")
+    .eq("email", String(appState.currentMember.email).trim().toLowerCase())
+    .maybeSingle();
+  if (error) console.error("fetchCurrentUserResponsibilities error:", error);
+  appState.currentResponsibilities = data || null;
+  console.log("[responsibilities] fetched:", data, "for email:", appState.currentMember.email);
+}
+
 function updateDerivedMemberLists() {
   // Update assignable names list
   appState.assignableNames = appState.members
@@ -1045,6 +1061,24 @@ function renderAdminPage() {
               <label for="member-receive-concern">
                 <input type="checkbox" id="member-receive-concern" /> ${t('label_receive_concern')}
               </label>
+            </div>
+            <div id="responsibilities-section" class="hidden">
+              <hr />
+              <h4>Responsibilities</h4>
+              <div style="display:flex;gap:1rem;">
+                <div class="form-group" style="flex:1;">
+                  <label for="resp-unit">Unit</label>
+                  <input type="text" id="resp-unit" />
+                </div>
+                <div class="form-group" style="flex:1;">
+                  <label for="resp-committee">Committee</label>
+                  <input type="text" id="resp-committee" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="resp-other">Other</label>
+                <input type="text" id="resp-other" />
+              </div>
             </div>
             <div class="btn-group">
               <button type="submit" class="btn btn-primary">${t('btn_save_member')}</button>
@@ -1875,6 +1909,22 @@ function renderCards() {
   if (list) list.classList.remove("hidden");
 
   cardsRenderer.renderCards();
+
+  if (isShcRole() && !appState.showAllCallingsForStake) {
+    const resp = appState.currentResponsibilities;
+    const listEl = document.getElementById("data-list");
+    if (listEl) {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `
+        <h3 style="margin-bottom:0.75rem;">High Council Responsibilities</h3>
+        ${resp?.unit ? `<div class="member-row"><span class="member-label">Unit:</span> ${escapeHtml(resp.unit)}</div>` : ""}
+        ${resp?.comittee ? `<div class="member-row"><span class="member-label">Committee:</span> ${escapeHtml(resp.comittee)}</div>` : ""}
+        ${resp?.other ? `<div class="member-row"><span class="member-label">Other:</span> ${escapeHtml(resp.other)}</div>` : ""}
+      `;
+      listEl.appendChild(card);
+    }
+  }
 }
 
 const callingsActions = createCallingsActions({
@@ -2318,6 +2368,7 @@ window.refreshData = async () => {
       .toLowerCase()
       .trim();
 
+    await fetchCurrentUserResponsibilities();
     await fetchCallings();
 
     if (appState.currentPage === "reports" && appState.currentReportType) {
@@ -2885,6 +2936,9 @@ window.startNewMemberForm = () => {
   document.getElementById("member-email").disabled = false;
   appState.adminFormData.action = "create";
   appState.adminFormData.selectedMemberEmail = null;
+
+  const respSection = document.getElementById("responsibilities-section");
+  if (respSection) respSection.classList.add("hidden");
 };
 
 window.cancelAdminForm = () => {
@@ -2973,6 +3027,23 @@ window.submitMemberForm = async (event) => {
         return;
       }
 
+      if (supabase) {
+        const unit = (document.getElementById("resp-unit").value || "").trim() || null;
+        const committee = (document.getElementById("resp-committee").value || "").trim() || null;
+        const other = (document.getElementById("resp-other").value || "").trim() || null;
+        const { error: respError } = await supabase
+          .from("responsibilities")
+          .upsert(
+            { email: String(email).trim().toLowerCase(), unit, comittee: committee, other },
+            { onConflict: "email" },
+          );
+        if (respError) {
+          console.error("Responsibilities upsert error:", respError);
+          await showModalAlert(`Responsibilities save failed: ${respError.message}`);
+          return;
+        }
+      }
+
       await showModalAlert(t('member_updated'));
     }
 
@@ -3010,9 +3081,7 @@ window.editMember = async (memberEmail) => {
 
   document.getElementById("member-email").value = member.email || "";
   document.getElementById("member-name").value = member.name || "";
-  document.getElementById("member-role").value = String(
-    member.role || "",
-  ).toLowerCase();
+  document.getElementById("member-role").value = member.role || "";
   document.getElementById("member-can-assign").checked =
     member.can_be_assigned || false;
   document.getElementById("member-super").checked = member.super || false;
@@ -3027,6 +3096,28 @@ window.editMember = async (memberEmail) => {
   appState.adminFormData.selectedMemberEmail = String(member.email || "")
     .trim()
     .toLowerCase();
+
+  const respSection = document.getElementById("responsibilities-section");
+  if (respSection && String(member.role || "").toUpperCase() === "SHC") {
+    respSection.classList.remove("hidden");
+    document.getElementById("resp-unit").value = "";
+    document.getElementById("resp-committee").value = "";
+    document.getElementById("resp-other").value = "";
+
+    if (supabase) {
+      const { data: resp } = await supabase
+        .from("responsibilities")
+        .select("unit, comittee, other")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (resp) {
+        document.getElementById("resp-unit").value = resp.unit || "";
+        document.getElementById("resp-committee").value = resp.comittee || "";
+        document.getElementById("resp-other").value = resp.other || "";
+      }
+    }
+  }
 
   const form = document.getElementById("admin-form");
   const list = document.getElementById("admin-members-list");
@@ -3227,6 +3318,8 @@ async function startApp() {
   appState.currentRole = String(matchedMember.role || "")
     .toLowerCase()
     .trim();
+
+  await fetchCurrentUserResponsibilities();
 
   const { data: pushSubData } = await supabase
     .from("push_subscriptions")

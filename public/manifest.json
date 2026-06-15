@@ -2,21 +2,21 @@
   "name": "STAGING: The Record",
   "short_name": "STAGING: The Record",
   "description": "Track Church callings and releases.",
-  "start_url": "/therecord-staging/",
-  "scope": "/therecord-staging/",
+  "start_url": "/The-Record/",
+  "scope": "/The-Record/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#a7b8bd",
   "theme_color": "#1a73e8",
   "icons": [
     {
-      "src": "./staging-therecord-192.png",
+      "src": "./record-staging-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "./staging-therecord-512.png",
+      "src": "./record-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
