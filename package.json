@@ -1,6 +1,6 @@
 {
   "name": "the-record",
-  "version": "3.6.13",
+  "version": "3.6.15",
   "private": true,
   "type": "module",
   "scripts": {
