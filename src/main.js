@@ -89,7 +89,11 @@ async function saveDbSession(session) {
 
   const { data, error } = await supabase
     .from("user_sessions")
-    .insert({ user_id: session.user.id, refresh_token: session.refresh_token, email: session.user.email })
+    .insert({
+      user_id: session.user.id,
+      refresh_token: session.refresh_token,
+      email: session.user.email,
+    })
     .select("id")
     .single();
 
@@ -344,7 +348,7 @@ function ensureBuildVersionModal() {
   modal.innerHTML = `
     <section class="modal version-info-modal" role="dialog" aria-modal="true" aria-labelledby="build-version-title">
       <div class="modal-header version-info-header">
-        <h2 id="build-version-title">${t('version_modal_title')}</h2>
+        <h2 id="build-version-title">${t("version_modal_title")}</h2>
         <button type="button" class="icon-button" aria-label="Close version details" onclick="window.closeBuildVersionPopup()">×</button>
       </div>
       <div class="version-info-body">
@@ -352,7 +356,7 @@ function ensureBuildVersionModal() {
         <pre id="build-version-full" class="version-info-full"></pre>
       </div>
       <div class="btn-group version-info-actions">
-        <button type="button" class="btn btn-primary" onclick="window.closeBuildVersionPopup()">${t('btn_close')}</button>
+        <button type="button" class="btn btn-primary" onclick="window.closeBuildVersionPopup()">${t("btn_close")}</button>
       </div>
     </section>
   `;
@@ -372,7 +376,7 @@ function showBuildVersionPopup() {
   const shortNode = modal.querySelector("#build-version-short");
   const fullNode = modal.querySelector("#build-version-full");
 
-  const shortText = buildVersionState.short || t('version_unavailable');
+  const shortText = buildVersionState.short || t("version_unavailable");
   const fullText = buildVersionState.full || shortText;
 
   if (shortNode) {
@@ -404,10 +408,10 @@ window.subscribeToNotifications = async () => {
     });
 
     appState.hasPushSubscription = true;
-    await showModalAlert(t('notif_enabled'));
+    await showModalAlert(t("notif_enabled"));
   } catch (error) {
     console.error("Notification subscription failed:", error);
-    await showModalAlert(error?.message || t('notif_enable_failed'));
+    await showModalAlert(error?.message || t("notif_enable_failed"));
   } finally {
     renderHeader();
   }
@@ -426,7 +430,7 @@ async function applyBuildVersionToCreditLine() {
     versionNode.style.cursor = "pointer";
     versionNode.setAttribute("role", "button");
     versionNode.setAttribute("tabindex", "0");
-    versionNode.title = t('version_click_details');
+    versionNode.title = t("version_click_details");
     versionNode.addEventListener("click", showBuildVersionPopup);
     versionNode.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -918,19 +922,29 @@ async function fetchReferenceData() {
 }
 
 async function fetchCurrentUserResponsibilities() {
-  console.log("[responsibilities] called — supabase:", !!supabase, "email:", appState.currentMember?.email);
+  console.log(
+    "[responsibilities] called — supabase:",
+    !!supabase,
+    "email:",
+    appState.currentMember?.email,
+  );
   if (!supabase || !appState.currentMember?.email) {
     appState.currentResponsibilities = null;
     return;
   }
   const { data, error } = await supabase
     .from("responsibilities")
-    .select("unit, comittee, other")
+    .select("unit, committee, other")
     .eq("email", String(appState.currentMember.email).trim().toLowerCase())
     .maybeSingle();
   if (error) console.error("fetchCurrentUserResponsibilities error:", error);
   appState.currentResponsibilities = data || null;
-  console.log("[responsibilities] fetched:", data, "for email:", appState.currentMember.email);
+  console.log(
+    "[responsibilities] fetched:",
+    data,
+    "for email:",
+    appState.currentMember.email,
+  );
 }
 
 function updateDerivedMemberLists() {
@@ -978,9 +992,7 @@ async function toggleDatabaseMode() {
   } catch (error) {
     console.error("Error reloading data after mode switch:", error);
     // If data reload fails, show an alert but keep the UI functional
-    await showModalAlert(
-      t('mode_switch_partial_error', { mode: newMode }),
-    );
+    await showModalAlert(t("mode_switch_partial_error", { mode: newMode }));
   }
 }
 
@@ -1013,53 +1025,57 @@ function renderAdminPage() {
 
   adminPage.classList.remove("hidden");
 
-  const roles = ["admin", "stake", "SHC"]
-    .map((r) => `<option value="${r}">${r}</option>`)
+  const roles = [
+    { value: "admin", label: "admin" },
+    { value: "stake", label: "stake" },
+    { value: "shc", label: "SHC" },
+  ]
+    .map((r) => `<option value="${r.value}">${r.label}</option>`)
     .join("");
 
   adminPage.innerHTML = `
     <section class="admin-header">
-      <h2>${t('admin_panel_title')}</h2>
-      <p>${t('admin_panel_subtitle')}</p>
+      <h2>${t("admin_panel_title")}</h2>
+      <p>${t("admin_panel_subtitle")}</p>
     </section>
 
     <section class="admin-actions">
-      <button type="button" class="btn btn-primary" onclick="window.startNewMemberForm()">${t('admin_add_member_btn')}</button>
+      <button type="button" class="btn btn-primary" onclick="window.startNewMemberForm()">${t("admin_add_member_btn")}</button>
     </section>
 
     <section class="admin-content">
       <div id="admin-form" class="hidden">
         <article class="card admin-form-card">
-          <h3 id="admin-form-title">${t('admin_form_title_add')}</h3>
+          <h3 id="admin-form-title">${t("admin_form_title_add")}</h3>
           <form id="admin-member-form" onsubmit="window.submitMemberForm(event)">
             <div class="form-group">
-              <label for="member-email">${t('label_email')}</label>
+              <label for="member-email">${t("label_email")}</label>
               <input type="email" id="member-email" required />
             </div>
             <div class="form-group">
-              <label for="member-name">${t('label_name')}</label>
+              <label for="member-name">${t("label_name")}</label>
               <input type="text" id="member-name" required />
             </div>
             <div class="form-group">
-              <label for="member-role">${t('label_role')}</label>
+              <label for="member-role">${t("label_role")}</label>
               <select id="member-role" required>
-                <option value="">${t('label_select_role')}</option>
+                <option value="">${t("label_select_role")}</option>
                 ${roles}
               </select>
             </div>
             <div class="form-group">
               <label for="member-can-assign">
-                <input type="checkbox" id="member-can-assign" /> ${t('label_can_assign')}
+                <input type="checkbox" id="member-can-assign" /> ${t("label_can_assign")}
               </label>
             </div>
             <div class="form-group">
               <label for="member-super">
-                <input type="checkbox" id="member-super" /> ${t('label_super_admin')}
+                <input type="checkbox" id="member-super" /> ${t("label_super_admin")}
               </label>
             </div>
             <div class="form-group">
               <label for="member-receive-concern">
-                <input type="checkbox" id="member-receive-concern" /> ${t('label_receive_concern')}
+                <input type="checkbox" id="member-receive-concern" /> ${t("label_receive_concern")}
               </label>
             </div>
             <div id="responsibilities-section" class="hidden">
@@ -1081,8 +1097,8 @@ function renderAdminPage() {
               </div>
             </div>
             <div class="btn-group">
-              <button type="submit" class="btn btn-primary">${t('btn_save_member')}</button>
-              <button type="button" class="btn btn-secondary" onclick="window.cancelAdminForm()">${t('btn_cancel')}</button>
+              <button type="submit" class="btn btn-primary">${t("btn_save_member")}</button>
+              <button type="button" class="btn btn-secondary" onclick="window.cancelAdminForm()">${t("btn_cancel")}</button>
             </div>
           </form>
         </article>
@@ -1090,40 +1106,40 @@ function renderAdminPage() {
 
       <div id="admin-members-list">
         <article class="card admin-members-card">
-          <h3>${t('admin_members_heading')}</h3>
+          <h3>${t("admin_members_heading")}</h3>
           <div class="members-grid">
             ${appState.members
               .map(
                 (m) => `
               <div class="member-card" data-member-email="${escapeHtml(m.email)}">
-                <div class="member-row"><span class="member-label">${t('label_name_colon')}</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
-                <div class="member-row"><span class="member-label">${t('label_email_colon')}</span> <span class="email" title="${escapeHtml(m.email)}">${escapeHtml(m.email)}</span></div>
-                <div class="member-row"><span class="member-label">${t('label_role_colon')}</span> ${escapeHtml(m.role || "")}</div>
+                <div class="member-row"><span class="member-label">${t("label_name_colon")}</span> <button type="button" class="member-name-link" data-action="edit" title="Edit ${escapeHtml(m.name)}">${escapeHtml(m.name)}</button></div>
+                <div class="member-row"><span class="member-label">${t("label_email_colon")}</span> <span class="email" title="${escapeHtml(m.email)}">${escapeHtml(m.email)}</span></div>
+                <div class="member-row"><span class="member-label">${t("label_role_colon")}</span> ${escapeHtml(m.role || "")}</div>
                 <div class="member-row">
                   <span class="member-label ${m.can_be_assigned ? "assign-on" : "assign-off"}">
-                    ${t('label_assign_colon')}
+                    ${t("label_assign_colon")}
                   </span>
                   ${m.can_be_assigned ? "✓" : ""}
                 </div>
                 <div class="member-row">
                   <span class="member-label ${m.super ? "super-admin-on" : "super-admin-off"}">
-                    ${t('label_super_admin_colon')}
+                    ${t("label_super_admin_colon")}
                   </span>
                   ${m.super ? "✓" : ""}
                 </div>
                 <div class="member-row">
                   <span class="member-label ${m.receive_concern ? "concern-recipient-on" : "concern-recipient-off"}">
-                    ${t('label_concern_recipient_colon')}
+                    ${t("label_concern_recipient_colon")}
                   </span>
                   ${m.receive_concern ? "✓" : ""}
                 </div>
                 <div class="member-row">
-                  <span class="member-label">${t('label_app_version_colon')}</span>
+                  <span class="member-label">${t("label_app_version_colon")}</span>
                   <span class="member-version-cell" style="font-size:0.8rem;color:var(--text-muted);opacity:0.45;">…</span>
                 </div>
                 <div class="member-row member-actions">
-                  <button type="button" class="btn btn-secondary btn-sm" data-action="edit">${t('btn_edit')}</button>
-                  <button type="button" class="btn btn-danger btn-sm" data-action="delete">${t('btn_delete')}</button>
+                  <button type="button" class="btn btn-secondary btn-sm" data-action="edit">${t("btn_edit")}</button>
+                  <button type="button" class="btn btn-danger btn-sm" data-action="delete">${t("btn_delete")}</button>
                 </div>
               </div>
             `,
@@ -1181,42 +1197,42 @@ function renderNotificationsPage() {
 
   notificationsPage.innerHTML = `
     <section class="admin-header">
-      <h2>${t('nav_notifications')}</h2>
-      <p>${t('notif_page_subtitle')}</p>
+      <h2>${t("nav_notifications")}</h2>
+      <p>${t("notif_page_subtitle")}</p>
     </section>
 
     <section class="admin-content">
       <article class="card admin-form-card">
-        <h3>${t('notif_subscription_heading')}</h3>
+        <h3>${t("notif_subscription_heading")}</h3>
         <p style="margin: 0 0 12px 0; color: var(--text-muted); font-size: 0.9rem;">
-          ${isSubscribed ? t('notif_subscribed') : t('notif_not_subscribed')}
+          ${isSubscribed ? t("notif_subscribed") : t("notif_not_subscribed")}
         </p>
         ${
           !isSubscribed
-            ? `<button type="button" class="btn btn-primary" onclick="window.subscribeToNotifications()">${t('notif_subscribe_btn')}</button>`
+            ? `<button type="button" class="btn btn-primary" onclick="window.subscribeToNotifications()">${t("notif_subscribe_btn")}</button>`
             : ""
         }
       </article>
 
       <article class="card admin-form-card">
-        <h3>${t('notif_send_heading')}</h3>
+        <h3>${t("notif_send_heading")}</h3>
         <div class="form-group">
-          <label for="notif-title">${t('label_title')}</label>
+          <label for="notif-title">${t("label_title")}</label>
           <input type="text" id="notif-title" placeholder="Notification title" />
         </div>
         <div class="form-group">
-          <label for="notif-body">${t('label_message')}</label>
+          <label for="notif-body">${t("label_message")}</label>
           <textarea id="notif-body" rows="4" placeholder="Enter your message..." style="width: 100%; box-sizing: border-box; resize: vertical; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font: inherit; background: var(--white); color: var(--text);"></textarea>
         </div>
         <div class="form-group">
-          <label>${t('label_recipients')}</label>
-          <div id="notif-recipients-loading" style="color: var(--text-muted); font-size: 0.9rem;">${t('notif_loading_subscribers')}</div>
+          <label>${t("label_recipients")}</label>
+          <div id="notif-recipients-loading" style="color: var(--text-muted); font-size: 0.9rem;">${t("notif_loading_subscribers")}</div>
           <div id="notif-recipients-list" class="notif-recipients-list hidden"></div>
-          <div id="notif-no-subscribers" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">${t('notif_no_subscribers')}</div>
+          <div id="notif-no-subscribers" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">${t("notif_no_subscribers")}</div>
         </div>
         <div class="btn-group">
-          <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">${t('btn_send')}</button>
-          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">${t('btn_deselect_all')}</button>
+          <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">${t("btn_send")}</button>
+          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">${t("btn_deselect_all")}</button>
         </div>
         <div id="notif-status" class="notif-status hidden"></div>
       </article>
@@ -1254,14 +1270,14 @@ async function loadNotificationSubscribers() {
         (sub, i) => `
         <label class="notif-recipient-item">
           <input type="checkbox" name="notif-recipient" value="${i}" checked />
-          <span>${escapeHtml(sub.user_email || t('notif_subscriber_label', { n: i + 1 }))}</span>
+          <span>${escapeHtml(sub.user_email || t("notif_subscriber_label", { n: i + 1 }))}</span>
         </label>
       `,
       )
       .join("");
   } catch (err) {
     if (loadingEl)
-      loadingEl.textContent = t('notif_load_error', { message: err.message });
+      loadingEl.textContent = t("notif_load_error", { message: err.message });
   }
 }
 
@@ -1286,14 +1302,14 @@ function renderInboxPage() {
 
   inboxPage.innerHTML = `
     <section class="admin-header">
-      <h2>${t('nav_messages')}</h2>
-      <p>${t('inbox_subtitle')}</p>
+      <h2>${t("nav_messages")}</h2>
+      <p>${t("inbox_subtitle")}</p>
     </section>
     <section class="admin-content">
       <article class="card admin-form-card">
-        <div id="inbox-loading" style="color: var(--text-muted); font-size: 0.9rem;">${t('inbox_loading')}</div>
+        <div id="inbox-loading" style="color: var(--text-muted); font-size: 0.9rem;">${t("inbox_loading")}</div>
         <div id="inbox-list" class="inbox-list hidden"></div>
-        <div id="inbox-empty" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">${t('inbox_empty')}</div>
+        <div id="inbox-empty" class="hidden" style="color: var(--text-muted); font-size: 0.9rem;">${t("inbox_empty")}</div>
       </article>
     </section>
   `;
@@ -1347,14 +1363,14 @@ async function loadInboxMessages() {
               </div>
             </div>
             <div class="inbox-item-body">${escapeHtml(n.body)}</div>
-            ${n.sent_by_email ? `<div class="inbox-item-from">${t('inbox_from', { email: escapeHtml(n.sent_by_email) })}</div>` : ""}
+            ${n.sent_by_email ? `<div class="inbox-item-from">${t("inbox_from", { email: escapeHtml(n.sent_by_email) })}</div>` : ""}
           </div>
         `;
       })
       .join("");
   } catch (err) {
     if (loadingEl)
-      loadingEl.textContent = t('inbox_load_error', { message: err.message });
+      loadingEl.textContent = t("inbox_load_error", { message: err.message });
   }
 }
 
@@ -1396,7 +1412,8 @@ window.deleteInboxMessage = async function (id) {
 };
 
 async function checkInboxAlert() {
-  const lastView = localStorage.getItem("lastInboxView") || "1970-01-01T00:00:00.000Z";
+  const lastView =
+    localStorage.getItem("lastInboxView") || "1970-01-01T00:00:00.000Z";
   try {
     const { count, error } = await supabase
       .from("app_notifications")
@@ -1452,8 +1469,8 @@ function renderReportsPage() {
 
   reportsPage.innerHTML = `
     <section class="reports-header">
-      <h2>${t('nav_reports')}</h2>
-      <p>${t('reports_subtitle')}</p>
+      <h2>${t("nav_reports")}</h2>
+      <p>${t("reports_subtitle")}</p>
     </section>
 
     <section class="report-actions">
@@ -1462,29 +1479,30 @@ function renderReportsPage() {
           appState.currentReportType === "sustain-setapart-release"
             ? "selected"
             : ""
-        }>${t('report_stake_business')}</option>
+        }>${t("report_stake_business")}</option>
         <option value="awaiting-shc" ${
           appState.currentReportType === "awaiting-shc" ? "selected" : ""
-        }>${t('report_awaiting_hc')}</option>
+        }>${t("report_awaiting_hc")}</option>
         <option value="unassigned-assignments" ${
           appState.currentReportType === "unassigned-assignments"
             ? "selected"
             : ""
-        }>${t('report_unassigned')}</option>
+        }>${t("report_unassigned")}</option>
         <option value="assignments-by-person" ${
           appState.currentReportType === "assignments-by-person"
             ? "selected"
             : ""
-        }>${t('report_by_person')}</option>
+        }>${t("report_by_person")}</option>
         <option value="status-summary" ${
           appState.currentReportType === "status-summary" ? "selected" : ""
-        }>${t('report_status_summary')}</option>
+        }>${t("report_status_summary")}</option>
         <option value="archive-items" ${
           appState.currentReportType === "archive-items" ? "selected" : ""
-        }>${t('report_archive_items')}</option>
+        }>${t("report_archive_items")}</option>
       </select>
       ${(() => {
-        if (appState.currentReportType !== "sustain-setapart-release") return "";
+        if (appState.currentReportType !== "sustain-setapart-release")
+          return "";
         const l = appState.reportLanguage || "en";
         return `<div class="lang-switcher" role="group" aria-label="Report language">
         <button type="button" class="btn lang-btn ${l === "en" ? "lang-btn-active" : ""}" onclick="window.setReportLanguage('en')">English</button>
@@ -1492,7 +1510,7 @@ function renderReportsPage() {
         <button type="button" class="btn lang-btn ${l === "to" ? "lang-btn-active" : ""}" onclick="window.setReportLanguage('to')">Tongan</button>
       </div>`;
       })()}
-      <button type="button" class="btn btn-primary" onclick="window.generateCurrentReport()">${t('btn_generate_report')}</button>
+      <button type="button" class="btn btn-primary" onclick="window.generateCurrentReport()">${t("btn_generate_report")}</button>
     </section>
 
     <article class="card report-card">
@@ -1541,7 +1559,9 @@ function renderArchivePage() {
   const rows = pageItems.length
     ? pageItems
         .map((item) => {
-          const typeClass = String(item.type || "").toLowerCase().includes("release")
+          const typeClass = String(item.type || "")
+            .toLowerCase()
+            .includes("release")
             ? "archive-row-release"
             : "archive-row-calling";
           const dateStr = formatDate(item.created_at);
@@ -1553,21 +1573,21 @@ function renderArchivePage() {
         </tr>`;
         })
         .join("")
-    : `<tr><td colspan="3" class="archive-empty">${t('archive_empty')}</td></tr>`;
+    : `<tr><td colspan="3" class="archive-empty">${t("archive_empty")}</td></tr>`;
 
   archivePage.innerHTML = `
     <section class="archive-header">
-      <h2>${t('nav_archive')}</h2>
-      <p>${t('archive_subtitle')}</p>
+      <h2>${t("nav_archive")}</h2>
+      <p>${t("archive_subtitle")}</p>
     </section>
 
     <section class="archive-content">
       <table class="archive-table">
         <thead>
           <tr>
-            <th>${t('col_name')}</th>
-            <th>${t('col_position')}</th>
-            <th>${t('col_status')}</th>
+            <th>${t("col_name")}</th>
+            <th>${t("col_position")}</th>
+            <th>${t("col_status")}</th>
           </tr>
         </thead>
         <tbody>
@@ -1581,13 +1601,13 @@ function renderArchivePage() {
         class="btn btn-secondary"
         onclick="window.archivePagePrev()"
         ${currentPage === 0 ? "disabled" : ""}
-      >${t('btn_previous')}</button>
-      <span class="archive-page-indicator">${t('archive_page_indicator', { current: currentPage + 1, total: totalPages })}</span>
+      >${t("btn_previous")}</button>
+      <span class="archive-page-indicator">${t("archive_page_indicator", { current: currentPage + 1, total: totalPages })}</span>
       <button
         class="btn btn-secondary"
         onclick="window.archivePageNext()"
         ${currentPage >= totalPages - 1 ? "disabled" : ""}
-      >${t('btn_next')}</button>
+      >${t("btn_next")}</button>
     </section>
   `;
 }
@@ -1645,14 +1665,14 @@ async function archiveCallingRecord(id, options = {}) {
   const { confirm = true } = options;
 
   if (!isAdminRole()) {
-    await showModalAlert(t('error_admin_only'));
+    await showModalAlert(t("error_admin_only"));
     renderCurrentPage();
     return false;
   }
 
   const item = appState.callings.find((calling) => calling.id === id);
   if (!item) {
-    await showModalAlert(t('error_not_found'));
+    await showModalAlert(t("error_not_found"));
     renderCurrentPage();
     return false;
   }
@@ -1660,7 +1680,7 @@ async function archiveCallingRecord(id, options = {}) {
   const normalizedStatus = String(item.status || "").trim();
 
   if (normalizedStatus === "In Progress") {
-    await showModalAlert(t('error_archive_in_progress'));
+    await showModalAlert(t("error_archive_in_progress"));
     renderCurrentPage();
     return false;
   }
@@ -1669,8 +1689,8 @@ async function archiveCallingRecord(id, options = {}) {
 
   if (confirm) {
     const message = isDeleteMistake
-      ? t('confirm_delete_mistake', { name: item.name || t('no_name') })
-      : t('confirm_archive');
+      ? t("confirm_delete_mistake", { name: item.name || t("no_name") })
+      : t("confirm_archive");
 
     const confirmed = await showModalConfirm(message);
     if (!confirmed) {
@@ -1725,7 +1745,7 @@ async function archiveCallingRecord(id, options = {}) {
         `[Delete] Failed to delete from both prod_callings and train_callings`,
       );
       await showModalAlert(
-        t('error_perm_delete_failed', { message: error.message }),
+        t("error_perm_delete_failed", { message: error.message }),
       );
       renderCurrentPage();
       return false;
@@ -1766,7 +1786,7 @@ async function archiveCallingRecord(id, options = {}) {
         `[Archive] Failed to archive from both prod_callings and train_callings`,
       );
       await showModalAlert(
-        t('error_archive_failed', { message: error.message }),
+        t("error_archive_failed", { message: error.message }),
       );
       renderCurrentPage();
       return false;
@@ -1920,7 +1940,7 @@ function renderCards() {
         <div class="card-banner banner-hc">High Council Responsibilities</div>
         <div class="card-content">
           ${resp?.unit ? `<div class="member-row"><span class="member-label">Unit:</span> ${escapeHtml(resp.unit)}</div>` : ""}
-          ${resp?.comittee ? `<div class="member-row"><span class="member-label">Committee:</span> ${escapeHtml(resp.comittee)}</div>` : ""}
+          ${resp?.committee ? `<div class="member-row"><span class="member-label">Committee:</span> ${escapeHtml(resp.committee)}</div>` : ""}
           ${resp?.other ? `<div class="member-row"><span class="member-label">Other:</span> ${escapeHtml(resp.other)}</div>` : ""}
         </div>
       `;
@@ -2026,10 +2046,10 @@ window.updateField = async (id, field, value) =>
   callingsActions.updateField(id, field, value);
 
 const DEV_ROLES = {
-  stake:  { role: "stake", super: false },
-  shc:    { role: "shc",   super: false },
-  admin:  { role: "admin", super: false },
-  super:  { role: "admin", super: true  },
+  stake: { role: "stake", super: false },
+  shc: { role: "shc", super: false },
+  admin: { role: "admin", super: false },
+  super: { role: "admin", super: true },
 };
 
 if ((import.meta.env.VITE_SUBTITLE || "").includes("STAGING")) {
@@ -2052,9 +2072,7 @@ window.setLanguage = async (lang) => {
 
 window.toggleSpApproval = async (id, checkbox) => {
   if (!checkbox.checked) {
-    const confirmed = await showModalConfirm(
-      t('confirm_remove_sp_approval')
-    );
+    const confirmed = await showModalConfirm(t("confirm_remove_sp_approval"));
     if (!confirmed) {
       checkbox.checked = true;
       return;
@@ -2151,7 +2169,7 @@ window.sendPushNotifications = async () => {
   const body = bodyEl?.value?.trim();
 
   if (!title || !body) {
-    await showModalAlert(t('notif_send_title_body_required'));
+    await showModalAlert(t("notif_send_title_body_required"));
     return;
   }
 
@@ -2163,7 +2181,7 @@ window.sendPushNotifications = async () => {
   );
 
   if (selectedIndices.length === 0) {
-    await showModalAlert(t('notif_send_recipient_required'));
+    await showModalAlert(t("notif_send_recipient_required"));
     return;
   }
 
@@ -2174,7 +2192,7 @@ window.sendPushNotifications = async () => {
     statusEl.className = `notif-status${style ? ` ${style}` : ""}`;
   }
 
-  setStatus(t('notif_sending_to', { count: selectedIndices.length }));
+  setStatus(t("notif_sending_to", { count: selectedIndices.length }));
 
   // Get the session JWT; fall back to the anon key so the request always
   // carries an Authorization header (function has verify_jwt = false but
@@ -2282,7 +2300,8 @@ window.toggleAllNotifRecipients = () => {
   const btn = document.querySelector(
     ".btn-group button[onclick='window.toggleAllNotifRecipients()']",
   );
-  if (btn) btn.textContent = allChecked ? t('btn_select_all') : t('btn_deselect_all');
+  if (btn)
+    btn.textContent = allChecked ? t("btn_select_all") : t("btn_deselect_all");
 };
 
 window.selectReportType = (value) => {
@@ -2306,7 +2325,10 @@ window.generateCurrentReport = () => {
 
 window.setReportLanguage = (lang) => {
   appState.reportLanguage = lang;
-  if (appState.reportOutput && appState.currentReportType === "sustain-setapart-release") {
+  if (
+    appState.reportOutput &&
+    appState.currentReportType === "sustain-setapart-release"
+  ) {
     window.generateCurrentReport();
   } else {
     renderReportsPage();
@@ -2390,12 +2412,14 @@ window.refreshData = async () => {
     renderCurrentPage();
 
     if (typeof window.showToast === "function") {
-      window.showToast(t('toast_data_refreshed'));
+      window.showToast(t("toast_data_refreshed"));
     }
   } catch (error) {
     console.error("Failed to refresh data:", error);
     await showModalAlert(
-      t('error_refresh_data', { message: error?.message || t('unknown_error') }),
+      t("error_refresh_data", {
+        message: error?.message || t("unknown_error"),
+      }),
     );
   } finally {
     appState.isRefreshing = false;
@@ -2427,22 +2451,22 @@ window.softRefreshApp = async () => {
 
 window.copyReportToClipboard = async () => {
   if (!appState.reportOutput) {
-    await showModalAlert(t('report_none_to_copy'));
+    await showModalAlert(t("report_none_to_copy"));
     return;
   }
 
   try {
     await navigator.clipboard.writeText(appState.reportOutput);
-    await showModalAlert(t('report_copied'));
+    await showModalAlert(t("report_copied"));
   } catch (err) {
     console.error("Failed to copy report:", err);
-    await showModalAlert(t('report_copy_failed'));
+    await showModalAlert(t("report_copy_failed"));
   }
 };
 
 window.printReport = async () => {
   if (!appState.reportOutput) {
-    await showModalAlert(t('report_none_to_print'));
+    await showModalAlert(t("report_none_to_print"));
     return;
   }
 
@@ -2473,9 +2497,7 @@ window.printReport = async () => {
 };
 
 window.resetCacheAndReload = async () => {
-  const confirmed = await showModalConfirm(
-    t('confirm_reset_cache'),
-  );
+  const confirmed = await showModalConfirm(t("confirm_reset_cache"));
   if (!confirmed) return;
 
   try {
@@ -2509,7 +2531,7 @@ window.handleConcernClick = async (event, id) => {
 
   if (button) {
     button.classList.add("is-sending");
-    button.textContent = t('btn_concern_sending');
+    button.textContent = t("btn_concern_sending");
   }
 
   try {
@@ -2523,10 +2545,10 @@ window.handleConcernClick = async (event, id) => {
 
       if (currentUserVote === "concern") {
         button.classList.add("is-sent", "is-selected");
-        button.textContent = t('btn_concern_voted');
+        button.textContent = t("btn_concern_voted");
       } else {
         button.classList.remove("is-sent", "is-selected");
-        button.textContent = t('btn_concern');
+        button.textContent = t("btn_concern");
       }
     }
   } catch (error) {
@@ -2534,10 +2556,10 @@ window.handleConcernClick = async (event, id) => {
 
     if (button) {
       button.classList.remove("is-sending");
-      button.textContent = t('btn_concern');
+      button.textContent = t("btn_concern");
     }
 
-    await showModalAlert(t('error_concern_failed'));
+    await showModalAlert(t("error_concern_failed"));
   }
 };
 
@@ -2556,38 +2578,38 @@ function renderLogin() {
     const errorStatus = Number(error?.status || 0);
 
     if (errorCode === "email_not_confirmed") {
-      return t('login_err_email_not_confirmed');
+      return t("login_err_email_not_confirmed");
     }
 
     if (errorCode === "otp_disabled") {
-      return t('login_err_otp_disabled');
+      return t("login_err_otp_disabled");
     }
 
     if (errorCode === "signup_disabled") {
-      return t('login_err_signup_disabled');
+      return t("login_err_signup_disabled");
     }
 
     if (errorCode === "over_email_send_rate_limit") {
-      return t('login_err_rate_limit_email');
+      return t("login_err_rate_limit_email");
     }
 
     if (errorCode === "over_request_rate_limit") {
-      return t('login_err_rate_limit_requests');
+      return t("login_err_rate_limit_requests");
     }
 
     if (errorCode === "email_address_not_authorized") {
-      return t('login_err_email_not_authorized');
+      return t("login_err_email_not_authorized");
     }
 
     if (errorCode === "unexpected_failure" || errorStatus >= 500) {
-      return t('login_err_backend');
+      return t("login_err_backend");
     }
 
     if (/database error finding user/i.test(error?.message || "")) {
-      return t('login_err_no_identity');
+      return t("login_err_no_identity");
     }
 
-    return error?.message || t('login_err_generic');
+    return error?.message || t("login_err_generic");
   };
 
   // Initial UI state: Email Entry
@@ -2596,12 +2618,12 @@ function renderLogin() {
       <div class="login-card">
         <div class="login-splash">
           <h1><span>The</span> Record</h1>
-          <h3>${t('login_tagline')}</h3>
+          <h3>${t("login_tagline")}</h3>
           ${
             appState.dbMode === "training"
               ? `
             <div style="background-color: #f59e0b; color: #000; padding: 8px; margin-top: 12px; border-radius: 6px; font-size: 13px; font-weight: bold;">
-              ${t('login_training_mode')}
+              ${t("login_training_mode")}
             </div>
           `
               : ""
@@ -2613,16 +2635,16 @@ function renderLogin() {
             <input
               id="email-input"
               type="email"
-              placeholder="${t('login_email_placeholder')}"
+              placeholder="${t("login_email_placeholder")}"
               required
               class="loginEntry"
             />
-            <button type="submit">${t('login_send_code_btn')}</button>
+            <button type="submit">${t("login_send_code_btn")}</button>
           </form>
         </div>
 
         <div id="auth-step-code" class="hidden">
-          <p class="form-instruction">${t('login_enter_code')}</p>
+          <p class="form-instruction">${t("login_enter_code")}</p>
           <p id="auth-step-code-email" class="form-instruction" style="font-size: 0.85em; opacity: 0.7; margin-top: -8px;"></p>
           <form id="otp-verify-form">
             <input
@@ -2636,8 +2658,8 @@ function renderLogin() {
               class="loginEntry"
               autocomplete="one-time-code"
             />
-            <button type="submit">${t('login_verify_btn')}</button>
-            <button type="button" class="btn-link" id="back-to-email-btn">${t('login_new_code_btn')}</button>
+            <button type="submit">${t("login_verify_btn")}</button>
+            <button type="button" class="btn-link" id="back-to-email-btn">${t("login_new_code_btn")}</button>
           </form>
         </div>
 
@@ -2683,7 +2705,7 @@ function renderLogin() {
   if (userEmail) {
     document.getElementById("email-input").value = userEmail;
     showCodeStep(userEmail);
-    message.textContent = t('login_code_instruction');
+    message.textContent = t("login_code_instruction");
   }
 
   // Step 1: Request the OTP
@@ -2692,7 +2714,7 @@ function renderLogin() {
     userEmail = normalizeEmail(document.getElementById("email-input").value);
     if (!userEmail) return;
 
-    message.textContent = t('login_checking');
+    message.textContent = t("login_checking");
     message.classList.remove("error");
 
     const { data: memberRow, error: memberLookupError } = await supabase
@@ -2702,12 +2724,12 @@ function renderLogin() {
       .maybeSingle();
 
     if (!memberLookupError && !memberRow) {
-      message.textContent = t('login_unregistered_email');
+      message.textContent = t("login_unregistered_email");
       message.classList.add("error");
       return;
     }
 
-    message.textContent = t('login_sending_code');
+    message.textContent = t("login_sending_code");
     message.classList.remove("error");
 
     // Store email so it persists across page reloads (but will be cleared on database switch)
@@ -2736,7 +2758,7 @@ function renderLogin() {
 
     // Success: Hide email form, show code form
     showCodeStep(userEmail);
-    message.textContent = t('login_check_email', { mode: dbModeLabel });
+    message.textContent = t("login_check_email", { mode: dbModeLabel });
   });
 
   // Step 2: Verify the OTP
@@ -2748,13 +2770,13 @@ function renderLogin() {
     const verifyEmail = localStorage.getItem("otp-email") || userEmail;
 
     if (!verifyEmail) {
-      message.textContent = t('login_session_expired');
+      message.textContent = t("login_session_expired");
       message.classList.add("error");
       setTimeout(() => renderLogin(), 2000);
       return;
     }
 
-    message.textContent = t('login_verifying');
+    message.textContent = t("login_verifying");
     message.classList.remove("error");
 
     const dbModeLabel = (appState.dbMode || "production").toUpperCase();
@@ -2770,7 +2792,7 @@ function renderLogin() {
 
     if (error) {
       const dbModeLabel = (appState.dbMode || "production").toUpperCase();
-      message.textContent = t('login_invalid_code', { mode: dbModeLabel });
+      message.textContent = t("login_invalid_code", { mode: dbModeLabel });
       message.classList.add("error");
       return;
     }
@@ -2779,7 +2801,7 @@ function renderLogin() {
     // localStorage is cleared.
     await saveDbSession(verifyData?.session);
 
-    message.textContent = t('login_success');
+    message.textContent = t("login_success");
 
     // Clear the stored email after successful login
     localStorage.removeItem("otp-email");
@@ -2802,15 +2824,15 @@ function ensureConcernNoticeModal() {
   modal.innerHTML = `
     <section class="modal notice-modal" role="dialog" aria-modal="true" aria-labelledby="concern-notice-title">
       <div class="modal-header notice-modal-header">
-        <h2 id="concern-notice-title">${t('concern_modal_title')}</h2>
+        <h2 id="concern-notice-title">${t("concern_modal_title")}</h2>
       </div>
       <div class="notice-modal-body">
         <p>
-          ${t('concern_modal_body')}
+          ${t("concern_modal_body")}
         </p>
       </div>
       <div class="btn-group notice-modal-actions">
-        <button type="button" class="btn btn-primary" onclick="window.closeConcernNoticeModal()">${t('btn_i_understand')}</button>
+        <button type="button" class="btn btn-primary" onclick="window.closeConcernNoticeModal()">${t("btn_i_understand")}</button>
       </div>
     </section>
   `;
@@ -2826,10 +2848,9 @@ function ensureConcernNoticeModal() {
 }
 
 window.confirmLogout = async () => {
-  const confirmed = await showModalConfirm(
-    t('confirm_logout_body'),
-    { title: t('confirm_logout_title') }
-  );
+  const confirmed = await showModalConfirm(t("confirm_logout_body"), {
+    title: t("confirm_logout_title"),
+  });
   if (confirmed) window.logout();
 };
 
@@ -2919,7 +2940,7 @@ function renderHeader() {
 
 window.startNewMemberForm = () => {
   if (!isSuperAdmin()) {
-    showModalAlert(t('error_super_admin_only'));
+    showModalAlert(t("error_super_admin_only"));
     return;
   }
 
@@ -2933,7 +2954,9 @@ window.startNewMemberForm = () => {
     list.classList.add("hidden");
   }
 
-  document.getElementById("admin-form-title").textContent = t('admin_form_title_add');
+  document.getElementById("admin-form-title").textContent = t(
+    "admin_form_title_add",
+  );
   document.getElementById("admin-member-form").reset();
   document.getElementById("member-email").disabled = false;
   appState.adminFormData.action = "create";
@@ -2959,7 +2982,7 @@ window.submitMemberForm = async (event) => {
   event.preventDefault();
 
   if (!isSuperAdmin()) {
-    await showModalAlert(t('error_super_admin_modify'));
+    await showModalAlert(t("error_super_admin_modify"));
     return;
   }
 
@@ -2977,7 +3000,7 @@ window.submitMemberForm = async (event) => {
   ).checked;
 
   if (!email || !name || !role) {
-    await showModalAlert(t('error_required_fields'));
+    await showModalAlert(t("error_required_fields"));
     return;
   }
 
@@ -2996,18 +3019,20 @@ window.submitMemberForm = async (event) => {
 
       if (!result.ok) {
         console.error("Provisioning error:", result.error);
-        await showModalAlert(t('error_provision_member', { error: result.error }));
+        await showModalAlert(
+          t("error_provision_member", { error: result.error }),
+        );
         return;
       }
 
-      await showModalAlert(t('member_provisioned'));
+      await showModalAlert(t("member_provisioned"));
     } else if (appState.adminFormData.action === "update") {
       const oldEmail = String(appState.adminFormData.selectedMemberEmail || "")
         .trim()
         .toLowerCase();
 
       if (!oldEmail) {
-        await showModalAlert(t('error_missing_member_email'));
+        await showModalAlert(t("error_missing_member_email"));
         return;
       }
 
@@ -3025,28 +3050,39 @@ window.submitMemberForm = async (event) => {
 
       if (!result.ok) {
         console.error("Update error:", result.error);
-        await showModalAlert(t('error_update_member', { error: result.error }));
+        await showModalAlert(t("error_update_member", { error: result.error }));
         return;
       }
 
       if (supabase) {
-        const unit = (document.getElementById("resp-unit").value || "").trim() || null;
-        const committee = (document.getElementById("resp-committee").value || "").trim() || null;
-        const other = (document.getElementById("resp-other").value || "").trim() || null;
+        const unit =
+          (document.getElementById("resp-unit").value || "").trim() || null;
+        const committee =
+          (document.getElementById("resp-committee").value || "").trim() ||
+          null;
+        const other =
+          (document.getElementById("resp-other").value || "").trim() || null;
         const { error: respError } = await supabase
           .from("responsibilities")
           .upsert(
-            { email: String(email).trim().toLowerCase(), unit, comittee: committee, other },
+            {
+              email: String(email).trim().toLowerCase(),
+              unit,
+              committee: committee,
+              other,
+            },
             { onConflict: "email" },
           );
         if (respError) {
           console.error("Responsibilities upsert error:", respError);
-          await showModalAlert(`Responsibilities save failed: ${respError.message}`);
+          await showModalAlert(
+            `Responsibilities save failed: ${respError.message}`,
+          );
           return;
         }
       }
 
-      await showModalAlert(t('member_updated'));
+      await showModalAlert(t("member_updated"));
     }
 
     await fetchReferenceData();
@@ -3054,13 +3090,13 @@ window.submitMemberForm = async (event) => {
     renderAdminPage();
   } catch (error) {
     console.error("Form submission error:", error);
-    await showModalAlert(t('error_generic', { message: error.message }));
+    await showModalAlert(t("error_generic", { message: error.message }));
   }
 };
 
 window.editMember = async (memberEmail) => {
   if (!isSuperAdmin()) {
-    await showModalAlert(t('error_super_admin_edit'));
+    await showModalAlert(t("error_super_admin_edit"));
     return;
   }
 
@@ -3077,7 +3113,7 @@ window.editMember = async (memberEmail) => {
   );
   if (!member) {
     console.error(`Member not found with email: ${normalizedEmail}`);
-    await showModalAlert(t('error_member_not_found'));
+    await showModalAlert(t("error_member_not_found"));
     return;
   }
 
@@ -3109,13 +3145,13 @@ window.editMember = async (memberEmail) => {
     if (supabase) {
       const { data: resp } = await supabase
         .from("responsibilities")
-        .select("unit, comittee, other")
+        .select("unit, committee, other")
         .eq("email", normalizedEmail)
         .maybeSingle();
 
       if (resp) {
         document.getElementById("resp-unit").value = resp.unit || "";
-        document.getElementById("resp-committee").value = resp.comittee || "";
+        document.getElementById("resp-committee").value = resp.committee || "";
         document.getElementById("resp-other").value = resp.other || "";
       }
     }
@@ -3134,7 +3170,7 @@ window.editMember = async (memberEmail) => {
 
 window.deleteMember = async (memberEmail) => {
   if (!isSuperAdmin()) {
-    await showModalAlert(t('error_super_admin_delete'));
+    await showModalAlert(t("error_super_admin_delete"));
     return;
   }
 
@@ -3148,12 +3184,12 @@ window.deleteMember = async (memberEmail) => {
         .toLowerCase() === normalizedEmail,
   );
   if (!member) {
-    await showModalAlert(t('error_member_not_found'));
+    await showModalAlert(t("error_member_not_found"));
     return;
   }
 
   const confirmed = await showModalConfirm(
-    t('confirm_delete_member', { name: member.name }),
+    t("confirm_delete_member", { name: member.name }),
   );
 
   if (!confirmed) return;
@@ -3166,16 +3202,16 @@ window.deleteMember = async (memberEmail) => {
 
     if (!result.ok) {
       console.error("Delete error:", result.error);
-      await showModalAlert(t('error_delete_member', { error: result.error }));
+      await showModalAlert(t("error_delete_member", { error: result.error }));
       return;
     }
 
-    await showModalAlert(t('member_deleted'));
+    await showModalAlert(t("member_deleted"));
     await fetchReferenceData();
     renderAdminPage();
   } catch (error) {
     console.error("Delete error:", error);
-    await showModalAlert(t('error_generic', { message: error.message }));
+    await showModalAlert(t("error_generic", { message: error.message }));
   }
 };
 
@@ -3237,7 +3273,7 @@ async function fetchAndRenderMemberVersions() {
         cell.textContent = `${rec.version} · ${formatRelativeTime(rec.last_seen)}`;
         cell.style.opacity = "1";
       } else {
-        cell.textContent = t('admin_version_not_seen');
+        cell.textContent = t("admin_version_not_seen");
         cell.style.opacity = "0.45";
       }
     });
@@ -3252,10 +3288,7 @@ async function startApp() {
   if (savedLang !== "en") await loadLocale(savedLang);
 
   if (!supabase) {
-    showFatalError(
-      t('fatal_missing_config'),
-      t('fatal_missing_config_detail'),
-    );
+    showFatalError(t("fatal_missing_config"), t("fatal_missing_config_detail"));
     return;
   }
 
@@ -3264,8 +3297,8 @@ async function startApp() {
   } catch (error) {
     console.error("Error fetching members:", error);
     showFatalError(
-      t('fatal_load_error'),
-      error?.message || t('fatal_fetch_members'),
+      t("fatal_load_error"),
+      error?.message || t("fatal_fetch_members"),
     );
     return;
   }
@@ -3308,10 +3341,7 @@ async function startApp() {
     ) || null;
 
   if (!matchedMember) {
-    showFatalError(
-      t('fatal_access_denied'),
-      t('fatal_not_in_members'),
-    );
+    showFatalError(t("fatal_access_denied"), t("fatal_not_in_members"));
     return;
   }
 
@@ -3474,7 +3504,7 @@ async function sendWelcomeNotification(registration) {
 
 async function subscribeToPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-    throw new Error(t('push_not_supported'));
+    throw new Error(t("push_not_supported"));
   }
 
   // Use BASE_URL so the path is correct for subdirectory deployments
@@ -3485,7 +3515,7 @@ async function subscribeToPush() {
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
-    throw new Error(t('push_permission_denied'));
+    throw new Error(t("push_permission_denied"));
   }
 
   // Always unsubscribe from the browser side first so the push service
@@ -3504,7 +3534,7 @@ async function subscribeToPush() {
   } = await supabase.auth.getUser();
 
   if (!user?.id) {
-    throw new Error(t('push_no_user'));
+    throw new Error(t("push_no_user"));
   }
 
   // Remove any existing subscription for this user before inserting the new one
@@ -3518,9 +3548,10 @@ async function subscribeToPush() {
     ]);
 
   if (error) {
-    throw new Error(t('push_save_failed', { message: error.message }));
+    throw new Error(t("push_save_failed", { message: error.message }));
   }
-  appState.hasPushSubscription = true;                                                                mm
+  appState.hasPushSubscription = true;
+  mm;
   // Delay welcome notification so it doesn't fire before the browser permission dialog fully clears
   // Immediate receipt of the notifcation was sometimes not noticed by users.
   setTimeout(() => sendWelcomeNotification(registration), 45_000);
@@ -3536,7 +3567,7 @@ async function subscribeToPush() {
 startApp().catch((error) => {
   console.error("Failed to start app:", error);
   showFatalError(
-    t('fatal_start_error'),
-    error?.message || t('fatal_unexpected'),
+    t("fatal_start_error"),
+    error?.message || t("fatal_unexpected"),
   );
 });
