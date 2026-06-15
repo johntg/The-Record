@@ -10,41 +10,54 @@ const STAKE_BUSINESS_STRINGS = {
   en: {
     reportTitle: "Stake Business - in units",
     stakeHeading: "STAKE BUSINESS",
-    noItems: "No members require sustaining, setting apart, or release at this time.",
+    noItems:
+      "No members require sustaining, setting apart, or release at this time.",
     releases: "RELEASES",
-    releasedFrom: "The following have been released from their positions in the Stake:",
-    voteOfThanks: "It is proposed they be given a vote of thanks for their service.",
+    releasedFrom:
+      "The following have been released from their positions in the Stake:",
+    voteOfThanks:
+      "It is proposed they be given a vote of thanks for their service.",
     inFavour: "Those in favour manifest it by the uplifted hand.",
     sustainings: "SUSTAININGS",
-    calledToServe: "The following have been called to serve in positions in the Stake:",
+    calledToServe:
+      "The following have been called to serve in positions in the Stake:",
     proposed: "It is proposed that they be sustained.",
     opposed: "Those opposed, if any, by the same sign.",
   },
   sm: {
     reportTitle: "Pisinisi a le Siteki - i iunite",
     stakeHeading: "PISINISI A LE SITEKI",
-    noItems: "E leai se tagata e mana'omia le fa'atuatua, fa'ate'a, pe tu'usao i lenei taimi.",
+    noItems:
+      "E leai se tagata e mana'omia le fa'atuatua, fa'ate'a, pe tu'usao i lenei taimi.",
     releases: "FA'ATE'AGA",
-    releasedFrom: "O i latou o lo'o fa'ailo i lalo na fa'ate'a mai o latou tulaga i le Siteki:",
-    voteOfThanks: "E tatau ona foa'i atu se vōte o fa'afetai mo lo latou tautua.",
+    releasedFrom:
+      "O i latou o lo'o fa'ailo i lalo na fa'ate'a mai o latou tulaga i le Siteki:",
+    voteOfThanks:
+      "E tatau ona foa'i atu se vōte o fa'afetai mo lo latou tautua.",
     inFavour: "O i latou e finafinau fa'ailoa mai i le lima seia.",
     sustainings: "FA'ATUATUA",
-    calledToServe: "O i latou o lo'o fa'ailo i lalo na valaaulia e tautua i tulaga i le Siteki:",
+    calledToServe:
+      "O i latou o lo'o fa'ailo i lalo na valaaulia e tautua i tulaga i le Siteki:",
     proposed: "E tatau ona fa'atuatuaina i latou.",
     opposed: "O i latou e tetee, afai e iai, i le faailoga lava lea.",
   },
   to: {
     reportTitle: "Pisinisi ʻa e Steiki - ʻi he ngaahi ʻiuniti",
     stakeHeading: "PISINISI ʻA E STEIKI",
-    noItems: "ʻOku ʻikai ha kau mēmipa ʻoku fie poupouʻi, tānaki, pe tukuange ʻi he taimi ni.",
+    noItems:
+      "ʻOku ʻikai ha kau mēmipa ʻoku fie poupouʻi, tānaki, pe tukuange ʻi he taimi ni.",
     releases: "TUKUANGE",
-    releasedFrom: "Ko e kakai ʻoku hā ʻi lalo naʻe tukuange mei honau ngāue ʻi he Steiki:",
-    voteOfThanks: "ʻOku fakafofongaʻi ke foaki ha vouti fakamālohi ki honau ngāue.",
+    releasedFrom:
+      "Ko e kakai ʻoku hā ʻi lalo naʻe tukuange mei honau ngāue ʻi he Steiki:",
+    voteOfThanks:
+      "ʻOku fakafofongaʻi ke foaki ha vouti fakamālohi ki honau ngāue.",
     inFavour: "Ko kinautolu ʻoku tui ke fakaʻasi ʻaki ʻa e nima hake.",
     sustainings: "POUPOU",
-    calledToServe: "Ko e kakai ʻoku hā ʻi lalo naʻe ui ke ngāue ʻi he ngāue ʻi he Steiki:",
+    calledToServe:
+      "Ko e kakai ʻoku hā ʻi lalo naʻe ui ke ngāue ʻi he ngāue ʻi he Steiki:",
     proposed: "ʻOku fakafofongaʻi ke poupouʻi kinautolu.",
-    opposed: "Ko kinautolu ʻoku fakaʻikai, kapau ʻoku ai, ʻaki ʻa e fakaʻilonga tatau.",
+    opposed:
+      "Ko kinautolu ʻoku fakaʻikai, kapau ʻoku ai, ʻaki ʻa e fakaʻilonga tatau.",
   },
 };
 
@@ -284,8 +297,7 @@ function buildSustainSetApartReleaseReport(rows, lang = "en") {
       String(row.type || "").toUpperCase() !== "RELEASE" &&
       isInProgress(row) &&
       isCompletedValue(row.interviewed) &&
-      (isCompletedValue(row.sp_approved) ||
-        isCompletedValue(row.hc_sustained)),
+      (isCompletedValue(row.sp_approved) || isCompletedValue(row.hc_sustained)),
   );
   const reportSections = [];
 
@@ -438,7 +450,10 @@ export function generateReport(type, rows, reportContext = {}) {
   }
 
   if (type === "sustain-setapart-release") {
-    return buildSustainSetApartReleaseReport(rows, reportContext.language || "en");
+    return buildSustainSetApartReleaseReport(
+      rows,
+      reportContext.language || "en",
+    );
   }
 
   if (type === "unassigned-assignments") {

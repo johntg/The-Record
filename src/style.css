@@ -1122,6 +1122,10 @@ body.modal-open {
 .banner-release {
   background-color: #d32f2f; /* Red for Releases */
 }
+
+.banner-hc {
+  background-color: #546e7a;
+}
 /* Content Padding */
 .card-content {
   padding: 15px;

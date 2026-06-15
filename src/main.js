@@ -1917,10 +1917,12 @@ function renderCards() {
       const card = document.createElement("article");
       card.className = "card";
       card.innerHTML = `
-        <h3 style="margin-bottom:0.75rem;">High Council Responsibilities</h3>
-        ${resp?.unit ? `<div class="member-row"><span class="member-label">Unit:</span> ${escapeHtml(resp.unit)}</div>` : ""}
-        ${resp?.comittee ? `<div class="member-row"><span class="member-label">Committee:</span> ${escapeHtml(resp.comittee)}</div>` : ""}
-        ${resp?.other ? `<div class="member-row"><span class="member-label">Other:</span> ${escapeHtml(resp.other)}</div>` : ""}
+        <div class="card-banner banner-hc">High Council Responsibilities</div>
+        <div class="card-content">
+          ${resp?.unit ? `<div class="member-row"><span class="member-label">Unit:</span> ${escapeHtml(resp.unit)}</div>` : ""}
+          ${resp?.comittee ? `<div class="member-row"><span class="member-label">Committee:</span> ${escapeHtml(resp.comittee)}</div>` : ""}
+          ${resp?.other ? `<div class="member-row"><span class="member-label">Other:</span> ${escapeHtml(resp.other)}</div>` : ""}
+        </div>
       `;
       listEl.appendChild(card);
     }
