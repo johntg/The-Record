@@ -1825,7 +1825,7 @@ select {
   font-weight: 600;
   border-radius: 6px;
   background: var(--card-bg, #f0f0f0);
-  color: var(--text, #333);
+  color: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--border, #ccc);
   cursor: pointer;
 }
