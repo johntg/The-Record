@@ -153,6 +153,8 @@
   "notif_load_error": "Error sa pag-load ng mga subscriber: {message}",
   "notif_subscriber_label": "Subscriber {n}",
   "notif_enabled": "Naka-enable ang mga abiso.",
+  "welcome_notif_title": "All done!",
+  "welcome_notif_body": "You've set up notifications successfully. Messages from the Stake Presidency about your assignments can now be sent to you here.",
   "notif_enable_failed": "Hindi ma-enable ang mga abiso.",
 
   "inbox_subtitle": "Mga abisong ipinadala sa grupong ito",
