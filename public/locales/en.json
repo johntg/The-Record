@@ -153,6 +153,8 @@
   "notif_load_error": "Error loading subscribers: {message}",
   "notif_subscriber_label": "Subscriber {n}",
   "notif_enabled": "Notifications enabled.",
+  "welcome_notif_title": "All done!",
+  "welcome_notif_body": "You've set up notifications successfully. Messages from the Stake Presidency about your assignments can now be sent to you here.",
   "notif_enable_failed": "Could not enable notifications.",
 
   "inbox_subtitle": "Notifications sent to this group",

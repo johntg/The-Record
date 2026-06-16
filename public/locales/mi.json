@@ -153,6 +153,8 @@
   "notif_load_error": "Hapa ki te uta ohaurura: {message}",
   "notif_subscriber_label": "Ohaurura {n}",
   "notif_enabled": "Kua whakahohea ngā whakamōhiotanga.",
+  "welcome_notif_title": "All done!",
+  "welcome_notif_body": "You've set up notifications successfully. Messages from the Stake Presidency about your assignments can now be sent to you here.",
   "notif_enable_failed": "Kāore i āhei ki te whakahohea ngā whakamōhiotanga.",
 
   "inbox_subtitle": "Ngā whakamōhiotanga i tukuna ki tēnei rōpū",

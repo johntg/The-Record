@@ -153,6 +153,8 @@
   "notif_load_error": "Mea sese i le uta o tagata lesitalaina: {message}",
   "notif_subscriber_label": "Tagata Lesitalaina {n}",
   "notif_enabled": "Ua fa'aola fa'asilasila.",
+  "welcome_notif_title": "All done!",
+  "welcome_notif_body": "You've set up notifications successfully. Messages from the Stake Presidency about your assignments can now be sent to you here.",
   "notif_enable_failed": "E le'i mafai ona fa'aola fa'asilasila.",
 
   "inbox_subtitle": "Fa'asilasila na auina i lenei vaega",

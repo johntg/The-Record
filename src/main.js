@@ -3450,9 +3450,9 @@ async function repairPushSubscriptionIfNeeded(user) {
 
 async function sendWelcomeNotification(registration) {
   try {
-    const title = "Notifications Enabled! 🎉";
+    const title = t("welcome_notif_title");
     const options = {
-      body: "Thank you for moving to version 3 of The Record. You can now receive important information from The Record.",
+      body: t("welcome_notif_body"),
       icon: `${import.meta.env.BASE_URL}favicon.ico`,
       badge: `${import.meta.env.BASE_URL}favicon.ico`,
       tag: "welcome-notification",
