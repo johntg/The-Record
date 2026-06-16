@@ -1,52 +1,52 @@
 {
-  "name": "The Record",
-  "short_name": "The Record",
+  "name": "STAGING: The Record",
+  "short_name": "STAGING: The Record",
   "description": "Track Church callings and releases.",
-  "start_url": "/The-Record/",
-  "scope": "/The-Record/",
+  "start_url": "/therecord-staging/",
+  "scope": "/therecord-staging/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#a7b8bd",
   "theme_color": "#1a73e8",
   "icons": [
     {
-      "src": "./therecord-clr-192.png",
+      "src": "./therecord-staging-clr-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./therecord-clr-192.png",
+      "src": "./therecord-staging-clr-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "./therecord-clr-512.png",
+      "src": "./therecord-staging-clr-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./therecord-clr-512.png",
+      "src": "./therecord-staging-clr-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "./notification-clr-icon.png",
+      "src": "./notification-staging-clr-icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./notification-clr-badge.png",
+      "src": "./notification-staging-clr-badge.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./apple-touch-icon-clr.png",
+      "src": "./apple-touch-icon-staging-clr.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
