@@ -3551,7 +3551,6 @@ async function subscribeToPush() {
     throw new Error(t("push_save_failed", { message: error.message }));
   }
   appState.hasPushSubscription = true;
-  mm;
   // Delay welcome notification so it doesn't fire before the browser permission dialog fully clears
   // Immediate receipt of the notifcation was sometimes not noticed by users.
   setTimeout(() => sendWelcomeNotification(registration), 45_000);
