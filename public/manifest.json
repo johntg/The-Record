@@ -1,7 +1,7 @@
 {
   "name": "The Record",
   "short_name": "The Record",
-  "description": "Track Church callings and releases.",
+  "description": "Track Christchurch Stake callings and releases.",
   "start_url": "/The-Record/",
   "scope": "/The-Record/",
   "display": "standalone",
