@@ -1629,7 +1629,7 @@ function renderCurrentPage() {
   }
 
   if (isNotifications) {
-    if (!isSuperAdmin()) {
+    if (!isAdminAccess()) {
       appState.currentPage = "callings";
       renderCards();
       return;
