@@ -1232,7 +1232,8 @@ function renderNotificationsPage() {
         </div>
         <div class="btn-group">
           <button type="button" class="btn btn-primary" onclick="window.sendPushNotifications()">${t("btn_send")}</button>
-          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">${t("btn_deselect_all")}</button>
+          <button type="button" class="btn btn-tertiary" onclick="window.toggleAllNotifRecipients()">${t("btn_select_all")}</button>
+          <button type="button" class="btn btn-tertiary" onclick="window.selectShcNotifRecipients()">${t("btn_select_shc")}</button>
         </div>
         <div id="notif-status" class="notif-status hidden"></div>
       </article>
@@ -1249,9 +1250,10 @@ async function loadNotificationSubscribers() {
   if (!loadingEl || !listEl || !emptyEl) return;
 
   try {
-    const { data, error } = await supabase
-      .from("push_subscriptions")
-      .select("id, user_email, subscription");
+    const [{ data, error }, { data: members }] = await Promise.all([
+      supabase.from("push_subscriptions").select("id, user_email, subscription"),
+      supabase.from("members").select("email, role"),
+    ]);
 
     if (error) throw error;
 
@@ -1263,13 +1265,24 @@ async function loadNotificationSubscribers() {
       return;
     }
 
-    notifSubscribersCache = data;
+    const roleByEmail = {};
+    if (members) {
+      members.forEach((m) => {
+        if (m.email) roleByEmail[m.email.toLowerCase()] = m.role;
+      });
+    }
+
+    notifSubscribersCache = data.map((sub) => ({
+      ...sub,
+      role: roleByEmail[sub.user_email?.toLowerCase()] ?? null,
+    }));
+
     listEl.classList.remove("hidden");
-    listEl.innerHTML = data
+    listEl.innerHTML = notifSubscribersCache
       .map(
         (sub, i) => `
         <label class="notif-recipient-item">
-          <input type="checkbox" name="notif-recipient" value="${i}" checked />
+          <input type="checkbox" name="notif-recipient" value="${i}" />
           <span>${escapeHtml(sub.user_email || t("notif_subscriber_label", { n: i + 1 }))}</span>
         </label>
       `,
@@ -2302,6 +2315,15 @@ window.toggleAllNotifRecipients = () => {
   );
   if (btn)
     btn.textContent = allChecked ? t("btn_select_all") : t("btn_deselect_all");
+};
+
+window.selectShcNotifRecipients = () => {
+  const checkboxes = document.querySelectorAll("input[name='notif-recipient']");
+  if (!checkboxes.length) return;
+  checkboxes.forEach((cb) => {
+    const index = parseInt(cb.value, 10);
+    cb.checked = notifSubscribersCache[index]?.role === "shc";
+  });
 };
 
 window.selectReportType = (value) => {

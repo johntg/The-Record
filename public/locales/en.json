@@ -147,6 +147,7 @@
   "btn_send": "Send",
   "btn_deselect_all": "Deselect All",
   "btn_select_all": "Select All",
+  "btn_select_shc": "Select SHC",
   "notif_send_title_body_required": "Please enter both a title and a message.",
   "notif_send_recipient_required": "Please select at least one recipient.",
   "notif_sending_to": "Sending to {count} recipient(s)…",
