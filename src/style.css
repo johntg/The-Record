@@ -320,6 +320,7 @@ body.dark-mode .main-header .settings-langBtn:hover {
   color: #ffffff;
   width: 100%;
   box-sizing: border-box;
+  margin-top: 3em;
 }
 #logoutBtn:hover,
 #logoutBtn:focus-visible {
@@ -400,14 +401,13 @@ input:checked + .slider:before {
   color: #ffffff;
   width: 100%;
   box-sizing: border-box;
+  margin-top: 2rem;
 }
 #dbswitchBtn:hover,
 #dbswitchBtn:focus-visible {
   background-color: #373c78;
   color: #ffffff;
-}
-
-.themePicker {
+}qaa
   position: absolute;
   display: flex;
   flex-direction: column;
