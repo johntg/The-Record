@@ -407,7 +407,9 @@ input:checked + .slider:before {
 #dbswitchBtn:focus-visible {
   background-color: #373c78;
   color: #ffffff;
-}qaa
+}
+
+.themePicker {
   position: absolute;
   display: flex;
   flex-direction: column;
