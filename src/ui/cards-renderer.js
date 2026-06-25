@@ -292,13 +292,8 @@ export function createCardsRenderer({
             ${isRelease ? t('type_release') : t('type_calling')}
           </div>
 
-          ${(() => {
-            const s = currentStatus.toLowerCase();
-            if (s === 'on hold' || s === 'not proceeding') {
-              return `<div style="text-align: center; padding: 5px 10px; background: var(--danger-btn); color: white; font-size: 0.85rem; font-weight: 700; border-bottom: 1px solid var(--border);">${escapeHtml(currentStatus)}</div>`;
-            }
-            return '';
-          })()}
+          <div class="display-status${isHeldOrNotProceeding ? ' display-status--alert' : ''}">${escapeHtml(currentStatus)}</div>
+          ${row.note ? `<p class="display-note">${escapeHtml(row.note)}</p>` : ''}
 
           <div style="padding: 18px;">
             ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);")}
@@ -700,6 +695,25 @@ export function createCardsRenderer({
                       : ""
                   }
                 </div>
+
+                ${hasAdminPasswordAccess() ? `
+                <div style="margin: 10px 0 0 0;">
+                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_note')}</label>
+                  <input
+                    type="text"
+                    value="${escapeHtml(row.note || '')}"
+                    placeholder="${t('placeholder_note')}"
+                    onblur="window.updateField('${row.id}', 'note', this.value)"
+                    style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem; box-sizing: border-box;"
+                  />
+                </div>
+                ` : row.note ? `
+                <div style="margin: 10px 0 0 0;">
+                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_note')}</label>
+                  <p style="margin: 0; font-size: 0.95rem; color: var(--text);">${escapeHtml(row.note)}</p>
+                </div>
+                ` : ''}
+
               </div>
             </div>
           </div>
