@@ -552,6 +552,30 @@ body.dark-mode .card--noproceed {
   background-color: var(--noproceed) !important;
 }
 
+.display-status {
+  text-align: center;
+  padding: 5px 10px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+
+.display-status--alert {
+  background: var(--danger-btn);
+  color: white;
+}
+
+.display-note {
+  margin: 0;
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
 body.dark-mode .card {
   background-color: #111827 !important;
   color: var(--text);

@@ -109,6 +109,8 @@
   "col_name": "Name",
   "col_position": "Position",
   "col_status": "Status",
+  "label_note": "Note",
+  "placeholder_note": "Brief note…",
   "archive_empty": "No archived items found.",
   "btn_previous": "Previous",
   "btn_next": "Next",
