@@ -292,10 +292,14 @@ function buildSustainSetApartReleaseReport(rows, lang = "en") {
       !hasBeenAnnouncedInAnyUnit(row),
   );
 
+  const isSustained = (row) =>
+    String(row.status || "").trim().toLowerCase() === "sustained";
+
   const toSustain = rows.filter(
     (row) =>
       String(row.type || "").toUpperCase() !== "RELEASE" &&
       isInProgress(row) &&
+      !isSustained(row) &&
       isCompletedValue(row.interviewed) &&
       (isCompletedValue(row.sp_approved) || isCompletedValue(row.hc_sustained)),
   );
