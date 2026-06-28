@@ -2828,7 +2828,13 @@ function renderLogin() {
     // Clear the stored email after successful login
     localStorage.removeItem("otp-email");
 
-    startApp();
+    startApp().catch((error) => {
+      console.error("Failed to start app after login:", error);
+      showFatalError(
+        t("fatal_start_error"),
+        error?.message || t("fatal_unexpected"),
+      );
+    });
   });
 
   syncFabVisibility();
