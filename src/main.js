@@ -626,6 +626,12 @@ if (typeof window !== "undefined") {
   });
 
   window.addEventListener("error", (event) => {
+    // Browser-internal or cross-origin script errors have no filename/lineno.
+    // Swallowing them prevents Safari PWA internals from triggering the error overlay.
+    if (!event.filename && event.lineno === 0 && event.colno === 0) {
+      console.warn("Ignored cross-origin/browser-internal error:", event.message);
+      return;
+    }
     const message = event?.error?.message || event?.message || "Unknown error";
     console.error("Fatal runtime error:", event?.error || event);
     showFatalError("Application error", message);
