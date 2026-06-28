@@ -34,7 +34,7 @@ import {
   resolveSettingApartDoneField,
   resolveSustainingByField,
 } from "./utils/app-utils.js";
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { createClient } from "@supabase/supabase-js";
 const PUBLIC_VAPID_KEY =
   "BEic-4qILB0TTH_oPnkuEm9xgRcH2fvvX8pELjH7VgLxIU_gezvKZaEp_P95f7AF_wJ8VXvIM0_VwG8dpt60Vfg";
 
