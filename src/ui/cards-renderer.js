@@ -696,7 +696,6 @@ export function createCardsRenderer({
                   }
                 </div>
 
-                ${hasAdminPasswordAccess() ? `
                 <div style="margin: 10px 0 0 0;">
                   <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_note')}</label>
                   <input
@@ -707,12 +706,6 @@ export function createCardsRenderer({
                     style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem; box-sizing: border-box;"
                   />
                 </div>
-                ` : row.note ? `
-                <div style="margin: 10px 0 0 0;">
-                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_note')}</label>
-                  <p style="margin: 0; font-size: 0.95rem; color: var(--text);">${escapeHtml(row.note)}</p>
-                </div>
-                ` : ''}
 
               </div>
             </div>
