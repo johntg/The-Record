@@ -2089,6 +2089,7 @@ if ((import.meta.env.VITE_SUBTITLE || "").includes("STAGING")) {
     appState.currentRole = r.role;
     appState.currentMember.super = r.super;
     renderHeader();
+    syncFabVisibility();
     renderCards();
   };
 }
