@@ -2928,9 +2928,8 @@ window.closeConcernNoticeModal = () => {
 };
 
 function syncFabVisibility(hideFab = false) {
-  const isStaging = (import.meta.env.VITE_SUBTITLE || "").includes("STAGING");
   syncFabVisibilityUi({
-    hasAdminPasswordAccess: isStaging ? isAuthenticatedMember : isAdminRole,
+    hasAdminPasswordAccess: isAdminRole,
     isLoggedInSession: isAuthenticatedMember,
     onResetCache: () => window.resetCacheAndReload(),
     hideFab,
