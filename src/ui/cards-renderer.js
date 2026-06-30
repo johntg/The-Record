@@ -296,7 +296,7 @@ export function createCardsRenderer({
           ${row.note ? `<p class="display-note">${escapeHtml(row.note)}</p>` : ''}
 
           <div style="padding: 18px;">
-            ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);", ` <span id="abbrev-trigger-${row.id}" style="font-size: 1rem; font-weight: normal; cursor: pointer; opacity: ${row.unit_abbrev ? "1" : "0.4"};" onclick="var s=document.getElementById('abbrev-select-${row.id}');s.style.display='block';s.focus();">${row.unit_abbrev ? `(${escapeHtml(row.unit_abbrev)})` : "(+)"}</span>`)}
+            ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);", ` <span id="abbrev-trigger-${row.id}" style="font-size: 1rem; font-weight: normal; cursor: pointer; opacity: ${row.unit_abbrev ? "1" : "0.4"};" onclick="event.stopPropagation();var s=document.getElementById('abbrev-select-${row.id}');s.style.display='block';s.focus();">${row.unit_abbrev ? `(${escapeHtml(row.unit_abbrev)})` : "(+)"}</span>`)}
             ${renderEditableCardField(row, "position", "p", "color: var(--text-muted); margin: 4px 0;")}
             <div style="margin: 4px 0 10px 0;">
   <select
