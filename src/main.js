@@ -229,6 +229,7 @@ const appState = {
     "Riccarton Ward",
     "Stake",
   ],
+  unitAbbreviations: [],
   expandedGridId: null,
   expandedSustainingIds: new Set(),
   expandedReleaseAnnouncementIds: new Set(),
@@ -898,16 +899,18 @@ async function fetchArchivedItems() {
 }
 
 async function fetchReferenceData() {
-  const [membersResult, statusesResult] = await Promise.all([
+  const [membersResult, statusesResult, unitsResult] = await Promise.all([
     supabase
       .from(getTableName("members"))
       .select("*")
       .order("name", { ascending: true }),
     supabase.from(getTableName("status_options")).select("*"),
+    supabase.from("units").select("abrev").order("abrev", { ascending: true }),
   ]);
 
   const { data: members, error: membersError } = membersResult;
   const { data: statusRows, error: statusError } = statusesResult;
+  const { data: unitsRows, error: unitsError } = unitsResult;
 
   if (membersError) {
     throw new Error(
@@ -922,6 +925,14 @@ async function fetchReferenceData() {
     appState.statusOptions = normalizeStatusOptions([]);
   } else {
     appState.statusOptions = normalizeStatusOptions(statusRows);
+  }
+
+  if (unitsError) {
+    console.error("Could not load unit abbreviations:", unitsError);
+  } else {
+    appState.unitAbbreviations = (unitsRows || [])
+      .map((r) => r.abrev)
+      .filter(Boolean);
   }
 
   updateDerivedMemberLists();

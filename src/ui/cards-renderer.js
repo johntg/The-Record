@@ -22,7 +22,7 @@ export function createCardsRenderer({
     );
   }
 
-  function renderEditableCardField(row, field, tagName, style) {
+  function renderEditableCardField(row, field, tagName, style, displaySuffix = "") {
     const label =
       field === "name"
         ? "name"
@@ -54,7 +54,7 @@ export function createCardsRenderer({
         title="Click to edit ${label}"
         onclick="window.startInlineEdit('${row.id}', '${field}')"
         style="${style}"
-      >${escapeHtml(currentValue)}</${tagName}>
+      >${escapeHtml(currentValue)}${displaySuffix}</${tagName}>
     `;
   }
 
@@ -296,7 +296,7 @@ export function createCardsRenderer({
           ${row.note ? `<p class="display-note">${escapeHtml(row.note)}</p>` : ''}
 
           <div style="padding: 18px;">
-            ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);")}
+            ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);", row.unit_abbrev ? ` (${escapeHtml(row.unit_abbrev)})` : "")}
             ${renderEditableCardField(row, "position", "p", "color: var(--text-muted); margin: 4px 0;")}
             <div style="margin: 4px 0 10px 0;">
   <select
@@ -310,6 +310,22 @@ export function createCardsRenderer({
           `<option value="${escapeHtml(unit)}" ${
             row.unit === unit ? "selected" : ""
           }>${escapeHtml(unit)}</option>`,
+      )
+      .join("")}
+  </select>
+</div>
+            <div style="margin: 4px 0 10px 0;">
+  <select
+    onchange="window.updateField('${row.id}', 'unit_abbrev', this.value)"
+    style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
+  >
+    <option value="">-- Unit abbreviation --</option>
+    ${appState.unitAbbreviations
+      .map(
+        (abbrev) =>
+          `<option value="${escapeHtml(abbrev)}" ${
+            row.unit_abbrev === abbrev ? "selected" : ""
+          }>${escapeHtml(abbrev)}</option>`,
       )
       .join("")}
   </select>
