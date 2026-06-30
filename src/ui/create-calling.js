@@ -69,6 +69,12 @@ export function ensureCreateCallingUi({
             ${appState.units.map((unit) => `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`).join("")}
           </select>
 
+          <label class="field-label" for="create-unit-abbrev">Unit abbreviation</label>
+          <select id="create-unit-abbrev" name="unit_abbrev">
+            <option value="">-- None --</option>
+            ${appState.unitAbbreviations.map((abbrev) => `<option value="${escapeHtml(abbrev)}">${escapeHtml(abbrev)}</option>`).join("")}
+          </select>
+
           <p id="create-calling-message" class="form-message" aria-live="polite"></p>
 
           <div class="btn-group">
@@ -166,6 +172,7 @@ export async function submitNewCalling({
     name: String(formData.get("name") || "").trim(),
     position: String(formData.get("position") || "").trim(),
     unit: String(formData.get("unit") || "").trim(),
+    unit_abbrev: String(formData.get("unit_abbrev") || "").trim() || null,
     status: "In Progress",
   };
 
