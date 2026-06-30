@@ -33,11 +33,11 @@ export function ensureCreateCallingUi({
     width: "60px",
     height: "60px",
     zIndex: "1500",
-    display: "flex",
-    visibility: "visible",
     alignItems: "center",
     justifyContent: "center",
   });
+
+  syncFabVisibility();
 
   if (!documentRef.getElementById("create-calling-modal")) {
     const modal = documentRef.createElement("div");
