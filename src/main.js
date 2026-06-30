@@ -2089,8 +2089,7 @@ if ((import.meta.env.VITE_SUBTITLE || "").includes("STAGING")) {
     appState.currentRole = r.role;
     appState.currentMember.super = r.super;
     renderHeader();
-    syncFabVisibility();
-    renderCards();
+    renderCurrentPage();
   };
 }
 
@@ -2929,8 +2928,9 @@ window.closeConcernNoticeModal = () => {
 };
 
 function syncFabVisibility(hideFab = false) {
+  const isStaging = (import.meta.env.VITE_SUBTITLE || "").includes("STAGING");
   syncFabVisibilityUi({
-    hasAdminPasswordAccess: isAdminRole,
+    hasAdminPasswordAccess: isStaging ? isAuthenticatedMember : isAdminRole,
     isLoggedInSession: isAuthenticatedMember,
     onResetCache: () => window.resetCacheAndReload(),
     hideFab,
