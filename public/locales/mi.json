@@ -247,6 +247,7 @@
   "create_name_placeholder": "Ingoa Katoa",
   "label_unit": "Wāhanga",
   "label_unit_sustain_hint": "(hei wāhi tautokotanga)",
+  "label_unit_abbrev_attends": "Wāhanga e haere ai",
   "option_select_unit": "Tīpako Wāhanga...",
   "btn_save": "Tiaki",
   "error_admin_password_required": "Me takiuru mā te kupuhipa whakahaere ki te waihanga ūpoko.",

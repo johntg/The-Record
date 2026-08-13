@@ -247,6 +247,7 @@
   "create_name_placeholder": "Buong Pangalan",
   "label_unit": "Unit",
   "label_unit_sustain_hint": "(kung saan susuportahan)",
+  "label_unit_abbrev_attends": "Unit na dinadalo",
   "option_select_unit": "Pumili ng Unit...",
   "btn_save": "I-save",
   "error_admin_password_required": "Kailangan ng pag-sign in gamit ang admin password para lumikha ng mga entry.",

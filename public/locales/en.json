@@ -250,6 +250,7 @@
   "create_name_placeholder": "Full Name",
   "label_unit": "Unit",
   "label_unit_sustain_hint": "(where to be sustained)",
+  "label_unit_abbrev_attends": "Unit they attend",
   "option_select_unit": "Select Unit...",
   "btn_save": "Save",
   "error_admin_password_required": "Creating entries requires signing in with the admin password.",

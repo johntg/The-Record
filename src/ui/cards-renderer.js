@@ -297,6 +297,24 @@ export function createCardsRenderer({
 
           <div style="padding: 18px;">
             ${renderEditableCardField(row, "name", "h2", "margin: 0; font-size: 1.6rem;  color: var(--text-muted);", ` <span id="abbrev-trigger-${row.id}" style="font-size: 1rem; font-weight: normal; cursor: pointer; opacity: ${row.unit_abbrev ? "1" : "0.4"};" onclick="event.stopPropagation();var s=document.getElementById('abbrev-select-${row.id}');s.style.display='block';s.focus();">${row.unit_abbrev ? `(${escapeHtml(row.unit_abbrev)})` : "(+)"}</span>`)}
+            <div>
+  <select
+    id="abbrev-select-${row.id}"
+    onchange="window.updateField('${row.id}', 'unit_abbrev', this.value); this.style.display='none';"
+    onblur="this.style.display='none';"
+    style="display: none; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
+  >
+    <option value="">${t('option_select_unit')}</option>
+    ${appState.unitAbbreviations
+      .map(
+        (abbrev) =>
+          `<option value="${escapeHtml(abbrev)}" ${
+            row.unit_abbrev === abbrev ? "selected" : ""
+          }>${escapeHtml(abbrev)}</option>`,
+      )
+      .join("")}
+  </select>
+</div>
             ${renderEditableCardField(row, "position", "p", "color: var(--text-muted); margin: 4px 0;")}
             <div style="margin: 4px 0 10px 0;">
   <select
@@ -310,24 +328,6 @@ export function createCardsRenderer({
           `<option value="${escapeHtml(unit)}" ${
             row.unit === unit ? "selected" : ""
           }>${escapeHtml(unit)}</option>`,
-      )
-      .join("")}
-  </select>
-</div>
-            <div>
-  <select
-    id="abbrev-select-${row.id}"
-    onchange="window.updateField('${row.id}', 'unit_abbrev', this.value); this.style.display='none';"
-    onblur="this.style.display='none';"
-    style="display: none; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
-  >
-    <option value="">-- None --</option>
-    ${appState.unitAbbreviations
-      .map(
-        (abbrev) =>
-          `<option value="${escapeHtml(abbrev)}" ${
-            row.unit_abbrev === abbrev ? "selected" : ""
-          }>${escapeHtml(abbrev)}</option>`,
       )
       .join("")}
   </select>
