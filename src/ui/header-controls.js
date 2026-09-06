@@ -329,7 +329,8 @@ export async function renderHeader({
   _headerObserver = new IntersectionObserver(
     ([entry]) => {
       const btn = documentRef.getElementById("hamburger-btn");
-      if (btn) btn.style.visibility = entry.isIntersecting ? "visible" : "hidden";
+      if (btn)
+        btn.style.visibility = entry.isIntersecting ? "visible" : "hidden";
     },
     { threshold: 0 },
   );

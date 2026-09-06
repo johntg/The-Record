@@ -1,6 +1,6 @@
 {
-  "name": "the-record",
-  "version": "3.8.6",
+  "name": "STAGING-the-record",
+  "version": "3.8.7",
   "private": true,
   "type": "module",
   "scripts": {

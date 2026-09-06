@@ -521,6 +521,33 @@ export function createCardsRenderer({
             </button>
 
             <div style="display: ${isExpanded ? "block" : "none"}; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border);">
+              <div style="margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed var(--border);">
+                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_change_status')}</label>
+                <select
+                  onchange="window.updateAssignment('${row.id}', 'status', this.value)"
+                  style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
+                >
+                  ${visibleStatusOptions
+                    .map(
+                      (status) =>
+                        `<option value="${status}" ${currentStatus === status ? "selected" : ""}>${status}</option>`,
+                    )
+                    .join("")}
+                </select>
+
+                ${
+                  hasAdminPasswordAccess()
+                    ? `
+                  <button
+                    onclick="window.archiveCalling('${row.id}')"
+                    style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: white; font-weight: 700; cursor: pointer;"
+                  >
+                    ${t('btn_archive')}
+                  </button>
+`
+                    : ""
+                }
+              </div>
               <p style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 8px;">${t('label_detailed_steps')}</p>
               <div style="background: var(--surface-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
                 <div style="display: grid; gap: 10px; margin-bottom: 10px;">
@@ -685,34 +712,6 @@ export function createCardsRenderer({
                   </div>
                   `
                 }
-
-                <div style="margin: 10px 0 0 0;">
-                  <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('col_status')}</label>
-                  <select
-                    onchange="window.updateAssignment('${row.id}', 'status', this.value)"
-                    style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem;"
-                  >
-                    ${visibleStatusOptions
-                      .map(
-                        (status) =>
-                          `<option value="${status}" ${currentStatus === status ? "selected" : ""}>${status}</option>`,
-                      )
-                      .join("")}
-                  </select>
-
-                  ${
-                    hasAdminPasswordAccess()
-                      ? `
-                    <button
-                      onclick="window.archiveCalling('${row.id}')"
-                      style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: white; font-weight: 700; cursor: pointer;"
-                    >
-                      ${t('btn_archive')}
-                    </button>
-  `
-                      : ""
-                  }
-                </div>
 
                 <div style="margin: 10px 0 0 0;">
                   <label style="display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('label_note')}</label>
