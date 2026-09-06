@@ -944,6 +944,7 @@ body.modal-open {
   max-height: 70vh;
   overflow: auto;
   resize: vertical;
+  align-items: flex-start;
 }
 .terminal-box {
   width: var(--container-width);
