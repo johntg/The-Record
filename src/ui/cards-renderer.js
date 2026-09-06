@@ -534,19 +534,6 @@ export function createCardsRenderer({
                     )
                     .join("")}
                 </select>
-
-                ${
-                  hasAdminPasswordAccess()
-                    ? `
-                  <button
-                    onclick="window.archiveCalling('${row.id}')"
-                    style="margin-top: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: white; font-weight: 700; cursor: pointer;"
-                  >
-                    ${t('btn_archive')}
-                  </button>
-`
-                    : ""
-                }
               </div>
               <p style="font-size: 0.8rem; color: var(--text-subtle); margin-bottom: 8px;">${t('label_detailed_steps')}</p>
               <div style="background: var(--surface-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
@@ -723,6 +710,19 @@ export function createCardsRenderer({
                     style="width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 0.95rem; box-sizing: border-box;"
                   />
                 </div>
+
+                ${
+                  hasAdminPasswordAccess()
+                    ? `
+                  <button
+                    onclick="window.archiveCalling('${row.id}')"
+                    style="margin-top: 14px; width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--danger-soft); color: white; font-weight: 700; cursor: pointer;"
+                  >
+                    ${t('btn_archive')}
+                  </button>
+`
+                    : ""
+                }
 
               </div>
             </div>
