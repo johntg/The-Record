@@ -123,6 +123,18 @@ If deploying through GitHub Actions or another CI system, make sure these enviro
 - `VITE_STAKE_PW`
 - `VITE_ADMIN_PW`
 
+### Keeping staging's version in sync with main
+
+Every push to `main` bumps `package.json`'s version automatically (see `.github/workflows/deploy.yml`), but the `staging` branch is not auto-bumped, so its version can drift behind `main` over time.
+
+To align staging's version with main on demand:
+
+1. Open the repo on GitHub → **Actions** tab
+2. Select **Sync Staging Version**
+3. Click **Run workflow**
+
+This runs `.github/workflows/sync-staging-version.yml`, which is **manual-only** (`workflow_dispatch`, no automatic trigger). It reads the version from `main`'s `package.json`, and if staging is behind, bumps staging's `package.json`/`package-lock.json` to match and pushes the commit to `staging`. That push then triggers the normal `deploy-staging.yml` build, so the staging site redeploys stamped with the aligned version. If staging is already at the same version as main, the workflow is a no-op.
+
 ## Supabase Row Level Security (RLS) setup
 
 The app attempts to archive items by moving rows from the `callings` table to the `archive` table.
