@@ -477,6 +477,25 @@ export function createCallingsActions({
     await archiveCallingRecord(id, { confirm: true });
   }
 
+  function appendNoteAuthor(value) {
+    const text = String(value || "").trim();
+    if (!text) {
+      return value;
+    }
+
+    const authorName = String(getCurrentUserName() || "").trim();
+    if (!authorName) {
+      return text;
+    }
+
+    const suffix = ` - ${authorName}`;
+    if (text.endsWith(suffix)) {
+      return text;
+    }
+
+    return `${text}${suffix}`;
+  }
+
   async function updateField(id, field, value) {
     if (field === "hc_sustained") {
       await showModalAlert(
@@ -495,6 +514,14 @@ export function createCallingsActions({
 
     if (field === "interviewed" || isSettingApartDoneField) {
       updateData[field] = value ? new Date().toISOString() : null;
+    } else if (field === "note") {
+      const existingItem = appState.callings.find(
+        (calling) => calling.id === id,
+      );
+      if (existingItem && existingItem.note === value) {
+        return;
+      }
+      updateData[field] = appendNoteAuthor(value);
     } else {
       updateData[field] = value;
     }
