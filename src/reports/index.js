@@ -15,12 +15,16 @@ const STAKE_BUSINESS_STRINGS = {
     releases: "RELEASES",
     releasedFrom:
       "The following have been released from their positions in the Stake:",
+    releasedFromWard:
+      "The following have been released from their Stake positions within the ward:",
     voteOfThanks:
       "It is proposed they be given a vote of thanks for their service.",
     inFavour: "Those in favour manifest it by the uplifted hand.",
     sustainings: "SUSTAININGS",
     calledToServe:
       "The following have been called to serve in positions in the Stake:",
+    calledToServeWard:
+      "The following have been called to serve in Stake positions within the ward:",
     proposed: "It is proposed that they be sustained.",
     opposed: "Those opposed, if any, by the same sign.",
   },
@@ -32,29 +36,37 @@ const STAKE_BUSINESS_STRINGS = {
     releases: "FA'ATE'AGA",
     releasedFrom:
       "O i latou o lo'o fa'ailo i lalo na fa'ate'a mai o latou tulaga i le Siteki:",
+    releasedFromWard:
+      "O i latou o lo'o fa'ailo i lalo na fa'asa'olotoina mai tofiga i le Siteki i totonu o le uarota:",
     voteOfThanks:
       "E tatau ona foa'i atu se vōte o fa'afetai mo lo latou tautua.",
     inFavour: "O i latou e finafinau fa'ailoa mai i le lima seia.",
     sustainings: "FA'ATUATUA",
     calledToServe:
       "O i latou o lo'o fa'ailo i lalo na valaaulia e tautua i tulaga i le Siteki:",
+    calledToServeWard:
+      "O i latou o lo'o fa'ailo i lalo na vala'auina e auauna i tulaga i le Siteki i totonu o le uarota:",
     proposed: "E tatau ona fa'atuatuaina i latou.",
     opposed: "O i latou e tetee, afai e iai, i le faailoga lava lea.",
   },
   to: {
-    reportTitle: "Pisinisi ʻa e Steiki - ʻi he ngaahi ʻiuniti",
-    stakeHeading: "PISINISI ʻA E STEIKI",
+    reportTitle: "Pisinisi ʻa e Siteiki - ʻi he ngaahi ʻiuniti",
+    stakeHeading: "PISINISI ʻA E SITEIKI",
     noItems:
       "ʻOku ʻikai ha kau mēmipa ʻoku fie poupouʻi, tānaki, pe tukuange ʻi he taimi ni.",
     releases: "TUKUANGE",
     releasedFrom:
-      "Ko e kakai ʻoku hā ʻi lalo naʻe tukuange mei honau ngāue ʻi he Steiki:",
+      "Ko e kakai ʻoku hā ʻi lalo naʻe tukuange mei honau ngāue ʻi he Siteiki:",
+    releasedFromWard:
+      "Ko e kakai ʻoku hā ʻi lalo naʻe tukuange mei he ngaahi tuʻunga ʻo e Siteikí ʻi loto ʻi he uōtí:",
     voteOfThanks:
       "ʻOku fakafofongaʻi ke foaki ha vouti fakamālohi ki honau ngāue.",
     inFavour: "Ko kinautolu ʻoku tui ke fakaʻasi ʻaki ʻa e nima hake.",
     sustainings: "POUPOU",
     calledToServe:
-      "Ko e kakai ʻoku hā ʻi lalo naʻe ui ke ngāue ʻi he ngāue ʻi he Steiki:",
+      "Ko e kakai ʻoku hā ʻi lalo naʻe ui ke ngāue ʻi he ngāue ʻi he Siteiki:",
+    calledToServeWard:
+      "Ko e kakai ʻoku hā ʻi lalo naʻe uiuiʻi ki he ngaahi tuʻunga fakasiteiki ʻi loto ʻi he uōtí:",
     proposed: "ʻOku fakafofongaʻi ke poupouʻi kinautolu.",
     opposed:
       "Ko kinautolu ʻoku fakaʻikai, kapau ʻoku ai, ʻaki ʻa e fakaʻilonga tatau.",
@@ -215,7 +227,13 @@ function buildUnassignedAssignmentsReport(rows) {
   return `${formatReportHeader("Assignments Not Yet Made", totalMissing)}\n\n${sections}`;
 }
 
-function buildUnitSection(unitTitle, releases, toSustain, lang = "en") {
+function buildUnitSection(
+  unitTitle,
+  releases,
+  toSustain,
+  lang = "en",
+  isStakeSection = false,
+) {
   const t = STAKE_BUSINESS_STRINGS[lang] || STAKE_BUSINESS_STRINGS.en;
   const lines = [];
 
@@ -226,7 +244,9 @@ function buildUnitSection(unitTitle, releases, toSustain, lang = "en") {
   if (releases.length > 0) {
     lines.push(t.releases);
     lines.push("");
-    lines.push(t.releasedFrom);
+    lines.push(
+      isStakeSection ? t.releasedFrom : t.releasedFromWard || t.releasedFrom,
+    );
     lines.push("");
 
     releases.forEach((row, index) => {
@@ -244,7 +264,11 @@ function buildUnitSection(unitTitle, releases, toSustain, lang = "en") {
   if (toSustain.length > 0) {
     lines.push(t.sustainings);
     lines.push("");
-    lines.push(t.calledToServe);
+    lines.push(
+      isStakeSection
+        ? t.calledToServe
+        : t.calledToServeWard || t.calledToServe,
+    );
     lines.push("");
 
     toSustain.forEach((row, index) => {
@@ -263,25 +287,35 @@ function buildUnitSection(unitTitle, releases, toSustain, lang = "en") {
   return lines.join("\n");
 }
 
-function buildSustainSetApartReleaseReport(rows, lang = "en") {
+function buildSustainSetApartReleaseReport(rows, lang = "en", allUnits = []) {
   const unitsSet = new Set(rows.map((row) => row.unit).filter(Boolean));
   const units = Array.from(unitsSet).sort();
   const isInProgress = (row) =>
     String(row.status || "").trim() === "In Progress";
 
-  const hasBeenAnnouncedInAnyUnit = (row) => {
-    const releaseAnnouncedUnitsField = resolveReleaseAnnouncedUnitsField(row);
-    const announcedUnits = Array.isArray(row[releaseAnnouncedUnitsField])
-      ? row[releaseAnnouncedUnitsField]
-      : [];
+  const normalizeUnit = (unit) =>
+    String(unit || "")
+      .toLowerCase()
+      .trim();
 
-    return announcedUnits
-      .map((unit) =>
-        String(unit || "")
-          .toLowerCase()
-          .trim(),
-      )
-      .some(Boolean);
+  // Stake business is conducted in every ward; ward business only in its own ward.
+  const wardUnits = allUnits.filter((unit) => unit && unit !== "Stake");
+  const getRequiredUnits = (row) =>
+    row.unit === "Stake" ? wardUnits : [row.unit].filter(Boolean);
+
+  const hasBeenConductedInAllUnits = (row, conductedUnitsField) => {
+    const conducted = new Set(
+      (Array.isArray(row[conductedUnitsField]) ? row[conductedUnitsField] : [])
+        .map(normalizeUnit)
+        .filter(Boolean),
+    );
+    // Ticking "Stake" (e.g. conducted at stake conference) completes a Stake item.
+    if (row.unit === "Stake" && conducted.has(normalizeUnit("Stake"))) {
+      return true;
+    }
+    const required = getRequiredUnits(row);
+    if (!required.length) return false;
+    return required.every((unit) => conducted.has(normalizeUnit(unit)));
   };
 
   const releases = rows.filter(
@@ -289,7 +323,7 @@ function buildSustainSetApartReleaseReport(rows, lang = "en") {
       String(row.type || "").toUpperCase() === "RELEASE" &&
       isInProgress(row) &&
       isCompletedValue(row.interviewed) &&
-      !hasBeenAnnouncedInAnyUnit(row),
+      !hasBeenConductedInAllUnits(row, resolveReleaseAnnouncedUnitsField(row)),
   );
 
   const isSustained = (row) =>
@@ -301,7 +335,8 @@ function buildSustainSetApartReleaseReport(rows, lang = "en") {
       isInProgress(row) &&
       !isSustained(row) &&
       isCompletedValue(row.interviewed) &&
-      (isCompletedValue(row.sp_approved) || isCompletedValue(row.hc_sustained)),
+      (isCompletedValue(row.sp_approved) || isCompletedValue(row.hc_sustained)) &&
+      !hasBeenConductedInAllUnits(row, "units_sustained"),
   );
   const reportSections = [];
 
@@ -312,7 +347,13 @@ function buildSustainSetApartReleaseReport(rows, lang = "en") {
 
   if (stakeReleases.length > 0 || stakeToSustain.length > 0) {
     reportSections.push(
-      buildUnitSection(t.stakeHeading, stakeReleases, stakeToSustain, lang),
+      buildUnitSection(
+        t.stakeHeading,
+        stakeReleases,
+        stakeToSustain,
+        lang,
+        true,
+      ),
     );
   }
 
@@ -457,6 +498,7 @@ export function generateReport(type, rows, reportContext = {}) {
     return buildSustainSetApartReleaseReport(
       rows,
       reportContext.language || "en",
+      reportContext.units || [],
     );
   }
 

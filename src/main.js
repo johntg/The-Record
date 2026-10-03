@@ -2357,6 +2357,7 @@ window.generateCurrentReport = () => {
       archivedRows: appState.archivedItems,
       pageSize: 25,
       language: appState.reportLanguage,
+      units: appState.units,
     },
   );
   renderReportsPage();
@@ -2443,6 +2444,8 @@ window.refreshData = async () => {
           hcVotingTableAvailable: appState.hcVotingTableAvailable,
           archivedRows: appState.archivedItems,
           pageSize: 25,
+          language: appState.reportLanguage,
+          units: appState.units,
         },
       );
     }
